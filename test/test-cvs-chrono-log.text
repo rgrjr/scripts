@@ -49,7 +49,7 @@ install.pl now doesn't touch the "magic" line unless you say "-magic".
 Change some magic lines (4 scripts) to "#!/usr/bin/perl".
 ----------------------------
 revision 1.6
-date: 2003/07/27 02:40:58;  author: rogers;  state: Exp;  lines: +13 -0
+date: 2003/07/27 02:40:56;  author: rogers;  state: Exp;  lines: +13 -0
 Added Weblog/Squid hacks to the collection.
 ----------------------------
 revision 1.5
@@ -368,7 +368,7 @@ total revisions: 1;	selected revisions: 1
 description:
 ----------------------------
 revision 1.1
-date: 2003/07/27 02:40:58;  author: rogers;  state: Exp;
+date: 2003/07/27 02:40:57;  author: rogers;  state: Exp;
 Added Weblog/Squid hacks to the collection.
 =============================================================================
 
@@ -495,7 +495,7 @@ total revisions: 1;	selected revisions: 1
 description:
 ----------------------------
 revision 1.1
-date: 2003/07/27 02:40:58;  author: rogers;  state: Exp;
+date: 2003/07/27 02:41:02;  author: rogers;  state: Exp;
 Added Weblog/Squid hacks to the collection.
 =============================================================================
 
@@ -511,7 +511,7 @@ total revisions: 1;	selected revisions: 1
 description:
 ----------------------------
 revision 1.1
-date: 2003/07/27 02:40:58;  author: rogers;  state: Exp;
+date: 2003/07/27 02:40:59;  author: rogers;  state: Exp;
 Added Weblog/Squid hacks to the collection.
 =============================================================================
 
@@ -748,7 +748,7 @@ install.pl now doesn't touch the "magic" line unless you say "-magic".
 Change some magic lines (4 scripts) to "#!/usr/bin/perl".
 ----------------------------
 revision 1.1
-date: 2003/07/27 02:40:58;  author: rogers;  state: Exp;
+date: 2003/07/27 02:40:57;  author: rogers;  state: Exp;
 Added Weblog/Squid hacks to the collection.
 =============================================================================
 
