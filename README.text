@@ -7,6 +7,9 @@ new session on a (possibly multisession) CDROM.
 printing a summary.  This uses the "nominal-*.text" files to flush
 uninteresting lines.
 
+   * cvs-chrono-log.pl -- Converts "cvs log" format into a chronological
+recounting of changes (greatly compressing the output along the way).
+
    * daily-status.pl -- Generate daily status message.  Use this to run
 a cron job that sends periodic emails with check-logs.pl summaries.
 
