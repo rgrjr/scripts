@@ -12,8 +12,8 @@ INSTALL = perl ./install.pl -show
 root = /usr/local
 bin-directory = ${root}/bin
 pm-directory = /usr/lib/perl5/site_perl
-public-html-directory = /usr/local/aolserver/servers/rgrjr/pages/linux
-published-scripts = backup.pl cd-dump.pl
+public-html-directory = /srv/www/htdocs/linux
+published-scripts = backup.pl cd-dump.pl vacuum.pl
 html-pages = ${published-scripts:.pl=.pl.html}
 
 base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
@@ -60,7 +60,7 @@ install-qmail:
 install-afpd:
 	${INSTALL} -m 555 ${afpd-scripts} ${bin-directory}
 install-squid:
-	${INSTALL} -m 555 ${squid-scripts} ${root}/sbin
+	${INSTALL} -m 555 ${squid-scripts} /usr/sbin
 	squid -k reconfigure
 install-upsd:
 	${INSTALL} -m 555 upsd.pl /etc/init.d
