@@ -1,6 +1,22 @@
-#! /usr/bin/perl -w
+#!/usr/bin/perl -w
+# Copyright (C) 2004 by Bob Rogers, all rights reserved.  This program is Open
+# Source software; you may use it under the terms of the GNU GPL.
+#
+# Author:  Bob Rogers <rogers@rgrjr.dyndns.org>
+#
+# /etc/init.d/upsd.pl
 #
 # Perl UPS daemon for the APC Smart-UPS 1400 RM with network management card.
+#
+### BEGIN INIT INFO
+# Provides: upsd
+# Required-Start:
+# X-UnitedLinux-Should-Start: hotplug kbd
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop:
+# Description: UPS monitoring daemon for networked APC Smart-UPS 1400 RM.
+### END INIT INFO
 #
 # Requirements:
 #	LWP (distributed with perl)
