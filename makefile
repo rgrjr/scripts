@@ -20,6 +20,8 @@ backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl vacuum.pl
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl
 pm-log-scripts = squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
+# note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
+squid-scripts = redirect.pl
 # Note that tar-backup.pm is not used by anything at the moment.
 perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm
 # firewall-scripts must go into /etc/init.d to be useful.
@@ -40,7 +42,7 @@ test-chrono-log:
 	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
 	rm -f test-cvs-chrono-log.tmp
 
-install:	install-base install-qmail install-afpd
+install:	install-base install-qmail install-afpd install-squid
 install-base:
 	${INSTALL} -m 555 ${root-scripts} -inc ${pm-log-scripts} /root/bin
 	${INSTALL} -m 444 ${perl-modules} ${log-files} /root/bin
@@ -48,6 +50,9 @@ install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} /root/bin
 install-afpd:
 	${INSTALL} -m 555 ${afpd-scripts} /root/bin
+install-squid:
+	${INSTALL} -m 555 ${squid-scripts} /usr/sbin
+	squid -k reconfigure
 
 diff:
 	for file in `ls /root/bin | fgrep -v '~'`; do \
