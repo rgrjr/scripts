@@ -8,37 +8,66 @@
 # $Id$
 
 use strict;
+# use Data::Dumper;
+use Date::Parse;
+use Date::Format;
 
 my %modifications;
 
 sub record_file_rev_comment {
     my ($file_name, $file_rev, $date_etc, $comment) = @_;
+
     my $date = ($date_etc =~ /date: *([^;]+); */ 
 		? ($date_etc =~ s///, $1)
 		: '???');
-
     # warn "[got ($file_name, $file_rev, $date_etc):]\n";
-    $date_etc =~ s/state: Exp; *//;
-    push(@{$modifications{$date}{$comment}},
-	 [$file_name, $file_rev, $date_etc]);
+    if ($date eq '???') {
+	warn "Oops; can't identify date in '$date_etc' -- skipping.\n";
+    }
+    else {
+	my $encoded_date = str2time($date, 'UTC');
+	$date_etc =~ s/state: Exp; *//;
+	push(@{$modifications{$comment}{$encoded_date}},
+	     [$file_name, $file_rev, $date_etc]);
+    }
 }
 
 sub print_file_rev_comments {
     # Print all revision comments.
 
-    for my $date (reverse(sort(keys(%modifications)))) {
-	for my $comment (sort(keys(%{$modifications{$date}}))) {
-	    print "$date:\n";
-	    for my $line (split("\n", $comment)) {
-		print "  $line\n"
-		    if $line;
+    # examine entries by comment, then by date, combining all that have the
+    # identical comment and nearly the same date.
+    my @combined_entries;
+    for my $comment (sort(keys(%modifications))) {
+	my $last_date;
+	my @entries;
+	for my $date (reverse(sort(keys(%{$modifications{$comment}})))) {
+	    if ($last_date) {
+		push(@combined_entries, [$last_date, $comment, @entries]);
+		@entries = ();
+		undef($last_date);
 	    }
-	    for my $entry (@{$modifications{$date}{$comment}}) {
-		my ($file_name, $file_rev, $date_etc) = @$entry;
-		print "  => $file_name $file_rev:  $date_etc\n";
-	    }
-	    print "\n";
+	    $last_date ||= $date;
+	    push(@entries, @{$modifications{$comment}{$date}});
 	}
+	push(@combined_entries, [$last_date, $comment, @entries])
+	    if @entries;
+    }
+    # print Dumper(\%modifications, \@combined_entries);
+    # now print them out.
+    for my $date_entry (sort { -($a->[0] <=> $b->[0]); } @combined_entries) {
+	my $date = time2str("%Y-%m-%d %H:%M", shift(@$date_entry));
+	my $comment = shift(@$date_entry);
+	print "$date:\n";
+	for my $line (split("\n", $comment)) {
+	    print "  $line\n"
+		if $line;
+	}
+	for my $entry (@$date_entry) {
+	    my ($file_name, $file_rev, $date_etc) = @$entry;
+	    print "  => $file_name $file_rev:  $date_etc\n";
+	}
+	print "\n";
     }
 }
 

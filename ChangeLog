@@ -1,3 +1,10 @@
+2003-08-05  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* check-logs.pl:  Updated to 'use strict;'.
+
+	* cvs-chrono-log.pl:  Parse dates, reformat into local TZ, plus a
+	test case.
+
 2003-07-15  Bob Rogers  <rogers@rgrjr.dyndns.org>
 
 	* extract-subnet.pl:  Updated for 'use strict' and -w.

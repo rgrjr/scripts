@@ -1,0 +1,152 @@
+2003-08-05 20:22:
+  Updated check-logs.pl to 'use strict;'.
+  => README.text 1.8:  author: rogers;  lines: +2 -2
+  => check-logs.pl 1.2:  author: rogers;  lines: +56 -37
+  => nominal-random.text 1.2:  author: rogers;  lines: +1 -1
+
+2003-08-03 20:42:
+  Make vacuum.pl deal better with inability to open a connection.
+  => vacuum.pl 1.3:  author: rogers;  lines: +10 -5
+
+2003-07-28 16:59:
+  Also copy .tgz files if found.
+  => vacuum.pl 1.2:  author: rogers;  lines: +5 -5
+
+2003-07-28 12:59:
+  Revamped makefile install targets, fixed module installation.
+  New vacuum.pl script.
+  install.pl now doesn't touch the "magic" line unless you say "-magic".
+  Change some magic lines (4 scripts) to "#!/usr/bin/perl".
+  => README.text 1.7:  author: rogers;  lines: +6 -1
+  => cp-if-newer.pl 1.2:  author: rogers;  lines: +1 -1
+  => install.pl 1.6:  author: rogers;  lines: +5 -1
+  => makefile 1.4:  author: rogers;  lines: +24 -9
+  => rename-into-tree.pl 1.2:  author: rogers;  lines: +1 -1
+  => squid-log.pl 1.2:  author: rogers;  lines: +1 -1
+  => squint.pl 1.2:  author: rogers;  lines: +1 -1
+  => tar-backup.pl 1.1:  author: rogers;  
+  => tar-backup.pm 1.1:  author: rogers;  
+  => vacuum.pl 1.1:  author: rogers;  
+
+2003-07-26 22:40:
+  Added Weblog/Squid hacks to the collection.
+  => README.text 1.6:  author: rogers;  lines: +13 -0
+  => make-popular-pages.pl 1.1:  author: rogers;  
+  => page-hits.pl 1.1:  author: rogers;  
+  => parse-logs.pm 1.1:  author: rogers;  
+  => squid2std.pl 1.1:  author: rogers;  
+  => squint.pl 1.1:  author: rogers;  
+
+2003-07-25 22:19:
+  Chronological log reformatting hack -- needs documentation.
+  => README.text 1.5:  author: rogers;  lines: +3 -0
+  => cvs-chrono-log.pl 1.1:  author: rogers;  
+
+2003-07-18 22:01:
+  Random cleaning up.
+  => ChangeLog 1.3:  author: rogers;  lines: +1 -1
+  => README.text 1.4:  author: rogers;  lines: +10 -6
+  => install.pl 1.5:  author: rogers;  lines: +5 -3
+
+2003-07-15 07:26:
+  extract-subnet.pl:  Added 'use strict' and -w.
+  => ChangeLog 1.2:  author: rogers;  lines: +2 -0
+  => extract-subnet.pl 1.2:  author: rogers;  lines: +20 -15
+
+2003-07-15 07:15:
+  Started ChangeLog.
+  => ChangeLog 1.1:  author: rogers;  
+  => README.text 1.3:  author: rogers;  lines: +2 -0
+
+2003-07-15 07:10:
+  Oops; supply explicit -dev to cdrecord, use one dash in option names.
+  => cd-dump.pl 1.6:  author: rogers;  lines: +4 -3
+
+2003-07-13 21:34:
+  More perl style improvements.
+  => install.pl 1.4:  author: rogers;  lines: +5 -7
+
+2003-07-13 21:22:
+  Improve error message if install dir is not writable.
+  => install.pl 1.3:  author: rogers;  lines: +2 -2
+
+2003-07-13 11:47:
+  Converted to Getopt::Long usage.
+  => cd-dump.pl 1.5:  author: rogers;  lines: +33 -62
+
+2003-07-13 11:03:
+  Change $arg to $arg_name to fix "--" handling.
+  => cd-dump.pl 1.4:  author: rogers;  lines: +6 -6
+
+2003-07-11 06:53:
+  Clean up install.pl script.
+  => cd-dump.pl 1.3:  author: rogers;  lines: +1 -1
+  => install.pl 1.2:  author: rogers;  lines: +39 -33
+  => makefile 1.3:  author: rogers;  lines: +1 -1
+
+2003-07-10 08:07:
+  New --[no]mount option (untested), Pod::Usage, update doc.
+  => README.text 1.2:  author: rogers;  lines: +6 -0
+  => cd-dump.pl 1.2:  author: rogers;  lines: +63 -17
+
+2003-06-17 09:08:
+  Fix typos in comments.
+  => backup.pl 1.2:  author: rogers;  lines: +5 -4
+
+2003-06-15 21:08:
+  Machinery for installing this in the /root/bin dir.
+  => install.pl 1.1:  author: rogers;  
+  => makefile 1.2:  author: rogers;  lines: +11 -1
+
+2003-06-15 20:47:
+  Initial revision
+  => README.text 1.1:  author: rogers;  branches:  1.1.1;
+  => afpd-stat.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => atwho.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => backup.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => cd-dump.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => check-logs.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => cp-if-newer.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => daily-status.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => extract-subnet.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => makefile 1.1:  author: rogers;  branches:  1.1.1;
+  => nominal-random.text 1.1:  author: rogers;  branches:  1.1.1;
+  => nominal-shutdown.text 1.1:  author: rogers;  branches:  1.1.1;
+  => nominal-startup.text 1.1:  author: rogers;  branches:  1.1.1;
+  => partition-backup-sizes.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => qifq.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => qmail-redeliver 1.1:  author: rogers;  branches:  1.1.1;
+  => qmail-restart 1.1:  author: rogers;  branches:  1.1.1;
+  => rename-into-tree.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => rename-into-tree.pm 1.1:  author: rogers;  branches:  1.1.1;
+  => rgr-dehex.el 1.1:  author: rogers;  branches:  1.1.1;
+  => squid-log.pl 1.1:  author: rogers;  branches:  1.1.1;
+  => status-since 1.1:  author: rogers;  branches:  1.1.1;
+  => tripwire-verify 1.1:  author: rogers;  branches:  1.1.1;
+
+2003-06-15 20:47:
+  Initial sources.
+  => README.text 1.1.1.1:  author: rogers;  lines: +0 -0
+  => afpd-stat.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => atwho.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => backup.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => cd-dump.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => check-logs.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => cp-if-newer.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => daily-status.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => extract-subnet.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => makefile 1.1.1.1:  author: rogers;  lines: +0 -0
+  => nominal-random.text 1.1.1.1:  author: rogers;  lines: +0 -0
+  => nominal-shutdown.text 1.1.1.1:  author: rogers;  lines: +0 -0
+  => nominal-startup.text 1.1.1.1:  author: rogers;  lines: +0 -0
+  => partition-backup-sizes.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => qifq.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => qmail-redeliver 1.1.1.1:  author: rogers;  lines: +0 -0
+  => qmail-restart 1.1.1.1:  author: rogers;  lines: +0 -0
+  => rename-into-tree.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => rename-into-tree.pm 1.1.1.1:  author: rogers;  lines: +0 -0
+  => rgr-dehex.el 1.1.1.1:  author: rogers;  lines: +0 -0
+  => squid-log.pl 1.1.1.1:  author: rogers;  lines: +0 -0
+  => status-since 1.1.1.1:  author: rogers;  lines: +0 -0
+  => tripwire-verify 1.1.1.1:  author: rogers;  lines: +0 -0
+

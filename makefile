@@ -28,6 +28,14 @@ all:
 	@echo Nobody here but us scripts.
 	@echo So tell me what you really want to do, e.g. \"make publish\".
 
+test:	test-chrono-log
+
+test-chrono-log:
+	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text \
+		> test-cvs-chrono-log.tmp
+	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
+	rm -f test-cvs-chrono-log.tmp
+
 install:	install-base install-qmail install-afpd
 install-base:
 	${INSTALL} -m 555 ${root-scripts} /root/bin
