@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # bug: somehow, @cp_program_args isn't being obeyed . . .  -- rgr, 1-Nov-00.
 #

@@ -32,6 +32,7 @@
 my $mode = '555';	# default permissions (octal).
 # [not used.  -- rgr, 11-Jul-03.]
 # my $group = '';	# don't change group by default.
+my $install_perl_magic_p = 0;	# whether to change '#!/usr/bin/perl -w' magic.
 my $include_p = 0;		# new feature: hack include directory.
 my $force_p = 0;		# overrides date checking.
 my $show_p = 0;
@@ -185,7 +186,7 @@ sub install_program {
 	}
     }
     # It is; figure out how, and go do it.
-    if ($program !~ /\.pr?l$/) {
+    if (! $install_perl_magic_p || $program !~ /\.pr?l$/) {
 	# normal program or data file.
 	x11_install($program, $installed_program_name, $program_base_name);
     }
@@ -223,6 +224,9 @@ while (@ARGV) {
     }
     elsif ($program eq '-force') {
 	$force_p = $program;
+    }
+    elsif ($program eq '-magic') {
+	$install_perl_magic_p = $program;
     }
     elsif ($program eq '-inc') {
 	# When installing perl scripts, have it put the binary directory at the

@@ -1,4 +1,9 @@
-   * backup.pl -- Create and verify a dump file.
+   * backup.pl -- Create and verify a dump(8) file.
+
+   * tar-backup.pl -- Create and verify a tar(1) file (not as well
+supported as backup.pl).
+
+   * vacuum.pl -- Copy and verify named backup files over the network.
 
    * cd-dump.pl -- Dump the contents of the ./to-write/ directory to a
 new session on a (possibly multisession) CDROM.

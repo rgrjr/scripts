@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # Look for and report bad things in a squid access log on the standard input.
 # Right now, this just includes unauthorized proxying; things like worm hits are
