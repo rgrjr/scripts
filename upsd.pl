@@ -7,9 +7,10 @@
 #	logger utility (POSIX.2)
 #	/sbin/shutdown
 #
-# Created 15-Jun-04 by Bob Rogers <rogers@rgrjr.dyndns.org>.  Based loosely on
-# the C version by Slavik Terletsky <ts@polynet.lviv.ua>, as published in the
-# UPS-HOWTO by Harvey J. Stein <hjstein@bfr.co.il>, v2.42, 18 November 1997.
+# Created 15-Jun-04 by Bob Rogers <rogers@rgrjr.dyndns.org>.  Based very loosely
+# on the C version by Slavik Terletsky <ts@polynet.lviv.ua>, as published in the
+# UPS-HOWTO by Harvey J. Stein <hjstein@bfr.co.il> (v2.42, 18 November 1997),
+# plus some sample daemon code from the Perl documentation (v5.8.1).
 #
 # $Id$
 
@@ -145,11 +146,9 @@ sub run_ups_daemon {
     my $operation = shift;
 
     my $daemon_p = $operation eq 'start';
-    if ($daemon_p) {
-	if (-e $pid_file_name) {
-	    warn "$0:  upsd.pl is already running as a daemon.\n";
-	    return 0;
-	}
+    if ($daemon_p && -e $pid_file_name) {
+	warn "$0:  upsd.pl is already running as a daemon.\n";
+	return 0;
     }
     my $last_status = 'initial';	# force an initial log message.
     my $last_time_left;
@@ -160,10 +159,14 @@ sub run_ups_daemon {
     chdir('/')
 	or die "Can't chdir to /: $!";
     if ($daemon_p) {
+	# open a pipe to the 'logger' program, as a way of getting messages into
+	# the system log.
+	$log_handle = IO::Pipe->new->writer('logger', '-it', $daemon_name, 
+					    '-p', 'daemon.crit');
 	open(STDIN, '/dev/null')
 	    or die "Can't read /dev/null: $!";
-	open(STDOUT, '>/dev/null')
-	    or die "Can't write to /dev/null: $!";
+	open(STDOUT, '>&', $log_handle)
+	    or die "Can't write to log handle: $!";
 	my $pid = fork();
 	if (! defined($pid)) {
 	    die "0:  fork died:  $!";
@@ -181,23 +184,13 @@ sub run_ups_daemon {
 	$SIG{TERM} = \&handle_sigterm;
 	setsid()
 	    or die "Can't start a new session: $!";
-	# [the rest of this better not fail, or we'll never hear about it.  --
-	# rgr, 21-Jun-04.]
-	open(STDERR, '>&STDOUT')
+	# [note that this directs warnings to the logger.  -- rgr, 22-Jun-04.]
+	open(STDERR, '>&=STDOUT')
 	    or die "Can't dup stdout: $!";
     }
     else {
+	$log_handle = new_from_fd IO::Handle(fileno(STDOUT),"w");
 	warn("Running UPS daemon in the foreground.\n");
-    }
-
-    # open a pipe to the 'logger' program, as a way of getting messages into the
-    # system log.  do this only if we're running in the background.
-    if ($daemon_p) {
-	$log_handle = IO::Pipe->new->writer('logger', '-it', $daemon_name, 
-					    '-p', 'daemon.crit');
-    }
-    else {
-	$log_handle = new_from_fd IO::Handle(fileno(STDERR),"w");
     }
     die "$0:  Can't open output pipe to logger.\nDied"
 	unless $log_handle;
