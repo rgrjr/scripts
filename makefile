@@ -62,6 +62,10 @@ install-afpd:
 install-squid:
 	${INSTALL} -m 555 ${squid-scripts} ${root}/sbin
 	squid -k reconfigure
+install-upsd:
+	${INSTALL} -m 555 upsd.pl /etc/init.d
+	test -e /etc/upsd.conf \
+		|| ${INSTALL} -m 400 upsd.sample.conf /etc/upsd.conf
 
 uninstall-root-bin:
 	for file in ${perl-modules} ${base-scripts} ${qmail-scripts} \

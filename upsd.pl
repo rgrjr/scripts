@@ -231,20 +231,24 @@ sub run_ups_daemon {
 	    my $time_to_shutdown = $time_left-$min_runtime_left;
 	    $time_to_shutdown = 0
 		if $time_to_shutdown < 0;
-	    my @cmd =($shutdown_program,
-		      ($time_to_shutdown == 0 ? 'now' : "+$time_to_shutdown"),
-		      'POWER FAILURE!');
+	    my $cmd
+		= join(' ', $shutdown_program, '-h',
+		       ($time_to_shutdown == 0 ? 'now' : "+$time_to_shutdown"),
+		       "'POWER FAILURE!'");
 	    $log_handle->print("Status is '$new_status', ",
-		       "$time_left minutes left; scheduling shutdown ",
-		       ($time_to_shutdown
-			? "in $time_to_shutdown minutes"
-			: 'IMMEDIATELY'),
-		       ".\n");
+			       "$time_left minutes left; scheduling shutdown ",
+			       ($time_to_shutdown
+				? "in $time_to_shutdown minutes"
+				: 'IMMEDIATELY'),
+			       ".\n");
 	    $log_p = 0;
-	    system(@cmd)
-		or $log_handle->print("Error:  Couldn't exec '", join(' ', @cmd),
-			      "':  $!\n");
-	    # can't do much about this.  assume the user is testing, and
+	    if (fork() == 0) {
+		# this must be done in a separate process because shutdown
+		# blocks and waits for the specified elapsed time.
+		exec($cmd)
+		    or $log_handle->print("$0:  Couldn't exec \"$cmd\":  $!\n");
+	    }
+	    # can't do much if this fails.  assume the user is testing, and
 	    # pretend that it worked.
 	    $shutdown_scheduled_p = 1;
 	}
@@ -254,7 +258,7 @@ sub run_ups_daemon {
 	    $log_handle->print("Status is '$new_status', ",
 		       "$time_left minutes left; shutting down IMMEDIATELY!\n");
 	    $log_p = 0;
-	    system($shutdown_program, 'now')
+	    system($shutdown_program, '-h', 'now')
 		or $log_handle->print("Error:  Couldn't exec ",
 			      "'$shutdown_program now':  $!\n");
 	}
