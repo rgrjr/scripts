@@ -73,9 +73,12 @@ while (<>) {
 	if (m@^://.*\.doubleclick\.net/@i) {
 	    print "$doubleclick_image\n";
 	}
-	if (m@^://[0-9.]+/@i) {
+	elsif (m@://[0-9.]+/@i) {
 	    # Always croak on gifs that come from an anonymous IP address.  --
 	    # rgr, 7-Nov-02.
+	    print "$doubleclick_image\n";
+	}
+	elsif (m@^http://images-aud.sourceforge.net/pc.gif@) {
 	    print "$doubleclick_image\n";
 	}
 	elsif (m@^http://www.anywho.com/img/promos/@i) {
