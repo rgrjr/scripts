@@ -78,10 +78,26 @@ while (@ARGV && $ARGV[0] =~ /^-./) {
 # [these were culled from the march 2004 log.  they cover all bots that made
 # more than one hit during march, where a "bot" is defined as any user agent
 # that visits robots.txt.  all strings are case-exact.  -- rgr, 5-Apr-04.]
-my $robot_re = join('|', qw(Gaisbot Googlebot Jeeves NPBot NaverBot QuepasaCreep
-			    Scooter Slurp SurveyBot Yahoo-MMCrawler grub-client
-			    http://www.almaden.ibm.com/cs/crawler
-			    http://www.kototoi.org/zao/ ia_archiver msnbot));
+my $robot_re = join('|', qw(Ask.Jeeves/Teoma Gaisbot Googlebot grub-client
+			    NaverBot NPBot QuepasaCreep Scooter SurveyBot
+			    Yahoo!.Slurp Yahoo-MMCrawler 
+			    http://www.almaden.ibm.com/cs/crawler 
+			    http://www.kototoi.org/zao/ ia_archiver msnbot),
+		    # [more bots added from my november 2004 log.  note that all
+		    # of these less-common bots typically only make a difference
+		    # of 1 or 2 percent in reported page hits for my top pages.
+		    # "appie" is from http://www.walhello.com/;
+		    # www.steiermarksuche.at crashed mozilla when i tried to
+		    # look at it.  -- rgr, 25-Dec-04.]
+		    qw(appie BecomeBot Faxobot HooWWWer LinkWalker MSIECrawler
+		       Nutch psbot www.steiermarksuche.at TurnitinBot
+		       Ultraseek VoilaBot),
+		    # [these patterns need to have a little more than just the
+		    # name, so that I don't exclude other user agents by
+		    # mistake.  ".*" matches a version.  -- rgr, 25-Dec-04.]
+		    'gazz.*\(gazz@nttr.co.jp\)',
+		    'sna-..*\(mikeelliott@hotmail.com\)',
+		    'NG/2\.0');
 
 sub robot_user_agent_p {
     my ($user_agent) = @_;
