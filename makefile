@@ -23,6 +23,8 @@ backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl vacuum.pl
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
 		squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
+# mail manipulation scripts.
+mail-scripts = mbox-grep.pl mbox2maildir.pl
 # installation of various things, including these guys.
 install-scripts = install.pl install-rpms.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
@@ -50,7 +52,7 @@ test-chrono-log:
 install:	install-base
 install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
-	${INSTALL} -m 555 ${base-scripts} ${bin-directory}
+	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
 	${INSTALL} -m 444 ${log-files} /root/bin
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
