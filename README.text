@@ -26,6 +26,19 @@ one-liner cribbed from squid FAQ 6.6).
    * tripwire-verify -- Do batch tripwire verification.  This is meant
 to be used from a cron job.
 
+Weblog/Squid hacks:
+
+   * make-popular-pages.pl -- given a Web log (Squid or standard
+format), summarize the ten most popular pages.
+
+   * page-hits.pl -- given a Web log (standard format), summarize the
+hits in various ways.
+
+   * squid2std.pl -- convert Squid log to standard format.
+
+   * squint.pl -- look for evidence of unauthorized proxying in a Squid
+log.
+
 qmail hacks:
 
    * qifq.pl -- crude hack to snarf qmail files out of a "dead" queue
