@@ -37,11 +37,25 @@ pod2usage(2) if $usage;
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
-$system_types_to_install{'i386'}++
-    unless %system_types_to_install;
-
 warn "$0 version $VERSION:  $ID\n"
     if $verbose_p;
+
+if (! %system_types_to_install) {
+    $system_types_to_install{'noarch'}++;
+    # [this guesses the wrong thing for SuSE 8.1 on newer processors, since SuSE
+    # builds the RPMs so that they also run on older machines, hence the
+    # warning.  -- rgr, 20-Feb-04.]
+    my $machine_name = `uname -m`;
+    chomp($machine_name);
+    warn("$0:  Guessing that we need to install '*.$machine_name.rpm' ",
+	 "and '*.noarch.rpm' files.\n");
+    $system_types_to_install{$machine_name}++;
+}
+elsif ($verbose_p) {
+    warn("$0:  Installing ", 
+	 join(', ', map { "'*.$_.rpm'"; } sort(keys(%system_types_to_install))),
+	 " files.\n");
+}
 
 ### Main program.
 
@@ -64,7 +78,8 @@ sub process_rpm_file {
     elsif ($new_package->newer_than($installed)) {
 	# [bug: need to check for upgrades.  -- rgr, 30-Dec-03.]
 	warn("[got installed version '", $installed->version,
-	     "' release ", $installed->release, " for '$package_name'.]\n");
+	     "' release ", $installed->release, " for '$package_name'.]\n")
+	    if $verbose_p;
 	$install_p = 'upgrade';
     }
     $new_package->action($install_p);
@@ -82,9 +97,11 @@ for my $arg (@ARGV) {
 	opendir(DIR, $arg) || die;
 	my $file;
 	while (defined($file = readdir(DIR))) {
-	    process_rpm_file("$arg/$file")
-		if ($file =~ /\.([^.]+)\.rpm$/
-		    && $system_types_to_install{$1});
+	    if ($file =~ /\.([^.]+)\.rpm$/) {
+		my $system_type = $1;
+		process_rpm_file("$arg/$file")
+		    if $system_types_to_install{$system_type};
+	    }
 	}
 	closedir(DIR);
     }

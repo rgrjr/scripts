@@ -16,17 +16,19 @@ public-html-directory = /usr/local/aolserver/servers/rgrjr/pages/linux
 published-scripts = backup.pl cd-dump.pl
 html-pages = ${published-scripts:.pl=.pl.html}
 
-base-scripts = ${backup-scripts} ${log-scripts} install.pl
+base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
 backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl vacuum.pl
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
-log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl
-pm-log-scripts = squid2std.pl
+log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
+		squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
+# installation of various things, including these guys.
+install-scripts = install.pl install-rpms.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
 # Note that tar-backup.pm is not used by anything at the moment.
-perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm
+perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm rpm.pm
 # firewall-scripts must go into /etc/init.d to be useful.
 firewall-scripts = paranoid firewall
 # qmail-scripts and afpd-scripts are not installed by default.
@@ -48,7 +50,7 @@ test-chrono-log:
 install:	install-base
 install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
-	${INSTALL} -m 555 ${base-scripts} ${pm-log-scripts} ${bin-directory}
+	${INSTALL} -m 555 ${base-scripts} ${bin-directory}
 	${INSTALL} -m 444 ${log-files} /root/bin
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
@@ -57,6 +59,15 @@ install-afpd:
 install-squid:
 	${INSTALL} -m 555 ${squid-scripts} ${root}/sbin
 	squid -k reconfigure
+
+uninstall-root-bin:
+	for file in ${perl-modules} ${base-scripts} ${qmail-scripts} \
+			${afpd-scripts} ${squid-scripts}; do \
+	    if [ -r /root/bin/$$file ]; then \
+		echo Removing /root/bin/$$file; \
+		rm -f /root/bin/$$file; \
+	    fi; \
+	done
 
 diff:
 	for file in `ls ${bin-directory} | fgrep -v '~'`; do \
