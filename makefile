@@ -22,6 +22,8 @@ pm-log-scripts = squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 # Note that tar-backup.pm is not used by anything at the moment.
 perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm
+# firewall-scripts must go into /etc/init.d to be useful.
+firewall-scripts = paranoid firewall
 # qmail-scripts and afpd-scripts are not installed by default.
 qmail-scripts = qmail-restart qmail-redeliver qifq.pl
 afpd-scripts = afpd-stat.pl atwho.pl cp-if-newer.pl rename-into-tree.pl
@@ -53,6 +55,16 @@ diff:
 		diff -u /root/bin/$$file $$file; \
 	    fi; \
 	done
+
+install-firewall:
+	${INSTALL} -m 555 ${firewall-scripts} /etc/init.d
+diff-firewall:
+	for file in ${firewall-scripts}; do \
+	    if [ -r $$file ]; then \
+		diff -u /etc/init.d/$$file $$file; \
+	    fi; \
+	done
+
 
 ${html-pages}:   %.pl.html:	%.pl
 	pod2html $^ > $@
