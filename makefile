@@ -18,6 +18,7 @@ backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl vacuum.pl
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl
+pm-log-scripts = squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 # Note that tar-backup.pm is not used by anything at the moment.
 perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm
@@ -39,7 +40,7 @@ test-chrono-log:
 
 install:	install-base install-qmail install-afpd
 install-base:
-	${INSTALL} -m 555 ${root-scripts} /root/bin
+	${INSTALL} -m 555 ${root-scripts} -inc ${pm-log-scripts} /root/bin
 	${INSTALL} -m 444 ${perl-modules} ${log-files} /root/bin
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} /root/bin
