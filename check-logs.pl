@@ -93,6 +93,7 @@ sub initialize_local_addresses {
     # with old log files.
     $local_ip_address_p{'24.218.161.12'} = 100;
     $local_ip_address_p{'66.31.124.64'} = 100;
+    $local_ip_address_p{'66.31.87.164'} = 100;
     if (! open(IFC, "/sbin/ifconfig |")) {
 	warn "check-logs.pl: couldn't open pipe from ifconfig:  $!\n";
 	return 0;
