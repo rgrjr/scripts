@@ -1,5 +1,7 @@
 2003-07-15  Bob Rogers  <rogers@rgrjr.dyndns.org>
 
+	* extract-subnet.pl:  Added 'use strict' and -w.
+
 	* cd-dump.pl: Finished new --[no]mount option, converted to
 	Getopt::Long usage.
 
