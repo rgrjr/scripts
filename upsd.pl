@@ -159,14 +159,22 @@ sub run_ups_daemon {
     chdir('/')
 	or die "Can't chdir to /: $!";
     if ($daemon_p) {
+	# flush our stdin, which we won't need.
+	open(STDIN, '/dev/null')
+	    or die "Can't read stdin from /dev/null: $!";
 	# open a pipe to the 'logger' program, as a way of getting messages into
-	# the system log.
+	# the system log.  first, get rid of stderr, so it isn't held open by
+	# the logger fork.
+	open(STDERR, '>/dev/null')
+	    or die "Can't redirect stderr to /dev/null: $!";
 	$log_handle = IO::Pipe->new->writer('logger', '-it', $daemon_name, 
 					    '-p', 'daemon.crit');
-	open(STDIN, '/dev/null')
-	    or die "Can't read /dev/null: $!";
+	# restore stderr (to the terminal, we assume).
+	open(STDERR, '>&=STDOUT')
+	    or die "Can't redirect stderr to stdout: $!";
+	# redirect our stdout to the log.
 	open(STDOUT, '>&', $log_handle)
-	    or die "Can't write to log handle: $!";
+	    or die "Can't redirect stdout to log handle: $!";
 	my $pid = fork();
 	if (! defined($pid)) {
 	    die "0:  fork died:  $!";
@@ -186,13 +194,13 @@ sub run_ups_daemon {
 	    or die "Can't start a new session: $!";
 	# [note that this directs warnings to the logger.  -- rgr, 22-Jun-04.]
 	open(STDERR, '>&=STDOUT')
-	    or die "Can't dup stdout: $!";
+	    or die "Can't redirect stderr to stdout: $!";
     }
     else {
 	$log_handle = new_from_fd IO::Handle(fileno(STDOUT),"w");
 	warn("Running UPS daemon in the foreground.\n");
     }
-    die "$0:  Can't open output pipe to logger.\nDied"
+    die "$0:  Couldn't open output pipe to logger.\nDied"
 	unless $log_handle;
     # be sure to write log messages promptly!
     $log_handle->autoflush(1);
