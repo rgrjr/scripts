@@ -1,3 +1,57 @@
+2003-12-30  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* install.pl:  Allow installation to a file.
+
+	* install-rpms.pl:  New RPM kludgery.
+
+2003-11-06  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* cd-dump.pl:  Look for a default --dev if not specified.
+
+2003-10-19  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* redirect.pl:  Incorporated, installed into /usr/sbin.
+
+2003-10-02  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* all-correspondents.pl:  Rude hack to extract all "From:"
+	addresses from mbox files.
+
+2003-09-09  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* vacuum.pl:  Changed site_list_files to return sizes in MB as
+	floats, since perl has problems with integers > 2^32.  Improved
+	free_disk_space error checking.  Plus prettier display of file
+	sizes and space available, added more documentation.
+
+2003-08-27  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* makefile:  Installation of paranoid and firewall scripts.
+
+	* check-logs.pl:  Add our latest former IP address to
+	%local_ip_address_p.
+
+2003-08-22  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* backup.pl:  Bug fix:  0 is a valid backup level, so must use
+	'defined' to see whether a value was supplied.  Plus better
+	warnings, doc update, misc cleanups.
+
+2003-08-17  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* Brought firewall scripts under CVS.
+
+2003-08-12  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* parse-logs.pm:  Avoid "use strict" warnings.
+
+	* makefile:  "diff" target, to compare working to installed files,
+	install squid2std.pl, with -inc option.
+
+	* install.pl:  --inc now implies --magic.
+
+	* cd-dump.pl:  Fix broken "$?" in die messages. 
+
 2003-08-05  Bob Rogers  <rogers@rgrjr.dyndns.org>
 
 	* check-logs.pl:  Updated to 'use strict;'.
