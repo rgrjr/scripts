@@ -29,8 +29,7 @@ die("$0:  Last arg is '$destination', which is not ",
     ($directory eq $destination ? '' : 'in '),
     "a directory.  [got $directory]\nDied")
     unless -d $directory;
-warn("$0:  Destination directory '$directory' is not writable.\n")
-    unless -w $directory;
+my $rename_into_place_p = -w $directory;
 
 ### Subroutines.
 
@@ -49,19 +48,25 @@ sub x11_install {
     # $installed_program_name is its "new" name when in place, and
     # $program_pretty_name is for use in messages.
     my ($program, $installed_program_name, $program_pretty_name) = @_;
-    my ($result, $rename_p, $target_name);
+    my ($result, $target_name);
 
-    # Decide how we're going to get it there.
-    $rename_p = -w $directory;
-    $target_name = ($rename_p
+    warn("$0:  Destination directory '$directory' is not writable.\n")
+	if ! $rename_into_place_p && $verbose_p;
+    $target_name = ($rename_into_place_p
 		    ? "$directory/ins$$.tmp"
 		    : $installed_program_name);
-    if (! $rename_p && ! -w $installed_program_name) {
+    if (! $rename_into_place_p && ! -w $installed_program_name) {
 	# Must overwrite.  Make temporarily writable.  This will fail if we
 	# don't own it, or aren't root.
-	chmod(0755, $installed_program_name);
-	unless (-w $installed_program_name) {
-	    warn "$0:  Can't write '$installed_program_name'.\n";
+	if (! chmod(0755, $installed_program_name)) {
+	    warn "$0:  Can't chmod '$installed_program_name'.\n";
+	    $n_errors++;
+	    return 0;
+	}
+	# belt and suspenders.
+	if (! -w $installed_program_name) {
+	    warn("$0:  Can't write '$installed_program_name' ", 
+		 "or its parent directory.\n");
 	    $n_errors++;
 	    return 0;
 	}
@@ -70,7 +75,7 @@ sub x11_install {
     $result = system('cp', $program, $target_name) >> 8;
     $result = ! chmod($mode, $target_name)
 	if ! $result;
-    if ($rename_p && ! $result) {
+    if ($rename_into_place_p && ! $result) {
 	if ($make_numbered_backup_p && -e $installed_program_name) {
 	    # make a numbered backup of the installed version.  that means we
 	    # need to find the highest backup version number, and add one.
