@@ -47,6 +47,13 @@ install-qmail:
 install-afpd:
 	${INSTALL} -m 555 ${afpd-scripts} /root/bin
 
+diff:
+	for file in `ls /root/bin | fgrep -v '~'`; do \
+	    if [ -r $$file ]; then \
+		diff -u /root/bin/$$file $$file; \
+	    fi; \
+	done
+
 ${html-pages}:   %.pl.html:	%.pl
 	pod2html $^ > $@
 
