@@ -19,6 +19,7 @@ my $warn = 'page-hits.pl';
 # input filtering
 my %skip_address_p = ();	# addresses to filter out
 my $skip_errors_p = 1;
+my $skip_bots_p = 1;
 # output formatting
 my $use_dns_names_p = 1;
 # detail selection
@@ -72,6 +73,20 @@ while (@ARGV && $ARGV[0] =~ /^-./) {
 	exit(0) if $arg eq '-help';
 	die "$warn:  '$arg' is unknown; punting.\n";
     }
+}
+
+# [these were culled from the march 2004 log.  they cover all bots that made
+# more than one hit during march, where a "bot" is defined as any user agent
+# that visits robots.txt.  all strings are case-exact.  -- rgr, 5-Apr-04.]
+my $robot_re = join('|', qw(Gaisbot Googlebot Jeeves NPBot NaverBot QuepasaCreep
+			    Scooter Slurp SurveyBot Yahoo-MMCrawler grub-client
+			    http://www.almaden.ibm.com/cs/crawler
+			    http://www.kototoi.org/zao/ ia_archiver msnbot));
+
+sub robot_user_agent_p {
+    my ($user_agent) = @_;
+
+    $user_agent =~ /$robot_re/o;
 }
 
 my %ip_to_host_name_cache = ();
@@ -180,10 +195,13 @@ while (defined($line = <>)) {
     $return_codes{$return_code}++;
     next if $skip_address_p{$ip};
     next if $skip_errors_p && $return_code >= 400;
+    next
+	if $skip_bots_p && robot_user_agent_p($user_agent);
     # Some of these are malformed, so we need to parse the request line.
     if ($request =~ /^(GET|HEAD|POST) +([^ ]+) +HTTP/) {
 	# my $method = $1; 
 	my $page = $2;
+	$page =~ s/\?.*/?/;
 	tally($page);
 	print(join("\t", $date, host_ip_and_name($ip), $page), "\n")
 	    if $verbose_p;
