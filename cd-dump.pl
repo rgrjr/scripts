@@ -25,7 +25,7 @@ use Data::Dumper;
 require 'rename-into-tree.pm';
 
 my $warn = 'cd-dump.pl';
-my $VERSION = '0.1';
+my $VERSION = '0.2';
 
 my $cdrecord_command = '/usr/bin/cdrecord';
 my $mkisofs_command = '/usr/bin/mkisofs';
@@ -112,6 +112,39 @@ if (@files_to_write == 0) {
     warn "$warn:  Nothing in ./to-write/ to write.\n"
 	if $verbose_p;
     exit(0);
+}
+
+# Find a usable -dev specification.
+if (! $dev_spec) {
+    open(IN, "$cdrecord_command -scanbus 2>&1 |") || die;
+    my $line;
+    my @specs;
+    while (defined($line = <IN>)) {
+	chomp($line);
+	my ($spec, $foo, $description) = split(' ', $line, 3);
+	next
+	    unless $description;
+	if ($spec =~ /^\d+,\d+,\d+$/
+	    && $description =~ /CD-ROM/
+	    && $description =~ /RW/) {
+	    print "\t '$spec' => \"$description\"\n"
+		if $verbose_p > 1;
+	    push(@specs, $spec);
+	}
+    }
+    close(IN);
+    if (@specs ==1) {
+	$dev_spec = $specs[0];
+	warn "$0:  Using '--dev=$dev_spec'.\n"
+	    if $verbose_p;
+    }
+    elsif (@specs == 0) {
+	die "$0:  No CD burner available.\n";
+    }
+    else {
+	die("$0:  Multiple CD burners available; must specify one of ",
+	    join(', ', @specs), " to --dev.\n");
+    }
 }
 
 # Check what's currently on the cd.  There are three interesting cases:
@@ -209,15 +242,17 @@ __END__
 
 =head1 NAME
 
-cd-dump.pl -- Interface to `mkisofs' and `cdrecord' for automating backups.
+cd-dump.pl -- Interface to `mkisofs' and `cdrecord' programs.
 
 =head1 SYNOPSIS
 
     cd-dump.pl [--help] [--man] [--verbose] [--test] 
-               --dev=x,y,z [--[no]mount] [--max-iso9660-filenames]
+               [ --dev=x,y,z ] [--[no]mount] [--max-iso9660-filenames]
                [--relaxed-filenames] [-V=<volname>] [--speed=n]
 
 =head1 DESCRIPTION
+
+[finish.  -- rgr, 6-Nov-03.]
 
 =head1 OPTIONS
 
@@ -263,9 +298,12 @@ Passed to C<mkisofs>.
 
 =item B<--dev>
 
-Specifies the SCSI device, needed by C<cdrecord> to address the CD drive.
-There is no default; this must be specified.
-Passed to C<cdrecord>.
+Specifies the SCSI device, needed by C<cdrecord> to address the CD
+drive.  By default, C<cd-dump.pl> looks through all SCSI devices for a
+CD burner, and dies with an appropriate message if it can't find
+exactly one.  See the C<cdrecord> "man" page for details.  In
+particular, see the description of the C<scanbus> option to
+C<-cdrecord>.
 
 =item B<--speed>
 
@@ -277,7 +315,7 @@ disk.  Passed to C<cdrecord>, which defines the default.
 =head1 NOTES
 
 C<cd-dump.pl> assumes that C<cdrecord> and C<mkisofs> binaries are in
-the C</usr/local/bin/> directory.
+the C</usr/bin/> directory.
 
 =head1 USAGE AND EXAMPLES
 
@@ -288,6 +326,10 @@ the C</usr/local/bin/> directory.
 Copyright (C) 2002-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
+
+=head1 VERSION
+
+This is C<cd-dump.pl> version 0.2.
 
 =head1 AUTHOR
 
