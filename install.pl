@@ -1,44 +1,22 @@
 #!/usr/bin/perl -w
 #
-# Installation script that is smarter than the install program about (a) perl
-# scripts and (b) programs/files that have not been changed since the last
-# install (so that the file dates in the bin directory mean something).  See the
-# documentation on the
-# http://bmerc-www.bu.edu/needle-doc/latest/random-tools.html#install page.
+# Installation script that copies only if the file has been changed since the
+# last install (so that the file dates in the bin directory mean something).
 #
-#    Modification history:
+# [created, based on ../scripts/install.pl version.  -- rgr, 9-Dec-03.]
 #
-# . . .
-# first official version.  -- rgr, 28-Oct-96.
-# make smarter about perl scripts.  -- rgr, 15-Feb-97.
-# use perl5.003 for a change, add dir check.  -- rgr, 28-Apr-97.
-# -inc, #ifdef DEBUG for perl scripts.  -- rgr, 5-Sep-97.
-# system_install: new fn for OSF1 smartness.  -- rgr, 3-Nov-97.
-# allow for null return from 'which'.  -- rgr, 26-Feb-98.
-# nonwritable directory attempt.  -- rgr, 2-Mar-98.
-# system_install: better 'cp' messages.  -- rgr, 19-Mar-98.
-# attempt to make compatible with perl version 4.  -- rgr, 5-Oct-98.
-# Solaris kludges.  -- rgr, 21-Oct-98.
-# remove dependency on native install.  -- rgr, 30-Oct-98.
-# remove broken '-f' arg to cp (not in SunOS 4.1.x).  -- rgr, 4-Nov-98.
-# fix bug in date check when pathname given, improve error handling, clean up
-#	modularity.  -- rgr, 17-Nov-98.
-# '-mode' synonym for '-m'.  -- rgr, 21-Feb-99.
-# have -inc unshift instead of push, so dest dir is first.  -- rgr, 23-Dec-99.
-# don't use "which" if we can read $0 directly.  -- rgr, 13-Jan-00.
-# -quiet arg.  -- rgr, 19-Jan-00.
-#
+# $Id$
 
-my $mode = '555';	# default permissions (octal).
-# [not used.  -- rgr, 11-Jul-03.]
-# my $group = '';	# don't change group by default.
-my $install_perl_magic_p = 0;	# whether to change '#!/usr/bin/perl -w' magic.
-my $include_p = 0;		# new feature: hack include directory.
-my $force_p = 0;		# overrides date checking.
+use strict;
+
+my $mode = 0444;		# default permissions.
+my $force_p = 0;		# overrides contents checking.
+my $install_p = 1;		# whether to actually do it, or just show.
 my $show_p = 0;
 my $verbose_p = 0;
-my $perl_prefix_string = '';
-my $perl_prefix_n_lines = 0;
+my $make_numbered_backup_p = 1;
+my @old_file_versions;
+my $n_errors = 0;
 
 my $destination = pop(@ARGV) || die "$0:  No destination directory.\nDied";
 $destination =~ s:/$::;		# canonicalize without the slash.
@@ -54,43 +32,7 @@ die("$0:  Last arg is '$destination', which is not ",
 warn("$0:  Destination directory '$directory' is not writable.\n")
     unless -w $directory;
 
-my $which_install;
-if (-r $0) {
-    # which on linux doesn't find "./install.pl", but in this case, we don't
-    # even need to do which.  -- rgr, 13-Jan-00.
-    $which_install = $0;
-}
-else {
-    chomp($which_install = `which $0`);
-}
-# If we can't find ourself, don't bother complaining until we have actual perl
-# scripts to install.
-if ($which_install && -r $which_install) {
-    # warn "$0:  found myself in '$which_install'\n";
-    open(SELF, $which_install)
-	|| die "$0:  Can't open '$which_install'; died";
-    while (defined($line = <SELF>) && $line !~ /^[ \#\t]*$/) {
-	$perl_prefix_string .= $line;
-	$perl_prefix_n_lines++;
-    }
-    $perl_prefix_string .= "#\n";
-    close(SELF);
-}
-
 ### Subroutines.
-
-sub mtime {
-    # Return the modification time of the file given as an argument.  This not
-    # only hides the magic number, but it gets around the fact that perl doesn't
-    # like subscripting of function return values.  -- rgr, 22-Oct-96.
-    # [this seems to have been changed in perl5.  -- rgr, 15-Jul-03.]
-    my $file = shift;
-    my @stat = stat($file);
-
-    warn "$0:  modification time of $file is $stat[9].\n"
-	if $verbose_p > 1;
-    $stat[9];
-}
 
 sub x11_install {
     # Use cp to install a given file in a specified directory.  This subroutine
@@ -109,8 +51,6 @@ sub x11_install {
     my ($program, $installed_program_name, $program_pretty_name) = @_;
     my ($result, $rename_p, $target_name);
 
-    warn "$0:  Installing $program_pretty_name in $installed_program_name\n"
-	if $show_p;
     # Decide how we're going to get it there.
     $rename_p = -w $directory;
     $target_name = ($rename_p
@@ -128,10 +68,35 @@ sub x11_install {
     }
     # Do it.
     $result = system('cp', $program, $target_name) >> 8;
-    $result = ! chmod(oct($mode), $target_name)
+    $result = ! chmod($mode, $target_name)
 	if ! $result;
-    $result = ! rename($target_name, $installed_program_name)
-	if $rename_p && ! $result;
+    if ($rename_p && ! $result) {
+	if ($make_numbered_backup_p && -e $installed_program_name) {
+	    # make a numbered backup of the installed version.  that means we
+	    # need to find the highest backup version number, and add one.
+	    my $pattern = $installed_program_name;
+	    $pattern =~ s@^.*/@@;
+	    $pattern =~ s/\W/\\$&/g;
+	    $pattern = '^'.$pattern.'.~(\d+)~$';	# ', for emacs.
+	    my $version = 0;
+	    opendir(DIR, $directory) || die;
+	    while (defined(my $file = readdir(DIR))) {
+		$version = $1
+		    if ($file =~ /$pattern/ && $1 > $version);
+	    }
+	    closedir(DIR);
+	    $version++;
+	    my $backup = "$installed_program_name.~$version~";
+	    warn("$0:  Renaming '$installed_program_name' to '$backup'.\n")
+		if $show_p;
+	    $result = ! rename($installed_program_name, $backup);
+	    warn("$0:  Rename of '$installed_program_name' to ",
+		 "'$backup' failed.\n")
+		if $result;
+	}
+	$result = ! rename($target_name, $installed_program_name)
+	    if ! $result;
+    }
     if ($result) {
 	# This is fatal (eventually).
 	warn "$0:  Installing $program_pretty_name failed.\n";
@@ -139,43 +104,32 @@ sub x11_install {
     }
 }
 
-sub install_perl_script {
-    # Install perl script.  Note that we do not want to do this for .pm (perl
-    # "module", or library) files.  [though perhaps we should give those the
-    # #ifdef stuff for consistency.  -- rgr, 17-Nov-98.]
-    my ($program, $installed_program_name) = @_;
-    my ($line, $copy_p, $temp_file);
+sub file_contents {
+    my $file_name = shift;
 
-    open(PGM, $program)
-	|| die "$0:  Can't read $program; died";
-    # Skip preamble in program file.
-    while (defined($line = <PGM>) && $line !~ /^[ \#\t]*$/) {};
-    # Make a temp file.  [This used to use the same name as $program, in order
-    # to tell the native install to use the right name, but now we do this
-    # directly, so pick something distinctive.  -- rgr, 17-Nov-98.]
-    $temp_file = "/tmp/ntINS$$";
-    # Copy doctored script into $temp_file
-    open(TMP, ">$temp_file")
-	|| die "$0:  Can't write $temp_file; died";
-    print TMP $perl_prefix_string;
-    # Copy remaining lines (that aren't within "#ifdef DEBUG/#endif" lines).
-    $copy_p = 1;
-    while ($line = <PGM>) {
-	if ($line =~ /^[ \t]*#ifdef[ \t]+DEBUG/) {
-	    $copy_p = 0;
-	}
-	elsif ($line =~ /^[ \t]*#endif/) {
-	    $copy_p = 1;
-	}
-	elsif ($copy_p) {
-	    print TMP $line;
-	}
+    open(SRC, $file_name) || die "$0:  Can't open '$file_name'.\n";
+    my $src = join('', <SRC>);
+    close(SRC);
+    $src;
+}
+
+my %old_file_name_to_contents;
+sub old_version_match_p {
+    # return true if the passed file contents matches the one of the specified
+    # files, or if there were no old files specified.
+    my $src = shift;
+
+    return 1
+	if ! @old_file_versions;
+    for my $version (@old_file_versions) {
+	my $contents = $old_file_name_to_contents{$version};
+	$contents = $old_file_name_to_contents{$version} 
+	    = file_contents($version)
+		unless defined($contents);
+	return 1
+	    if $src eq $contents;
     }
-    close(TMP); close(PGM);
-    # Install and delete $temp_file
-    x11_install($temp_file, $installed_program_name,
-		"perl script $program");
-    unlink($temp_file);
+    0;
 }
 
 sub install_program {
@@ -187,30 +141,34 @@ sub install_program {
 	= ($destination eq $directory 
 	   ? "$directory/$program_base_name"
 	   : $destination || die "$0:  Multiple installs to '$destination'");
-    my ($source_mtime, $dest_mtime, $target_name);
 
     # See if installation is necessary.
-    unless ($force_p) {
-	$source_mtime = mtime($program);
-	$dest_mtime = mtime($installed_program_name);
-	if ($dest_mtime && $source_mtime <= $dest_mtime) {
-	    warn "$0:  $program is up to date in $directory\n"
-		if $verbose_p;
-	    return 0;
-	}
-    }
-    # It is; figure out how, and go do it.
-    if (! $install_perl_magic_p || $program !~ /\.pr?l$/) {
-	# normal program or data file.
-	x11_install($program, $installed_program_name, $program_base_name);
-    }
-    elsif ($perl_prefix_n_lines) {
-	install_perl_script($program, $installed_program_name);
+    if (! -r $installed_program_name || $force_p) {
+	# must install anyway.
+	warn("$0:  Installing $program_base_name in ", 
+	     "$installed_program_name (forced)\n")
+	    if $show_p || $verbose_p;
+	x11_install($program, $installed_program_name, $program_base_name)
+	    if $install_p;
     }
     else {
-	# perl, but must install as a normal program or data file.
-	warn "$0:  Can't fix perl magic line; installing $program as-is.\n";
-	x11_install($program, $installed_program_name, $program_base_name);
+	my $src = file_contents($program);
+	my $dst = file_contents($installed_program_name);
+	if ($src eq $dst) {
+	    warn "$0:  $program_base_name is up to date.\n"
+		if $verbose_p;
+	}
+	elsif (! old_version_match_p($src)) {
+	    warn("$0:  $program_base_name has been modified in place; ",
+		 "skipping update.\n");
+	}
+	else {
+	    warn("$0:  Installing $program_base_name in ", 
+		 "$installed_program_name (changed)\n")
+		if $show_p || $verbose_p;
+	    x11_install($program, $installed_program_name, $program_base_name)
+		if $install_p;
+	}
     }
 }
 
@@ -218,10 +176,11 @@ sub install_program {
 
 # Parse args, installing files in the process.
 while (@ARGV) {
-    $program = shift(@ARGV);
+    my $program = shift(@ARGV);
+    $program =~ s/^--/-/;
     if ($program eq '-m' || $program eq '-mode') {
 	# Explicit mode specification.
-	$mode = shift(@ARGV);
+	$mode = oct(shift(@ARGV));
     }
     elsif ($program eq '-c') {
 	# ignore, for BSD install compatibility.
@@ -237,23 +196,22 @@ while (@ARGV) {
     elsif ($program eq '-quiet') {
 	$show_p = $verbose_p = 0;
     }
+    elsif ($program eq '-noinstall' || $program eq '-n') {
+	$install_p = 0;
+	$show_p = 1;
+    }
+    elsif ($program =~ /^-(no)?backup$/) {
+	$make_numbered_backup_p = ! $1;
+    }
     elsif ($program eq '-force') {
 	$force_p = $program;
     }
-    elsif ($program eq '-magic') {
-	$install_perl_magic_p = $program;
-    }
-    elsif ($program eq '-inc') {
-	# When installing perl scripts, have it put the binary directory at the
-	# start of the @INC (include) path as the first thing it does.
-	$perl_prefix_string .= "unshift(\@INC, '$directory');\n#\n"
-	    unless $include_p;
-	$include_p = $program;
-	# this also implies '-magic'.
-	$install_perl_magic_p = $program;
+    elsif ($program eq '-old') {
+	push(@old_file_versions, shift(@ARGV));
     }
     elsif ($program =~ /^-./) {
-	warn "$0:  Unknown option '$program; ignoring.\n";
+	warn "$0:  Unknown option '$program'.\n";
+	$n_errors++;
     }
     elsif (! -r $program || -d $program) {
 	# This is actually an error (possibly a misspelled program name).
