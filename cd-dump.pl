@@ -368,6 +368,11 @@ the C</usr/bin/> directory.
 
 =head1 KNOWN BUGS
 
+Comparison of files written to CD versus originals will fail unless
+you supply both the C<--max-iso9660-filenames> and
+C<--relaxed-filenames> arguments (both passed to C<mkisofs>) on the
+command line.  These arguments should be hardwired.
+
 The subset of C<mkisofs> and C<cdrecord> options accepted is small and
 arbitrary.
 
