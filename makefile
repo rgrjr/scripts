@@ -20,7 +20,7 @@ qmail-scripts = qmail-restart qmail-redeliver qifq.pl
 afpd-scripts = afpd-stat.pl atwho.pl cp-if-newer.pl rename-into-tree.pl
 
 install:
-	./install.pl -c -m 755 ${all-scripts} /root/bin
+	./install.pl -c -m 755 -show ${all-scripts} /root/bin
 
 ${html-pages}:   %.pl.html:	%.pl
 	pod2html $^ > $@

@@ -237,7 +237,7 @@ __END__
 
 =head1 NAME
 
-cd-dump.pl -- Interface to `mkisofs' and `cdrecord' for automating backups.
+cd-dump.pl -- `mkisofs' and `cdrecord' interface for automated file archival.
 
 =head1 SYNOPSIS
 

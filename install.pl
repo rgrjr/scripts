@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl -w
 #
 # Installation script that is smarter than the install program about (a) perl
 # scripts and (b) programs/files that have not been changed since the last
@@ -29,19 +29,22 @@
 # -quiet arg.  -- rgr, 19-Jan-00.
 #
 
-$warn = 'install.pl';
-$mode = '555';		# default permissions (octal).
-$group = '';		# don't change group by default.
-$include_p = 0;		# new feature: hack include directory.
-$force_p = 0;		# overrides date checking.
-$show_p = $verbose_p = 0;
+my $mode = '555';	# default permissions (octal).
+# [not used.  -- rgr, 11-Jul-03.]
+# my $group = '';	# don't change group by default.
+my $include_p = 0;		# new feature: hack include directory.
+my $force_p = 0;		# overrides date checking.
+my $show_p = 0;
+my $verbose_p = 0;
 
-$directory = pop(@ARGV) || die "$warn:  No destination directory.\nDied";
+my $directory = pop(@ARGV) || die "$0:  No destination directory.\nDied";
 $directory = $` if $directory =~ m:/$:;	# canonicalize without the slash.
-die "$warn:  Last arg is '$directory', which is not a directory.\nDied"
+die "$0:  Last arg is '$directory', which is not a directory.\nDied"
     unless -d $directory;
 
-$perl_prefix_string = '';  $perl_prefix_n_lines = 0;
+my $perl_prefix_string = '';
+my $perl_prefix_n_lines = 0;
+my $which_install;
 if (-r $0) {
     # which on linux doesn't find "./install.pl", but in this case, we don't
     # even need to do which.  -- rgr, 13-Jan-00.
@@ -53,10 +56,10 @@ else {
 # If we can't find ourself, don't bother complaining until we have actual perl
 # scripts to install.
 if ($which_install && -r $which_install) {
-    # warn "$warn:  found myself in '$which_install'\n";
+    # warn "$0:  found myself in '$which_install'\n";
     open(SELF, $which_install)
-	|| die "$warn:  Can't open '$which_install'; died";
-    while (($line = <SELF>) && $line !~ /^[ \#\t]*$/) {
+	|| die "$0:  Can't open '$which_install'; died";
+    while (defined($line = <SELF>) && $line !~ /^[ \#\t]*$/) {
 	$perl_prefix_string .= $line;
 	$perl_prefix_n_lines++;
     }
@@ -68,10 +71,10 @@ sub mtime {
     # Return the modification time of the file given as an argument.  This not
     # only hides the magic number, but it gets around the fact that perl doesn't
     # like subscripting of function return values.  -- rgr, 22-Oct-96.
-    local $file = shift;
-    local @stat = stat($file );
+    my $file = shift;
+    my @stat = stat($file );
 
-    warn "$warn:  modification time of $file is $stat[9].\n"
+    warn "$0:  modification time of $file is $stat[9].\n"
 	if $verbose_p > 1;
     $stat[9];
 }
@@ -90,10 +93,10 @@ sub x11_install {
     # $program is the pathname of the thing where it lives now,
     # $installed_program_name is its "new" name when in place, and
     # $program_pretty_name is for use in messages.
-    local ($program, $installed_program_name, $program_pretty_name) = @_;
-    local ($result, $rename_p, $target_name);
+    my ($program, $installed_program_name, $program_pretty_name) = @_;
+    my ($result, $rename_p, $target_name);
 
-    warn "$warn:  Installing $program_pretty_name in $directory\n"
+    warn "$0:  Installing $program_pretty_name in $directory\n"
 	if $show_p;
     # Decide how we're going to get it there.
     $rename_p = -w $directory;
@@ -105,7 +108,7 @@ sub x11_install {
 	# don't own it, or aren't root.
 	chmod(0755, $installed_program_name);
 	unless (-w $installed_program_name) {
-	    warn "$warn:  Can't write '$installed_program_name'.\n";
+	    warn "$0:  Can't write '$installed_program_name'.\n";
 	    $n_errors++;
 	    return 0;
 	}
@@ -118,7 +121,7 @@ sub x11_install {
 	if $rename_p && ! $result;
     if ($result) {
 	# This is fatal (eventually).
-	warn "$warn:  Installing $program_pretty_name failed.\n";
+	warn "$0:  Installing $program_pretty_name failed.\n";
 	$n_errors++;
     }
 }
@@ -127,11 +130,11 @@ sub install_perl_script {
     # Install perl script.  Note that we do not want to do this for .pm (perl
     # "module", or library) files.  [though perhaps we should give those the
     # #ifdef stuff for consistency.  -- rgr, 17-Nov-98.]
-    local ($program, $installed_program_name) = @_;
-    local ($line, $copy_p, $temp_file);
+    my ($program, $installed_program_name) = @_;
+    my ($line, $copy_p, $temp_file);
 
     open(PGM, $program)
-	|| die "$warn:  Can't read $program; died";
+	|| die "$0:  Can't read $program; died";
     # Skip preamble in program file.
     while (defined($line = <PGM>) && $line !~ /^[ \#\t]*$/) {};
     # Make a temp file.  [This used to use the same name as $program, in order
@@ -140,7 +143,7 @@ sub install_perl_script {
     $temp_file = "/tmp/ntINS$$";
     # Copy doctored script into $temp_file
     open(TMP, ">$temp_file")
-	|| die "$warn:  Can't write $temp_file; died";
+	|| die "$0:  Can't write $temp_file; died";
     print TMP $perl_prefix_string;
     # Copy remaining lines (that aren't within "#ifdef DEBUG/#endif" lines).
     $copy_p = 1;
@@ -164,9 +167,9 @@ sub install_perl_script {
 
 sub install_program {
     # Have a real program to install; decide how & whether to do it.
-    local ($program) = @_;
-    local $program_base_name = $program;
-    local ($installed_program_name, $source_mtime, $dest_mtime, $target_name);
+    my ($program) = @_;
+    my $program_base_name = $program;
+    my ($installed_program_name, $source_mtime, $dest_mtime, $target_name);
 
     $program_base_name = $'
 	if $program =~ m@^.*/@;
@@ -177,7 +180,7 @@ sub install_program {
 	$source_mtime = mtime($program);
 	$dest_mtime = mtime($installed_program_name);
 	if ($source_mtime <= $dest_mtime) {
-	    warn "$warn:  $program is up to date in $directory\n"
+	    warn "$0:  $program is up to date in $directory\n"
 		if $verbose_p;
 	    return 0;
 	}
@@ -192,7 +195,7 @@ sub install_program {
     }
     else {
 	# perl, but must install as a normal program or data file.
-	warn "$warn:  Can't fix perl magic line; installing $program as-is.\n";
+	warn "$0:  Can't fix perl magic line; installing $program as-is.\n";
 	x11_install($program, $installed_program_name, $program_base_name);
     }
 }
@@ -204,6 +207,9 @@ while (@ARGV) {
     if ($program eq '-m' || $program eq '-mode') {
 	# Explicit mode specification.
 	$mode = shift(@ARGV);
+    }
+    elsif ($program eq '-c') {
+	# ignore, for BSD install compatibility.
     }
     elsif ($program eq '-verbose') {
 	$show_p = $program;
@@ -227,11 +233,11 @@ while (@ARGV) {
 	$include_p = $program;
     }
     elsif ($program =~ /^-./) {
-	warn "$warn:  Unknown option '$program; ignoring.\n";
+	warn "$0:  Unknown option '$program; ignoring.\n";
     }
     elsif (! -r $program || -d $program) {
 	# This is actually an error (possibly a misspelled program name).
-	warn "$warn:  $program does not exist.\n";
+	warn "$0:  $program does not exist.\n";
 	$n_errors++;
     }
     else {
@@ -239,4 +245,4 @@ while (@ARGV) {
     }
 }
 
-die "$warn:  $n_errors errors encountered; died" if $n_errors;
+die "$0:  $n_errors errors encountered; died" if $n_errors;
