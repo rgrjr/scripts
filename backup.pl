@@ -6,23 +6,13 @@
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-#    [original] Modification history:
-#
-# created, based heavily on shell script (bash) version.  -- rgr, 21-Oct-02.
-# change $destination_dir dflt, do_or_die '-ignore-return'.  -- rgr, 27-Oct-02.
-# more changes in dump/dest dir defaulting.  -- rgr, 17-Nov-02.
-# update doc.  -- rgr, 27-Feb-03.
-#
 # $Id$
 
 use strict;
 use Getopt::Long;
 use Pod::Usage;
 
-my $VERSION = '2.0';	# really, this is the first perl version.
-my $warn = 'backup.pl';
-# [this was '/dev/hda9', but that was too error-prone.  -- rgr, 21-Oct-02.]
-my $default_dump_partition = '';
+my $VERSION = '2.1';
 
 my $test_p = 0;
 my $verbose_p = 0;
@@ -33,8 +23,6 @@ my $dump_name = '';
 # final directory to which we rename.  -- rgr, 17-Nov-02.]
 my $dump_dir = '';
 my $cd_p = 1;
-# [changed this default.  -- rgr, 27-Oct-02.]
-# [changed again.  -- rgr, 17-Nov-02.]
 my $destination_dir = '';
 my $dump_volume_size = '';
 my ($dump_partition, $level);
@@ -55,7 +43,7 @@ sub do_or_die {
     my $ignore_return_code_p = $_[0] eq '-ignore-return';
     shift if $ignore_return_code_p;
 
-    warn("$warn:  Executing '", join(' ', @_), "'\n")
+    warn("$0:  Executing '", join(' ', @_), "'\n")
 	if $test_p || $verbose_p;
     if ($test_p) {
 	1;
@@ -64,7 +52,7 @@ sub do_or_die {
 	1;
     }
     elsif ($ignore_return_code_p && !($? & 255)) {
-	warn("$warn:  Executing '$_[0]' failed:  Code $?\n",
+	warn("$0:  Executing '$_[0]' failed:  Code $?\n",
 	     ($verbose_p
 	      # no sense duplicating this.
 	      ? ()
@@ -72,7 +60,7 @@ sub do_or_die {
 	1;
     }
     else {
-	die("$warn:  Executing '$_[0]' failed:  $?\n",
+	die("$0:  Executing '$_[0]' failed:  $?\n",
 	    ($verbose_p
 	     # no sense duplicating this.
 	     ? ()
@@ -100,15 +88,22 @@ GetOptions('date=s' => \$file_date,
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
 
-$dump_partition ||= (-b $ARGV[0] ? shift(@ARGV) : $default_dump_partition);
-pod2usage("$warn:  Missing -partition (or positional <partition>) arg.")
-    unless($dump_partition);
-$level ||= ($ARGV[0] =~ /^\d$/ ? shift(@ARGV) : 9);
-pod2usage("$warn:  -level (or positional <level>) arg must be a single digit.")
+$dump_partition = shift(@ARGV)
+    if ! $dump_partition && @ARGV;
+pod2usage("$0:  --partition (or positional <partition>) arg must be a "
+	  ."block-special device.")
+    unless $dump_partition && -b $dump_partition;
+# [note that we have to check for defined-ness, since 0 is a valid backup level.
+# -- rgr, 20-Aug-03.]
+$level = (@ARGV ? shift(@ARGV) : 9)
+    unless defined($level);
+pod2usage("$0:  --level (or positional <level>) arg must be a single digit.")
     unless $level =~ /^\d$/;
-pod2usage("$warn:  '".shift(@ARGV)."' is an extraneous positional arg.")
+pod2usage("$0:  '".shift(@ARGV)."' is an extraneous positional arg.")
     if @ARGV;
 # Compute some defaults.
+# [this is broken; there's no way to shut off the $dump_volume_size defaulting, 
+# and leave it unlimited.  -- rgr, 20-Aug-03.]
 if ($cd_p) {
     # the CD-R and -RW disks are supposed to be 700MB, but leave a little room.
     # [actually, dump appears to leave about 0.1% by itself.  and 712000kB is
@@ -117,22 +112,23 @@ if ($cd_p) {
     $dump_dir ||= '/scratch/backups/cd';
 }
 else {
-    # Assume the Zip100 drive.  The "-B 94000" forces it to nearly fill the
+    # Assume a Zip100 drive.  The "-B 94000" forces it to nearly fill the
     # [Zip100] disk.  -- rgr, 20-Jan-00.
     $dump_volume_size ||= 94000;
     $dump_dir ||= '/mnt/zip';
 }
-pod2usage("$warn:  --dest-dir value must be an existing writable directory.")
-    if ($destination_dir
-	&& ! (-d $destination_dir && -w $destination_dir));
-if ($destination_dir && (! $dump_dir || $dump_dir eq $destination_dir)) {
-    # only one directory specified, or the same directory specified twice.  skip
-    # the rename step.
-    $dump_dir = $destination_dir;
-    $destination_dir = '';
+if ($destination_dir) {
+    pod2usage("$0:  --dest-dir value must be an existing writable directory.")
+	unless -d $destination_dir && -w $destination_dir;
+    if (! $dump_dir || $dump_dir eq $destination_dir) {
+	# only one directory specified, or the same directory specified twice.
+	# skip the rename step.
+	$dump_dir = $destination_dir;
+	$destination_dir = '';
+    }
 }
 $dump_dir ||= '.';
-pod2usage("$warn:  --dump-dir value must be an existing writable directory.")
+pod2usage("$0:  --dump-dir value must be an existing writable directory.")
     unless -d $dump_dir && -w $dump_dir;
 # [should make sure that $destination_dir and $dump_dir are on the same
 # partition if both are specified.  -- rgr, 17-Nov-02.]
@@ -142,7 +138,7 @@ pod2usage("$warn:  --dump-dir value must be an existing writable directory.")
 # 21-Oct-02.]
 my ($part, $mount_point)
     = split(' ', `$grep_program "^$dump_partition " /etc/mtab`);
-pod2usage("$warn:  '$dump_partition' is not a mounted partition.")
+pod2usage("$0:  '$dump_partition' is not a mounted partition.")
     unless -d $mount_point;
 # Compute the dump file name.
 if (! $dump_name) {
@@ -164,9 +160,9 @@ my $dump_file = "$dump_dir/$dump_name";
 my $cd_dump_file = "$destination_dir/$dump_name";
 
 ### Make the backup.
-die "$warn:  '$dump_file' already exists; remove it if you want to overwrite.\n"
+die "$0:  '$dump_file' already exists; remove it if you want to overwrite.\n"
     if -e $dump_file;
-die("$warn:  '$cd_dump_file' already exists; ",
+die("$0:  '$cd_dump_file' already exists; ",
     "remove it if you want to overwrite.\n")
     if $destination_dir && -e $cd_dump_file;
 print "Backing up $dump_partition \($mount_point\) to $dump_file\n";
@@ -180,9 +176,9 @@ do_or_die('-ignore-return', $restore_program, '-C', '-y', '-f', $dump_file);
 ### Cleanup.
 if ($destination_dir) {
     rename($dump_file, $cd_dump_file)
-	|| die("$warn:  rename('$dump_file', '$cd_dump_file') failed:  $?")
+	|| die("$0:  rename('$dump_file', '$cd_dump_file') failed:  $?")
 	    unless $test_p;
-    warn "$warn:  Renamed '$dump_file' to '$cd_dump_file'.\n"
+    warn "$0:  Renamed '$dump_file' to '$cd_dump_file'.\n"
 	if $test_p || $verbose_p;
 }
 # Phew.
