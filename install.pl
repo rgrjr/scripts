@@ -2,6 +2,7 @@
 #
 # Installation script that copies only if the file has been changed since the
 # last install (so that the file dates in the bin directory mean something).
+# Also can do "diff -u" instead of installing.
 #
 # [created, based on ../scripts/install.pl version.  -- rgr, 9-Dec-03.]
 #
@@ -47,9 +48,15 @@ sub x11_install {
     # $program is the pathname of the thing where it lives now,
     # $installed_program_name is its "new" name when in place, and
     # $program_pretty_name is for use in messages.
-    my ($program, $installed_program_name, $program_pretty_name) = @_;
+    my ($program, $installed_program_name, $program_pretty_name, $reason) = @_;
     my ($result, $target_name);
 
+    if ($show_p eq '-diff') {
+	return system('diff', '-u', $program, $installed_program_name);
+    }
+    warn("$0:  Installing $program_pretty_name in ", 
+	 "$installed_program_name (", ($reason || 'changed'), ")\n")
+	if $show_p || $verbose_p;
     warn("$0:  Destination directory '$directory' is not writable.\n")
 	if ! $rename_into_place_p && $verbose_p;
     $target_name = ($rename_into_place_p
@@ -150,11 +157,8 @@ sub install_program {
     # See if installation is necessary.
     if (! -r $installed_program_name || $force_p) {
 	# must install anyway.
-	warn("$0:  Installing $program_base_name in ", 
-	     "$installed_program_name (forced)\n")
-	    if $show_p || $verbose_p;
-	x11_install($program, $installed_program_name, $program_base_name)
-	    if $install_p;
+	x11_install($program, $installed_program_name, $program_base_name,
+		    'forced');
     }
     else {
 	my $src = file_contents($program);
@@ -168,11 +172,7 @@ sub install_program {
 		 "skipping update.\n");
 	}
 	else {
-	    warn("$0:  Installing $program_base_name in ", 
-		 "$installed_program_name (changed)\n")
-		if $show_p || $verbose_p;
-	    x11_install($program, $installed_program_name, $program_base_name)
-		if $install_p;
+	    x11_install($program, $installed_program_name, $program_base_name);
 	}
     }
 }
@@ -201,9 +201,10 @@ while (@ARGV) {
     elsif ($program eq '-quiet') {
 	$show_p = $verbose_p = 0;
     }
-    elsif ($program eq '-noinstall' || $program eq '-n') {
+    elsif ($program eq '-noinstall' || $program eq '-n' 
+	   || $program eq '-diff') {
 	$install_p = 0;
-	$show_p = 1;
+	$show_p = ($program eq '-diff' ? $program : '-noinstall');
     }
     elsif ($program =~ /^-(no)?backup$/) {
 	$make_numbered_backup_p = ! $1;
