@@ -16,6 +16,11 @@ my $warn = 'make-popular-pages.pl';
 my $squid_format_p = 1;
 my $html_format_p = 1;
 my $robots_p = 0;
+# [this is my definition of "popular."  -- rgr, 14-Feb-03.]
+my %excluded_pages = ('/site.css' => 1,
+		      '/random/doubleclick.png' => 1,
+		      '/bob/resume.html' => 'last',
+		      '/robots.txt' => 1);
 
 GetOptions(# 'help' => \$help, 'man' => \$man, 'verbose+' => \$verbose_p,
 	   'squid!' => \$squid_format_p,
@@ -36,25 +41,23 @@ open(LOG,
 my $pages = '';		# contains popular page hits.
 my $n = 0;
 my $line;
-while (chomp($line = <LOG>), $line) {
+while ($n < 10 && ($line = <LOG>)) {
+    chomp($line);
     my ($page, $hits) = split("\t", $line);
+    my $excluded_p = $excluded_pages{$page} || 0;
+    last
+	if $excluded_p eq 'last';
     next
-	if $page eq '/site.css';
+	if $excluded_p;
     $n++;
-    # [this is my definition of "popular."  -- rgr, 14-Feb-03.]
-    $n += 10
-	if $page =~ /resume\.html$/;
-    if ($n <= 10
-	&& $page !~ /robots.txt$/) {
-	if ($html_format_p) {
-	    $pages .= join("\n    ",
-			   "  <tr> <td align='right'>$n</td>",
-			   "<td> <a href='$page'><tt>$page</tt></a></td>",
-			   "<td align='right'> $hits</td>\n  </tr>\n");
-	}
-	else {
-	    print join("\t", $hits, $page), "\n";
-	}
+    if ($html_format_p) {
+	$pages .= join("\n    ",
+		       "  <tr> <td align='right'>$n</td>",
+		       "<td> <a href='$page'><tt>$page</tt></a></td>",
+		       "<td align='right'> $hits</td>\n  </tr>\n");
+    }
+    else {
+	print join("\t", $hits, $page), "\n";
     }
 }
 close(LOG);
