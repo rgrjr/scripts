@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #
 #    vacuum.pl:  suck backup files across the network.
 #
@@ -257,16 +257,21 @@ sub copy_backup_files {
     return 1
 	if @need_copying == 0;
     my $free_space = free_disk_space($to);
-    my $enough_space_p = $free_space-$total_space >= $min_free_left;
-    print "$warn:  Oops; not enough space left:\n"
+    my ($enough_space_p, $pretty_free_space, $pretty_free_left, $message)
+	= (defined($free_space)
+	   ? ($free_space-$total_space >= $min_free_left,
+	      $free_space.'MB', sprintf('%.2fMB', $free_space-$total_space),
+	      'not enough space left')
+	   : (0, '???', '???', "can't find free space for $to"));
+    print "$warn:  Oops; $message:\n"
 	if ! $enough_space_p;
     if ($verbose_p || ! $enough_space_p) {
 	print "   Files to copy:\n";
 	map &print_items, @need_copying;
 	printf "   Total space:    %.2fMB\n", $total_space;
-	print  "   Free space:     ${free_space}MB\n";
+	print  "   Free space:     $pretty_free_space\n";
 	print  "   Min free left:  ${min_free_left}MB\n";
-	printf "   Free left:      %.2fMB\n", $free_space-$total_space;
+	print  "   Free left:      $pretty_free_left\n";
     }
     die
 	if ! $enough_space_p;
