@@ -19,6 +19,8 @@ html-pages = ${published-scripts:.pl=.pl.html}
 base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
 backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl \
 		show-backups.pl vacuum.pl
+# [we call this a script, but really it needs to be sourced.  -- rgr, 5-Dec-04.]
+root-scripts = xauth-local-host
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
@@ -54,6 +56,7 @@ install:	install-base
 install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
 	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
+	${INSTALL} -m 555 ${root-scripts} /root/bin
 	${INSTALL} -m 444 ${log-files} /root/bin
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}

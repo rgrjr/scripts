@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# Set up for access to the local display when "su root" and the $LOGNAME home
+# directory is NFS-mounted with root-squashing.
+#
+# Usage:
+#
+#	rogers@carthage> echo $XAUTHORITY
+#	/home/rogers/.Xauthority
+#	rogers@carthage> echo $DISPLAY
+#	carthage.modulargenetics.com:0
+#	rogers@carthage> su
+#	Password: 
+#	carthage:/home/rogers # cd
+#	carthage:~ # . bin/xauth-local-host
+#	carthage:~ # emacs &
+#	[1] 16989
+#	carthage:~ # exit
+#	exit
+#	rogers@carthage> 
+#
+# In this case, we can't simply inherit $XAUTHORITY, because root can't read it.
+# This shell fragment sets up environment variables, so it has to be sourced,
+# rather than being run as a script.  See
+# http://rgrjr.dyndns.org/linux/security/xauth.html#root-cannot-read for
+# details, and for other options.
+#
+# [created.  -- rgr, 19-Aug-03.]
+#
+
+export XAUTHORITY=/root/.Xauthority
+su -c "xauth -f ~$LOGNAME/.Xauthority extract - $DISPLAY" $LOGNAME \
+    | xauth merge -
