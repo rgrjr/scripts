@@ -16,9 +16,12 @@
 # update for SuSE 8.1 (cdrecord in /usr/bin, /mnt => /media).  -- rgr, 4-May-03.
 #
 
+BEGIN { unshift(@INC, '/root/bin/') if -r '/root/bin'; }
+
 use strict;
 use Data::Dumper;
-require '/root/bin/rename-into-tree.pm';
+use Pod::Usage;
+require 'rename-into-tree.pm';
 
 my $warn = 'cd-dump.pl';
 my $VERSION = '0.1';
@@ -60,6 +63,7 @@ foreach my $opt (qw(dev=s speed=s)) {
 my $arg_errors = 0;
 my $verbose_p = 0;
 my $test_p = 0;
+my $leave_mounted_p = 0;
 while (@ARGV) {
     my $arg = shift(@ARGV);
     my ($arg_name, $arg_value) = split(/=/, $arg, 2);
@@ -69,8 +73,17 @@ while (@ARGV) {
     if ($arg eq '-verbose') {
 	$verbose_p++;
     }
+    elsif ($arg eq '-help') {
+	pod2usage(1);
+    }
+    elsif ($arg eq '-man') {
+	pod2usage(-exitstatus => 0, -verbose => 2);
+    }
     elsif ($arg eq '-test') {
 	$test_p++;
+    }
+    elsif ($arg =~ /^-(no)?mount$/) {
+	$leave_mounted_p = ! $1;
     }
     elsif (! defined($option_entry)) {
 	warn "Unknown argument:  '$arg'\n";
@@ -93,9 +106,9 @@ while (@ARGV) {
 }
 $verbose_p++
     if $test_p;
-die "$warn:  Must specify '-dev=x,y,z' in order to write a CD.\n"
+pod2usage("$warn:  Must specify '-dev=x,y,z' in order to write a CD.\n")
     unless $dev_spec;
-die if $arg_errors;
+pod2usage if $arg_errors;
 
 # Check directories.
 die "No ./to-write/ directory; died"
@@ -213,9 +226,10 @@ foreach my $file (@files_to_write) {
     }
 }
 
-# and leave the disk unmounted.
+# and leave the disk unmounted, if requested.
 system($unmount_command, $cd_mount_point) == 0
-    || warn "$warn:  '$unmount_command $cd_mount_point' failed:  !?";
+    || warn "$warn:  '$unmount_command $cd_mount_point' failed:  !?"
+    unless $leave_mounted_p;
 # phew . . .
 exit(0);
 
@@ -227,10 +241,9 @@ cd-dump.pl -- Interface to `mkisofs' and `cdrecord' for automating backups.
 
 =head1 SYNOPSIS
 
-    cd-dump.pl [--file-name=<name>] [--dump-dir=<dest-dir>]
-	       [--test] [--verbose] [--usage|-?] [--help] [--cd-dir=<mv-dir>]
-	       [--partition=<block-special-device>] [--level=<digit>]
-	       [--volsize=<max-vol-size>] [<partition>] [<level>]
+    cd-dump.pl [--help] [--man] [--verbose] [--test] 
+               --dev=x,y,z [--[no]mount] [--max-iso9660-filenames]
+               [--relaxed-filenames] [-V=<volname>] [--speed=n]
 
 =head1 DESCRIPTION
 
@@ -238,21 +251,54 @@ cd-dump.pl -- Interface to `mkisofs' and `cdrecord' for automating backups.
 
 =over 4
 
-=item B<-max-iso9660-filenames>
+=item B<--help>
 
-=item B<-relaxed-filenames>
+Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
 
-=item B<-V>
+=item B<--man>
 
-=item B<-dev>
+Prints the full documentation in the Unix `manpage' style.
 
-Specifies the SCSI device, needed by C<cdrecord> to address the 
+=item B<--verbose>
 
-=item B<-speed>
+Turns on verbose message output.  Repeating this option results in
+greater verbosity.
 
-=item B<-verbose>
+=item B<--test>
 
-=item B<-test>
+Specifies testing mode, in which C<cd-dump.pl> goes through all the
+motions, but doesn't actually write anything on the CD, or touch the
+hard disk file system.  This implies some verbosity.
+
+=item B<--mount>
+
+=item B<--nomount>
+
+Leaves the newly written disk mounted, if C<--mount> is specified.
+The default is C<--nomount>.
+
+=item B<--max-iso9660-filenames>
+
+Passed to C<mkisofs>.
+
+=item B<--relaxed-filenames>
+
+Passed to C<mkisofs>.
+
+=item B<--V>
+
+Passed to C<mkisofs>.
+
+=item B<--dev>
+
+Specifies the SCSI device, needed by C<cdrecord> to address the CD drive.
+There is no default; this must be specified.
+Passed to C<cdrecord>.
+
+=item B<--speed>
+
+Write speed, as a multiple of the "standard" read speed for an audio
+disk.  Passed to C<cdrecord>, which defines the default.
 
 =back
 

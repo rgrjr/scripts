@@ -44,3 +44,9 @@ directories specially.
 
    * rgr-dehex.el -- hacks for looking at tcpdump output.
 
+To Do:
+
+   1. ** Should document & publish install.pl.  -- rgr, 15-Jun-03.
+
+   2. * Look at Web installation of POD, and maybe update this.  -- rgr,
+15-Jun-03.
