@@ -17,7 +17,8 @@ published-scripts = backup.pl cd-dump.pl
 html-pages = ${published-scripts:.pl=.pl.html}
 
 base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
-backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl vacuum.pl
+backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl \
+		show-backups.pl vacuum.pl
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
