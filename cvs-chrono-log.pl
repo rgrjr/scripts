@@ -67,7 +67,8 @@ sub print_file_rev_comments {
 	}
 	# CVS sorts the file names, but combining sets of entries with similar
 	# dates can make them come unsorted.
-	my ($lines_removed, $lines_added, $n_matches, $n_files);
+	my ($n_matches, $n_files) = (0, 0);
+	my ($lines_removed, $lines_added);
 	for my $entry (sort { $a->[0] cmp $b->[0]; } @$date_entry) {
 	    my ($file_name, $file_rev, $date_etc) = @$entry;
 	    print "  => $file_name $file_rev:  $date_etc\n";
