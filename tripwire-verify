@@ -5,11 +5,13 @@
 #    Modification history:
 #
 # created.  -- rgr, 12-Jan-02.
-# oops; must verify the /var/adm/tripwire/tw.config sig.  -- rgr, 12-Sep-02.
+# oops; must also verify the tw.config file.  -- rgr, 12-Sep-02.
+# updated for SuSE 8.1.  -- rgr, 12-Aug-03.
 #
 
-cd /var/adm/tripwire
+cd /etc
 /usr/bin/gpg --verify tw.config.sig tw.config
-cd /var/adm/tripwire/db
-/usr/bin/gpg --verify tw.db_rgrjr.dyndns.org.sig tw.db_rgrjr.dyndns.org
-time ../bin/tripwire
+cd /etc/tw
+/usr/bin/gpg --verify tw.db_rgrjr.sig tw.db_rgrjr
+# time /usr/sbin/tripwire -q
+time /usr/sbin/tripwire
