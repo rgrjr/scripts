@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# Set up a firewall -- paranoid version.
+#
+# Copyright (C) 1999-2003 Robert G. Rogers Jr. <rogers@rgrjr.dyndns.org>
+#
+# This script is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2, or (at your option) any later version.
+#
+# Based heavily on the Linux IPCHAINS-HOWTO (/usr/doc/HOWTO/IPCHAINS-HOWTO) by
+# Paul Russell <Paul.Russell@rustcorp.com.au>, version v1.0.5, 27 October 1998.
+# This is a stripped-down version of the "firewall" script.
+#
+# Note that this script is intended to run before the network script, so none of
+# the interfaces are initialized.  This means that (a) we don't know what our
+# own DHCP-assigned IP address should be, (b) we can't use symbolic host names,
+# because DNS is not yet available, and (c) we can't even be sure of the DNS
+# server addresses, which therefore have to be hardwired.  But that's ok; we're
+# not going to let anybody do anything anyway, and we probably won't need DNS
+# for the short term.  After the network is up, we'll use the "firewall" script
+# to let useful services through.
+#
+# It is OK to re-run this script manually after editing; it flushes each chain
+# before adding to it.
+#
+#    [old] Modification history:
+#
+# created [firewall version].  -- rgr, 18-Dec-99.
+# recreated as "paranoid" -- don't let anybody in.  -- rgr, 4-Mar-00.
+# allow X11 on the loopback interface, update DNS_IPS, reject forwarding
+#	requests.  -- rgr, 5-Oct-01.
+# update DNS_IPS again.  -- rgr, 26-Apr-03.
+# started updating for iptables.  -- rgr, 26-Apr-03.
+#
+# $Id$
+
+PATH=/sbin:$PATH
+
+# no DNS yet, so these must be hardwired.
+# [updated.  -- rgr, 26-Apr-03.]
+DNS_IPS='204.127.202.19 216.148.227.79'
+
+# Allow arbitrary packets to leave, but not for X11 connections that are not via
+# the loopback interface.
+iptables -P OUTPUT ACCEPT
+iptables -F OUTPUT
+iptables -A OUTPUT -o lo -j ACCEPT
+iptables -A OUTPUT -p TCP -d 0.0.0.0/0 --source-port 6000:6063 -j LOG
+iptables -A OUTPUT -p TCP -d 0.0.0.0/0 --source-port 6000:6063 -j REJECT
+
+# Deny input packets by default, except for ICMP packets and packets on the
+# loopback and internal interfaces.
+iptables -P INPUT DROP
+iptables -F INPUT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -i eth1 -j ACCEPT
+iptables -A INPUT -p ICMP -j ACCEPT
+
+# External cable modem interface (eth0).
+iptables -N ext-in
+iptables -F ext-in
+# Accept DNS results (on either TCP or UDP) from any of the ne.mediaone.net DNS
+# servers.
+for ip in $DNS_IPS; do
+    iptables -A ext-in -p UDP -s $ip --source-port domain -j ACCEPT
+    iptables -A ext-in -p TCP -s $ip --source-port domain -j ACCEPT
+done
+# [temporary:  ignore mail connections, so we don't lose mail before the mailer
+# is configured.  -- rgr, 26-Apr-03.]
+iptables -A ext-in -p TCP --destination-port smtp -j DROP
+# Deny all other attempts at opening connections to this machine.  [And log
+# them, because I want to know who has the gall.  -- rgr, 21-Dec-99.]
+iptables -A ext-in -p TCP -j LOG
+iptables -A ext-in -p TCP -j REJECT
+
+# Add the external input filtering chain.
+iptables -A INPUT -i eth0 -j ext-in
+
+# Don't forward packets yet.
+iptables -P FORWARD DROP

@@ -1,0 +1,245 @@
+#!/bin/sh
+#
+# Set up a firewall.
+#
+# Copyright (C) 1999-2003 Robert G. Rogers Jr. <rogers@rgrjr.dyndns.org>
+#
+# This script is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2, or (at your option) any later version.
+#
+# Based heavily on the Linux IPCHAINS-HOWTO (/usr/doc/HOWTO/IPCHAINS-HOWTO) by
+# Paul Russell <Paul.Russell@rustcorp.com.au>, version v1.0.5, 27 October 1998.
+#
+# Note that this script must run after the network startup script, since it must
+# find out what our DHCP-assigned IP address and nameserver IP addresses might
+# be.  Consequently, I use the "paranoid" script to deny incoming connections
+# early in the startup process, then use this script later on to relax some of
+# the paranoid restrictions.  (I have resisted the temptation to call this
+# script "Prozac.")
+#
+# It is OK to re-run this script manually after editing; it flushes each chain
+# before adding to it.  (Though you get a "Chain already exists" warning for the
+# ext-in chain.)
+#
+# [Under ipchains, you could use something like
+#
+#	ipchains -C input -i eth0 -p tcp -s 207.25.71.27 50000 -d $OUR_EXT_IP 21 -y
+#
+# to test whether the firewall works for a given packet.  Unfortunately,
+# iptables does not seem to have this feature.  -- rgr, 17-Aug-03.]
+#
+### BEGIN INIT INFO
+# Provides:       firewall
+# Required-Start: $remote_fs $syslog $network
+# Required-Stop:  $remote_fs $syslog
+# Default-Start:  2 3 5
+# Default-Stop:   
+# Description:    Firewall (rgrjr version).
+### END INIT INFO
+#
+#    [old] Modification history:
+#
+# created.  -- rgr, 18-Dec-99.
+# count outgoing packets by interface.  -- rgr, 19-Dec-99.
+# log denied external connection requests, -F calls.  -- rgr, 21-Dec-99.
+# accept incoming SMTP connections.  -- rgr, 28-Dec-99.
+# add some logging, deny outgoing X11 connections.  -- rgr, 23-Feb-00.
+# oops -- fix bug in X11 spec.  -- rgr, 25-Feb-00.
+# use pump to determine local IP address, allow self-X11.  -- rgr, 4-Mar-00.
+# also use pump to determine name server addresses.  -- rgr, 5-Mar-00.
+# allow identd connections.  -- rgr, 5-Mar-00.
+# change default policies to REJECT.  -- rgr, 9-Mar-00.
+# accept WWW connections.  -- rgr, 24-Mar-00.
+# disallow fragments.  -- rgr, 26-Mar-00.
+# use ifconfig and /etc/resolv.conf instead of pump.  -- rgr, 16-Apr-00.
+# NTP server/client access.  -- rgr, 17-Nov-00.
+# NTP client refinement.  -- rgr, 25-Nov-00.
+# deny loopback spoofing, allow X11 on the internal subnet, exit if we can't
+#	find the external IP.  -- rgr, 28-Apr-01.
+# don't allow NTP packets to NFS ports.  -- rgr, 28-May-01.
+# clean up IP selection, don't drop frags, allow TCP 8080.  -- rgr, 10-Aug-01.
+# allow more internal X11 cases, deny more external spoofing cases, drop packets
+#	coming from 0.0.0.0.  -- rgr, 5-Oct-01.
+# disable hole for TCP port 8080.  -- rgr, 20-Aug-02.
+# . . .
+# don't log rejected UDP packets.  -- rgr, 25-May-03.
+#
+# $Id$
+
+PATH=/sbin:$PATH
+
+### Interface address definitions.
+# Symbolic names for interfaces.
+ext_iface=eth0
+int_iface=eth1
+# We can't count on the IP address assigned via DHCP to the external interface,
+# so we need to find out what we've been assigned, and use that as our local
+# address.  (Don't use "hostname -i", because that relies on DNS.)  -- rgr,
+# 4-Mar-00.  [this now picks the first address if there is more than one.  --
+# rgr, 10-Aug-01.]
+OUR_EXT_IP=`ifconfig $ext_iface | perl -ne 'print("$1\n"), exit 0 if /inet addr: *([0-9.]+)/;'`
+if [ "$OUR_EXT_IP" = "" ]; then
+    # If this failed, then the external interface didn't come up, and we can't
+    # set up the firewall properly.  In this case, at least, we don't need a
+    # firewall, so that's not big a problem, as long as we remember to run this
+    # after "ifup $OUR_EXT_IP" succeeds.  -- rgr, 28-Apr-01.
+    echo $ext_iface has no IP -- firewall NOT IN FORCE.
+    exit 1
+fi
+# Snarf legitimate DNS hosts from the /etc/resolv.conf file.  [DHCP might point
+# us to different nameserver(s), but if so, pump will update /etc/resolv.conf
+# for us.  -- rgr, 5-Mar-00.]
+DNS_IPS=`perl -ane 'print "$F[1] " if $F[0] eq "nameserver";' /etc/resolv.conf`
+# Subnet for our internal interface.
+# [changed to the Heinz number.  -- rgr, 5-Oct-01.]
+INTERNAL_SUBNET=192.168.57.0/24
+# INTERNAL_SUBNET=192.168.23.0/24
+
+### Output chain setup.
+# Allow arbitrary packets to leave, but not for attempts to open X11 connections
+# to the outside world, which should be tunneled through SSH.
+iptables -P OUTPUT ACCEPT
+iptables -F OUTPUT
+# Allow X11 connections to/from the private subnet or via the loopback
+# interface.  We need some special rules here, or the last rule will reject
+# them.  We use more rules than are strictly necessary so we can count X11
+# traffic separately.  -- rgr, 5-Oct-01.  [this used to also be qualified with
+# "-s $INTERNAL_SUBNET", but i don't think that's necessary.  leaving it out
+# allows an internal machine to connect to (e.g.) rgrjr.dyndns.org:0.  -- rgr,
+# 5-Oct-01.]
+iptables -A OUTPUT -p TCP -d $INTERNAL_SUBNET --destination-port 6000:6063 -j ACCEPT
+iptables -A OUTPUT -p TCP -o lo -d 0.0.0.0/0 --destination-port 6000:6063 -j ACCEPT
+iptables -A OUTPUT -p TCP -d $OUR_EXT_IP --destination-port 6000:6063 -j ACCEPT
+iptables -A OUTPUT -p TCP -d 0.0.0.0/0 --destination-port 6000:6063 --syn -j LOG
+iptables -A OUTPUT -p TCP -d 0.0.0.0/0 --destination-port 6000:6063 --syn -j REJECT
+# Count all other packets by interface.
+iptables -A OUTPUT -o $ext_iface
+iptables -A OUTPUT -o $int_iface
+# No restriction on packets leaving the external interface.
+# iptables -N ext-out
+# iptables -A OUTPUT -o $ext_iface -j ext-out
+
+### Input chain setup.
+# By default, reject input packets, except on the loopback interface, and ICMP
+# packets.
+iptables -P INPUT DROP
+iptables -F INPUT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -p ICMP -j ACCEPT
+
+# External cable modem interface ($ext_iface):  Trust (almost) no one.
+iptables -N ext-in
+iptables -F ext-in
+# If somebody on the outside is trying to spoof us by pretending to come from
+# the loopback interface or the internal network, or is trying to send to one of
+# those addresses, then log the packet & ignore it (rather than rejecting it).
+iptables -A ext-in -s 127.0.0.0/8 -j LOG
+iptables -A ext-in -s 127.0.0.0/8 -j DROP
+iptables -A ext-in -s $INTERNAL_SUBNET -j LOG
+iptables -A ext-in -s $INTERNAL_SUBNET -j DROP
+iptables -A ext-in -d 127.0.0.0/8 -j LOG
+iptables -A ext-in -d 127.0.0.0/8 -j DROP
+iptables -A ext-in -d $INTERNAL_SUBNET -j LOG
+iptables -A ext-in -d $INTERNAL_SUBNET -j DROP
+# We also get these damn connections from 0.0.0.0, which is probably somebody on
+# the local segment with a misconfigured machine.  Don't even bother logging
+# them; yesterday I got more than 12000.  -- rgr, 5-Oct-01.
+iptables -A ext-in -s 0.0.0.0/32 -j DROP
+# Accept DHCP responses through UDP port 68 (DHCP/BOOTP client).  See RFC2131.
+# [I don't know how to find out which addresses correspond to legitimate DHCP
+# servers, but we won't be paying attention to this unless we've made a request,
+# so the window of opportunity is tiny.  -- rgr, 16-Apr-00.]
+iptables -A ext-in -p UDP -d $OUR_EXT_IP --destination-port 68 -j ACCEPT
+# Accept DNS results (on either TCP or UDP) from any acceptable DNS server.
+for ip in $DNS_IPS; do
+    iptables -A ext-in -p UDP -s $ip --source-port domain -d $OUR_EXT_IP -j ACCEPT
+    # [actually, the TCP rules are unnecessary because of the final "accept
+    # everything but new incoming connections" rules at the end of the set.  but
+    # we do need to pass the UDP packets.  -- rgr, 18-Dec-99.]
+    # iptables -A ext-in -p TCP -s $ip --source-port domain -d $OUR_EXT_IP -j ACCEPT
+done
+# Accept identd connections.  Don't bother logging, because identd leaves its
+# own (much more verbose) trace in the logs.  -- rgr, 5-Mar-00.
+iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port auth --syn -j ACCEPT
+# Accept incoming FTP data connections from "active" servers.
+iptables -A ext-in -p TCP -s 0.0.0.0/0 --source-port ftp-data \
+    -d $OUR_EXT_IP --destination-port 1024:5999 --syn -j ACCEPT
+iptables -A ext-in -p TCP -s 0.0.0.0/0 --source-port ftp-data \
+    -d $OUR_EXT_IP --destination-port 6064: --syn -j ACCEPT
+# Enable this to accept results from external NTP servers for local clients.
+# Don't enable logging unless you want to see thousands of messages per day.
+# The client will allocate a random unpriviledged UDP port so that it can
+# receive replies.  Unfortunately, this means that anyone can send us UDP
+# packets, as long as they come from the ntp port on the remote machine.  We
+# therefore need to restrict the local port to prevent them from sending to any
+# of our "priviledged" UDP ports, as well as active server ports in the
+# "unpriviledged" range (which the ntp client won't be able to use anyway).  If
+# you are running NFS, this will also include the following:
+#
+#       111  portmapper
+#       817  rquotad
+#      1024  status
+#      1232  mountd
+#      1233  nlockmgr
+#      2049  nfs
+#
+# [I got these from running "rpcinfo -p" after "/etc/rc.d/init.d/nfs start", so
+# they correspond to the actual configuration I am using (nfs-utils 0.3.1 on an
+# up-to-date RH 6.0 system).  If you do this experiment, don't forget to do
+# "/etc/rc.d/init.d/nfs stop" until you have finished updating your firewall!
+# -- rgr, 28-May-01.]
+#
+#    We want to reject UDP ports 0-1023 anyway, so the others break the legal
+# range into three subranges, requiring three rules:  one to deny access to the
+# mountd and nlockmgr ports, which are conveniently adjacent; one to deny the
+# nfs port itself; and a "default" to accept everything else above 1024.
+ntp_src="-p UDP -s 0.0.0.0/0 --source-port ntp"
+iptables -A ext-in $ntp_src -d $OUR_EXT_IP --destination-port 1232:1233 -j REJECT
+iptables -A ext-in $ntp_src -d $OUR_EXT_IP --destination-port 2049 -j REJECT
+iptables -A ext-in $ntp_src -d $OUR_EXT_IP --destination-port 1025: -j ACCEPT
+# If you are *not* running NFS, then you will need to comment out the first two
+# (and change the second from 1025 and up to 1024 and up),
+# lest you get rare errors from the ntp client when it happens to pick one of
+# the unused but filtered UDP ports on which to listen.
+#
+# Enable this to run an NTP server.
+iptables -A ext-in -p UDP -d $OUR_EXT_IP --destination-port ntp -j ACCEPT
+# Enable this to run a WWW (HTTP) server.
+iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port www --syn -j ACCEPT
+# [any server on port 8080 should now be reached via proxy on port 80.
+# -- rgr, 20-Aug-02.]
+# iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port 8080 --syn -j ACCEPT
+# Enable this to run (and log all connections to) an SSH server.
+iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port ssh --syn -j LOG
+iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port ssh --syn -j ACCEPT
+# Enable this to accept incoming mail (SMTP) connections.
+iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port smtp --syn -j ACCEPT
+# Reject all other connection attempts to this machine, logging TCP connection
+# attempts only.  UDP packets are rejected silently because otherwise they tend
+# to flood the log file; the Comcast network is full of badly configured Windows
+# machines.  Ditto for IGMP (protocol 2).  -- rgr, 25-May-03.
+iptables -A ext-in -p UDP -j REJECT
+iptables -A ext-in -p 2 -j REJECT
+iptables -A ext-in -p TCP --syn -j LOG
+iptables -A ext-in -p TCP --syn -j REJECT
+# But let through responses to our connections.
+iptables -A ext-in -p TCP ! --syn -j ACCEPT
+
+# Add the external input filtering chain.
+iptables -A INPUT -i $ext_iface -j ext-in
+# Also allow any incoming connections on the internal network.
+iptables -A INPUT -i $int_iface -s $INTERNAL_SUBNET -j ACCEPT
+# And flush anything else.
+iptables -A INPUT -j LOG
+iptables -A INPUT -j REJECT
+
+# Set up masquerading for the internal network.  [note that the interface given
+# for packets traversing the forward chain is the one they will go *out* on, so
+# we must specify $ext_iface for packets coming from $int_iface.]
+iptables -P FORWARD DROP
+iptables -F FORWARD
+# [not updated yet.  -- rgr, 2-May-03.]
+# iptables -A FORWARD -o $ext_iface -s $INTERNAL_SUBNET -j MASQ
+iptables -A FORWARD -j LOG
+iptables -A FORWARD -j REJECT
