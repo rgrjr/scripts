@@ -24,6 +24,7 @@ sub record_file_rev_comment {
 }
 
 sub print_file_rev_comments {
+    # Print all revision comments.
 
     for my $date (reverse(sort(keys(%modifications)))) {
 	for my $comment (sort(keys(%{$modifications{$date}}))) {
@@ -36,8 +37,8 @@ sub print_file_rev_comments {
 		my ($file_name, $file_rev, $date_etc) = @$entry;
 		print "  => $file_name $file_rev:  $date_etc\n";
 	    }
+	    print "\n";
 	}
-	print "\n";
     }
 }
 
@@ -60,6 +61,11 @@ while (defined($line = <>)) {
 	chomp(my $date_etc = <>);
 	my $comment = '';
 	$line = <>;
+	if ($line =~ /^branches: /) {
+	    chomp($line);
+	    $date_etc .= "  ".$line;
+	    $line = <>;
+	}
 	while ($line !~ /^---+$|^===+$/) {
 	    $comment .= $line;
 	    $line = <>;
