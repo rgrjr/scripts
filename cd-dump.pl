@@ -70,19 +70,19 @@ while (@ARGV) {
     $arg_name =~ s/^--/-/;
     my $option_entry = $options{$arg_name};
     my ($arg_array, $type);
-    if ($arg eq '-verbose') {
+    if ($arg_name eq '-verbose') {
 	$verbose_p++;
     }
-    elsif ($arg eq '-help') {
+    elsif ($arg_name eq '-help') {
 	pod2usage(1);
     }
-    elsif ($arg eq '-man') {
+    elsif ($arg_name eq '-man') {
 	pod2usage(-exitstatus => 0, -verbose => 2);
     }
-    elsif ($arg eq '-test') {
+    elsif ($arg_name eq '-test') {
 	$test_p++;
     }
-    elsif ($arg =~ /^-(no)?mount$/) {
+    elsif ($arg_name =~ /^-(no)?mount$/) {
 	$leave_mounted_p = ! $1;
     }
     elsif (! defined($option_entry)) {
@@ -237,7 +237,7 @@ __END__
 
 =head1 NAME
 
-cd-dump.pl -- `mkisofs' and `cdrecord' interface for automated file archival.
+cd-dump.pl -- Interface to `mkisofs' and `cdrecord' for automating backups.
 
 =head1 SYNOPSIS
 
