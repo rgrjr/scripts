@@ -20,8 +20,9 @@ html-pages = ${published-scripts:.pl=.pl.html}
 base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
 backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl \
 		show-backups.pl vacuum.pl
-# [we call this a script, but really it needs to be sourced.  -- rgr, 5-Dec-04.]
-root-scripts = xauth-local-host
+# [we call xauth-local-host a script, but really it needs to be sourced.  --
+# rgr, 5-Dec-04.]
+root-scripts = xauth-local-host burn-backups
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
@@ -102,3 +103,8 @@ ${html-pages}:   %.pl.html:	%.pl
 
 publish:	${published-scripts} ${published-modules} ${html-pages}
 	install -c -m 444 $^ ${public-html-directory}
+
+### Other oddments.
+
+clean:
+	rm -f pod2htm*.tmp ${html-pages}
