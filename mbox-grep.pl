@@ -21,7 +21,8 @@ my $warn = 'mbox-grep.pl';
 # The stuff in the middle (matched by "\S*") is the envelope sender -- we need
 # "\S*" instead of "\S+" because bounces get "<>" as the sender address.  We
 # just want to get to the DOW to help eliminate false hits.
-my $from_line_regexp = '^From \S* +(Sun|Mon|Tue|Wed|Thu|Fri|Sat) ';
+my $from_line_regexp = ('^From \S* +(Sun|Mon|Tue|Wed|Thu|Fri|Sat'
+			.'|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ');
 
 my $matching_line_count = 0;	# global count, for exit code.
 my @message_order = ();		# for messages reordered by VM.
@@ -173,9 +174,8 @@ sub search_one_file {
 		$line_number++;
 	    }
 	    $line_number++;	# handle extra read.
-	    if ($data =~ /\(([0-9 \t\n]+)\)/) {
-		@message_order = (0, split(' ', $1));
-	    }
+	    @message_order = (0, split(' ', $1))
+		if $data =~ /\(([0-9 \t\n]+)\)/;
 	    warn("$warn: $file_name: Got order (", join(', ', @message_order),
 		 ") from header line\n   $data")
 		if $debug_p;
