@@ -173,7 +173,7 @@ print("$warn:  Executing '$mkisofs_cmd\n",
       "\t\t\t| $cdrecord_cmd'\n")
     if $verbose_p || $test_p;
 system("$mkisofs_cmd | $cdrecord_cmd") == 0
-    || die "$warn:  '$mkisofs_cmd | $cdrecord_cmd' failed:  !?"
+    || die "$warn:  '$mkisofs_cmd | $cdrecord_cmd' failed:  $?"
     unless $test_p;
 
 # now get rid of what we've written successfully.  if the disk is mountable,
@@ -200,7 +200,7 @@ foreach my $file (@files_to_write) {
 
 # and leave the disk unmounted, if requested.
 system($unmount_command, $cd_mount_point) == 0
-    || warn "$warn:  '$unmount_command $cd_mount_point' failed:  !?"
+    || warn "$warn:  '$unmount_command $cd_mount_point' failed:  $?"
     unless $leave_mounted_p;
 # phew . . .
 exit(0);
