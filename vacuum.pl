@@ -25,13 +25,11 @@ my $test_p = 0;
 my $verbose_p = 0;
 my $usage = 0;
 my $help = 0;
-GetOptions('from=s' => \$from,
-	   'min-free-left=i' => \$min_free_left,
-	   'mode=s' => \$mode,
-	   'to=s' => \$to,
-	   'prefix=s' => \$prefix,
-	   'test+' => \$test_p, 'verbose+' => \$verbose_p,
-	   'usage|?' => \$usage, 'help' => \$help)
+GetOptions('test+' => \$test_p, 'verbose+' => \$verbose_p,
+	   'usage|?' => \$usage, 'help' => \$help,
+	   'from=s' => \$from, 'to=s' => \$to,
+	   'mode=s' => \$mode, 'prefix=s' => \$prefix,
+	   'min-free-left=i' => \$min_free_left)
     or pod2usage(-verbose => 0);
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
@@ -309,21 +307,21 @@ vacuum.pl - Suck backup files across the network.
 
 =head1 SYNOPSIS
 
-    vacuum.pl [--from=<source-dir>] [--to=<dest-dir>]
-              [--mode={mv|cp}] [--prefix=<tag>] [--min-free-left=<size>]
-	      [--test] [--verbose] [--usage|-?] [--help]
+    vacuum.pl [--test] [--verbose] [--usage|-?] [--help]
+              [--from=<source-dir>] [--to=<dest-dir>]
+              [--mode=(mv|cp)] [--prefix=<tag>] [--min-free-left=<size>]
 
 =head1 DESCRIPTION
 
 This script selectively copies backup dumps over the network via
 C<ssh> (though it can also be used to copy them locally).  It only
 sees backup dump and tar files that follow the naming convention used
-by the C<tar-backup.pl> script.  Furthermore, it only copies or moves
-those dump files that are both (a) still current and (b) do not
-already exist at the destination.  A dump file is current if there is
-no more recent dump file with the same prefix at the same or lower
-dump level.  If no such files exist, 
-C<vacuum.pl> exits without error, and without printing any messages.
+by the C<backup.pl> script.  Furthermore, it only copies or moves
+those files that are both (a) still current and (b) do not already
+exist at the destination.  A dump file is current if there is no more
+recent dump file with the same prefix at the same or lower dump level.
+If no such files exist, C<vacuum.pl> exits without error, and without
+printing any messages.
 
 When files are copied across the network (as opposed to being moved
 locally), C<vacuum.pl> always does an C<md5sum> on them to verify the
@@ -358,8 +356,9 @@ list of files that need to be transferred.
 
 =item 2.
 
-If C<vacuum.pl> can't run C<df> on the destination machine to
-determine the current free space.
+If C<vacuum.pl> can't run C<df> (to determine the current free space)
+or C<ls> (to determine which files are already present) on the
+destination machine
 
 =item 3.
 
@@ -381,44 +380,41 @@ and exits with a non-zero return code (courtesy of C<die>).
 
 =over 4
 
-=item C<--test>
+=item B<--test>
 
 If specified, no commands will be executed.  Instead, the commands will
 just be echoed to C<STDERR>.
 
-=item C<--verbose>
+=item B<--verbose>
 
 If specified, extra information messages are printed before and during
 the copy.
 
-=item C<--from=E<lt>source-dirE<gt>
+=item B<--from>
 
 Specified the source directory for the copy; required argument.  May
 be specified positionally.  Either C<--from> or C<--to> may be on a
 remote host, using C<ssh> syntax, e.g. C<"user@host:/path/to/dir/">,
 but not both.
 
-=item C<--to=E<lt>dest-dirE<gt>
+=item B<--to>
 
-Specifies the destination directory for the copy.  May also be
-specified positionally.
+Specifies the destination directory for the copy; required argument.
+May also be specified positionally.
 
-=item C<--mode=cp>
+=item B<--mode>
 
-Specifies 'copy' mode (the default).  The original file is always left
-in place.
+This can be either C<--mode=cp> to specify 'copy' mode (the default),
+in which case the original file is always left in place, or
+C<--mode=mv> to specify 'move' mode, in which case the source file is
+deleted after a successful copy.
 
-=item C<--mode=mv>
-
-Specifies 'move' mode.  Once the copy is verified, the 'from' file is
-deleted.
-
-=item C<--prefix>
+=item B<--prefix>
 
 Specifies the dump file prefix tag; may be used to select a subset of
 files to transfer.
 
-=item C<--min-free-left>
+=item B<--min-free-left>
 
 Specifies the minimum amount of free space to leave on the destination
 device after all copying is done, in megabytes; the default is 1024
@@ -429,23 +425,29 @@ more than this, then no files will be copied.
 
 =head1 USAGE AND EXAMPLES
 
+[need some.  -- rgr, 18-Aug-04.]
+
 =head1 SEE ALSO
 
 =over 4
 
-=item Dump/Restore at SourceForge (http://sourceforge.net/projects/dump/)
+=item Dump/Restore at SourceForge (L<http://sourceforge.net/projects/dump/>)
 
 =item man dump(8)
 
 =item man tar
 
-=item tar-backup.pl
+=item C<backup.pl> (L<http://rgrjr.dyndns.org/linux/backup.pl.html>)
 
 =item man ssh
 
-=item System backups (http://rgrjr.dyndns.org/linux/backup.html)
+=item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
 
 =back
+
+=head1 VERSION
+
+    $Version:$
 
 =head1 BUGS
 
@@ -453,9 +455,9 @@ None known.
 
 =head1 COPYRIGHT
 
-    Copyright (C) 2000-2003 by Bob Rogers <rogers@rgrjr.dyndns.org>.
-    This script is free software; you may redistribute it
-    and/or modify it under the same terms as Perl itself.
+Copyright (C) 2000-2003 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+This script is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
 
 =head1 AUTHOR
 
