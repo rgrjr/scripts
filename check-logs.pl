@@ -344,7 +344,7 @@ while (defined($line = <>)) {
     chomp($line);
     # $report_p = 0;
     next
-	unless $line =~ / +($host_name|h0050da615e79) +/o;
+	unless $line =~ / +($host_name|rgr|h0050da615e79) +/o;
     my $date = $`;  
     my $description = $';
     if ($from_date_string) {
