@@ -2,13 +2,9 @@
 #
 #    vacuum.pl:  suck backup files across the network.
 #
-#    Modification history:
+# [created.  -- rgr, 23-Dec-02.]
 #
-# created.  -- rgr, 23-Dec-02.
-# completed.  -- rgr, 27-Dec-02.
-# --mode arg, md5sum verification.  -- rgr, 2-Jan-03.
-# got site_file_delete working.  -- rgr, 6-Jan-03.
-#
+# [$Id$]
 
 use strict;
 use Getopt::Long;
@@ -17,7 +13,7 @@ use Pod::Usage;
 my $warn = $0;
 $warn =~ s@.*/@@;
 
-my $VERSION = '0.2';
+my $VERSION = '0.3';
 
 my $scp_program_name = '/usr/bin/scp';
 my $from = '';		# source directory; required arg.
@@ -57,10 +53,29 @@ my $local_to_local_p = -d $from && -d $to;
 
 ### Subroutines.
 
-sub convert_bytes_to_MB {
-    # convert $space to megabytes.
-    my $space = shift;
-    (($space+(1<<10)-1) >> 10)/1024.0;
+sub display_mb {
+    my $mb = shift;
+    my $n_digits = shift || '';
+    my $suffix = 'MB';
+
+    if (abs($mb) < 1.0) {
+	$mb *= 1024;
+	$suffix = 'KB';
+    }
+    elsif (abs($mb) > 1024.0) {
+	$mb /= 1024;
+	$suffix = 'GB';
+    }
+    sprintf("%$n_digits.2f%s", $mb, $suffix);
+}
+
+sub print_items {
+    # generate a detail line from a file entry created by find_files_to_copy,
+    # passed in $_ as by 'map'.  also used for debugging.
+    my ($name, $size, $level) = @$_;
+
+    printf("      %-25s  %s  level %d\n",
+	   $name, display_mb($size, 8), $level);
 }
 
 sub site_list_files {
@@ -96,9 +111,16 @@ sub site_list_files {
 	my ($tag, $date, $level) = $file =~ //;
 	if (! defined($levels{$tag})
 	    || $level < $levels{$tag}) {
-	    # it's a keeper.
+	    # it's a keeper.  first, though, convert the size into MB.  do this
+	    # in two chunks, because perl 5.6 thinks the answer is always 4095
+	    # for values above 2^32.  -- rgr, 9-Sep-03.
+	    my $mega = 1024.0*1024.0;
+	    my $mega_per_million = $mega/1000000;
+	    my $mb = (length($size) <= 6 ? $size : substr($size, -6))/$mega;
+	    $mb += substr($size, 0, -6)/$mega_per_million
+		if length($size) > 6;
 	    # print "[file $file, tag $tag, date $date, level $level]\n";
-	    push(@result, [$file, $size, $level]);
+	    push(@result, [$file, $mb, $level]);
 	    $levels{$tag} = $level;
 	}
     }
@@ -111,19 +133,21 @@ sub free_disk_space {
     my ($dir) = @_;
     my $result;
 
-    if ($dir =~ /:/) {
-	my $host = $`;
-	my $spec = $';
+    my ($host, $spec) = split(/:/, $dir);
+    if (defined($spec)) {
 	open(IN, "ssh '$host' \"df '$spec'\" |")
 	    or die;
     }
     else {
+	($host, $spec) = ('localhost', $dir);
 	open(IN, "df '$dir' |")
 	    or die;
     }
     my $line;
     while (! defined($result)
 	   && defined($line = <IN>)) {
+	die "$0:  '$dir' is mounted via NFS on $host.\n"
+	    if $line =~ /^[-\w\d.]+:/;
 	next
 	    unless $line =~ m@^/dev/@;
 	my @fields = split(' ', $line);
@@ -131,6 +155,8 @@ sub free_disk_space {
 	    if $fields[3] =~ /^\d+$/;
     }
     close(IN);
+    die "$0:  Couldn't determine free space for '$spec' on $host.\n"
+	unless $result;
     $result;
 }
 
@@ -173,14 +199,6 @@ sub site_file_md5 {
     $results[0];
 }
 
-sub print_items {
-    # for debugging.
-    my ($name, $size, $level) = @$_;
-
-    printf("      %-25s  %8.2fMB  level %d\n",
-	   $name, convert_bytes_to_MB($size), $level);
-}
-
 sub find_files_to_copy {
     # extract lists for the $from and $to directories, and find those files that
     # need to be copied, i.e. that exist in $from but not in $to (and have the
@@ -205,7 +223,7 @@ sub find_files_to_copy {
 	    push(@need_copying, $from);
 	}
     }
-    convert_bytes_to_MB($total_space), @need_copying;
+    $total_space, @need_copying;
 }
 
 sub copy_one_file {
@@ -260,18 +278,19 @@ sub copy_backup_files {
     my ($enough_space_p, $pretty_free_space, $pretty_free_left, $message)
 	= (defined($free_space)
 	   ? ($free_space-$total_space >= $min_free_left,
-	      $free_space.'MB', sprintf('%.2fMB', $free_space-$total_space),
+	      display_mb($free_space), display_mb($free_space-$total_space),
 	      'not enough space left')
-	   : (0, '???', '???', "can't find free space for $to"));
+	   : (0, '???', '???', 
+	      "can't find free space for the '$to' directory"));
     print "$warn:  Oops; $message:\n"
 	if ! $enough_space_p;
     if ($verbose_p || ! $enough_space_p) {
 	print "   Files to copy:\n";
 	map &print_items, @need_copying;
-	printf "   Total space:    %.2fMB\n", $total_space;
-	print  "   Free space:     $pretty_free_space\n";
-	print  "   Min free left:  ${min_free_left}MB\n";
-	print  "   Free left:      $pretty_free_left\n";
+	print "   Total space:    ", display_mb($total_space), "\n";
+	print "   Free space:     $pretty_free_space\n";
+	print "   Min free left:  ", display_mb($min_free_left), "\n";
+	print "   Free left:      $pretty_free_left\n";
     }
     die
 	if ! $enough_space_p;
@@ -309,8 +328,7 @@ C<vacuum.pl> exits without error, and without printing any messages.
 
 When files are copied across the network (as opposed to being moved
 locally), C<vacuum.pl> always does an C<md5sum> on them to verify the
-copy.  If the file is being moved across the network, the original is
-not deleted unless the checksums match.
+copy, and the original is not deleted unless the checksums match.
 
 Dump file names look something like C<home-20021021-l9.dump>, and
 consist of (a) a prefix tag ("home"), which is normally the last
@@ -318,8 +336,8 @@ component of the directory where the directory is mounted, (b) the
 date the backup was made, e.g. '20021021', and (c) the dump level,
 e.g. '9'.  The suffix can be one of ".dump", ".tar", ".tgz", or
 ".gtar" (for "GNU tar").  The prefix can be used to select a subset of
-backup files to transfer; currently, there is no way to change the set
-of allowed suffixes.
+backup files to transfer.  Currently, there is no way to change the
+set of allowed suffixes.
 
 The backup date and backup level that are encoded in the file name are
 used to decide which files are still current.  We use the 'official'
@@ -328,6 +346,37 @@ may get changed as an artifact of copying.  The set of current dumps
 is generated by going backward through a directory listing, since
 names that follow the convention sort in chronological order within a
 series.
+
+C<vacuum.pl> checks the free space on the destination end, and will
+refuse to copy in any of the following situations:
+
+=over 4
+
+=item 1.
+
+If C<vacuum.pl> can't run C<ls> on the source machine to establish the
+list of files that need to be transferred.
+
+=item 2.
+
+If C<vacuum.pl> can't run C<df> on the destination machine to
+determine the current free space.
+
+=item 3.
+
+If the destination would not have at least 1GB of free space left over
+after copying all current files.  The amount of required leftover
+space can be changed via the C<--min-free-left> option.
+
+=item 4.
+
+If the destination directory is NFS-mounted on the destination machine.
+In this case, you should vacuum directly onto the exporting machine.
+
+=back
+
+For all of the above situations, C<vacuum.pl> prints an error message
+and exits with a non-zero return code (courtesy of C<die>).
 
 =head1 OPTIONS
 
@@ -365,12 +414,12 @@ in place.
 Specifies 'move' mode.  Once the copy is verified, the 'from' file is
 deleted.
 
-=item C<--prefix=E<lt>tagE<gt>>
+=item C<--prefix>
 
 Specifies the dump file prefix tag; may be used to select a subset of
 files to transfer.
 
-=item C<--min-free-left=E<lt>size-MBE<gt>
+=item C<--min-free-left>
 
 Specifies the minimum amount of free space to leave on the destination
 device after all copying is done, in megabytes; the default is 1024
@@ -405,7 +454,7 @@ None known.
 
 =head1 COPYRIGHT
 
-    Copyright (C) 2000-2002 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+    Copyright (C) 2000-2003 by Bob Rogers <rogers@rgrjr.dyndns.org>.
     This script is free software; you may redistribute it
     and/or modify it under the same terms as Perl itself.
 
