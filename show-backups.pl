@@ -9,6 +9,9 @@
 use strict;
 # use Data::Dumper;
 
+my $host_name = `hostname`;
+chomp($host_name);
+
 # Figure out where to search for backups.
 my @search_roots = @ARGV;
 if (! @search_roots) {
@@ -24,10 +27,7 @@ if (! @search_roots) {
 }
 
 # Find backup dumps on disk.
-my $command
-    = join(' | ',
-	   join(' ', 'find', @search_roots, '-name', "'home-*.dump'"),
-	   'xargs ls -l');
+my $command = join(' ', 'find', @search_roots, '-name', "'home-*.dump'");
 open(IN, "$command |")
     or die;
 my %date_to_dumps;
@@ -35,8 +35,13 @@ while (<IN>) {
     chomp;
     if (/-(\d+)-l(\d)\.dump$/) {
 	my ($date, $level) = //;
-	my $listing = substr($_, 30);
-	$listing =~ s/^ *(\d+) /(' 'x(14-length($1))).$1.' '/e;
+	my $file = $_;
+	my @stat = stat($file);
+	my $size = $stat[7];
+	$file =~ s@(/.*/)(.*)$@$2 [$host_name:$1]@;
+	# [sprintf can't handle huge numbers.  -- rgr, 28-Jun-04.]
+	# my $listing = sprintf('%14i %s', $size, $file);
+	my $listing = (' 'x(14-length($size))).$size.' '.$file;
 	push(@{$date_to_dumps{$date}}, [$date, $level, $listing]);
     }
 }
