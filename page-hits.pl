@@ -102,7 +102,7 @@ my $robot_re = join('|', qw(Ask.Jeeves/Teoma Gaisbot Googlebot grub-client
 sub robot_user_agent_p {
     my ($user_agent) = @_;
 
-    $user_agent =~ /$robot_re/o;
+    $user_agent && $user_agent =~ /$robot_re/o;
 }
 
 my %ip_to_host_name_cache = ();
