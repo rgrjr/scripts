@@ -37,14 +37,23 @@ my $include_p = 0;		# new feature: hack include directory.
 my $force_p = 0;		# overrides date checking.
 my $show_p = 0;
 my $verbose_p = 0;
-
-my $directory = pop(@ARGV) || die "$0:  No destination directory.\nDied";
-$directory =~ s:/$::;	# canonicalize without the slash.
-die "$0:  Last arg is '$directory', which is not a writable directory.\nDied"
-    unless -d $directory && -w $directory;
-
 my $perl_prefix_string = '';
 my $perl_prefix_n_lines = 0;
+
+my $destination = pop(@ARGV) || die "$0:  No destination directory.\nDied";
+$destination =~ s:/$::;		# canonicalize without the slash.
+my $directory = $destination;
+if (! -d $directory) {
+    # the destination is a file name; find its directory portion.
+    $directory =~ s:/[^/]+$:: || die "'$directory'";
+}
+die("$0:  Last arg is '$destination', which is not ",
+    ($directory eq $destination ? '' : 'in '),
+    "a directory.  [got $directory]\nDied")
+    unless -d $directory;
+warn("$0:  Destination directory '$directory' is not writable.\n")
+    unless -w $directory;
+
 my $which_install;
 if (-r $0) {
     # which on linux doesn't find "./install.pl", but in this case, we don't
@@ -67,6 +76,8 @@ if ($which_install && -r $which_install) {
     $perl_prefix_string .= "#\n";
     close(SELF);
 }
+
+### Subroutines.
 
 sub mtime {
     # Return the modification time of the file given as an argument.  This not
@@ -98,7 +109,7 @@ sub x11_install {
     my ($program, $installed_program_name, $program_pretty_name) = @_;
     my ($result, $rename_p, $target_name);
 
-    warn "$0:  Installing $program_pretty_name in $directory\n"
+    warn "$0:  Installing $program_pretty_name in $installed_program_name\n"
 	if $show_p;
     # Decide how we're going to get it there.
     $rename_p = -w $directory;
@@ -172,7 +183,10 @@ sub install_program {
     my ($program) = @_;
     my $program_base_name = $program;
     $program_base_name =~ s@^.*/@@;
-    my $installed_program_name = "$directory/$program_base_name";
+    my $installed_program_name 
+	= ($destination eq $directory 
+	   ? "$directory/$program_base_name"
+	   : $destination || die "$0:  Multiple installs to '$destination'");
     my ($source_mtime, $dest_mtime, $target_name);
 
     # See if installation is necessary.
@@ -201,6 +215,7 @@ sub install_program {
 }
 
 ### Main loop
+
 # Parse args, installing files in the process.
 while (@ARGV) {
     $program = shift(@ARGV);
