@@ -60,10 +60,10 @@ sub make_option_forwarders {
     for my $entry (@_) {
 	push(@result, $entry, sub {
 	    my ($arg_name, $arg_value) = @_;
-	    my $arg = (defined($arg_value) && $arg_value != 1
+	    my $arg = (defined($arg_value) && $arg_value ne 1
 		       ? "$arg_name='$arg_value'"
 		       : $arg_name);
-	    push(@$arg_array, "--$arg");
+	    push(@$arg_array, "-$arg");
 	});
     }
     @result;
@@ -167,7 +167,8 @@ unshift(@mkisofs_options, '-quiet')
     unless $verbose_p;
 my $mkisofs_cmd = join(' ', $mkisofs_command, @mkisofs_options, './to-write/');
 my $cdrecord_cmd
-    = join(' ', $cdrecord_command, '-multi', @cdrecord_options, '-');
+    = join(' ', $cdrecord_command, "-dev=$dev_spec",
+	   '-multi', @cdrecord_options, '-');
 print("$warn:  Executing '$mkisofs_cmd\n",
       "\t\t\t| $cdrecord_cmd'\n")
     if $verbose_p || $test_p;
