@@ -76,5 +76,6 @@ sub make_standard_log_entry {
 	 # these last two are the "referer" and user-agent headers.  squid
 	 # doesn't preserve these, though they will be passed through to
 	 # aolserver and recorded there in the event of a cache miss.
-	 "\"$$entry{'referer'}\"", "\"$$entry{'user-agent'}\"");
+	 '"'.($$entry{'referer'} || '').'"',
+	 '"'.($$entry{'user-agent'} || '').'"');
 }
