@@ -139,7 +139,7 @@ pod2usage("$0:  --dump-dir value must be an existing writable directory.")
 my ($part, $mount_point)
     = split(' ', `$grep_program "^$dump_partition " /etc/mtab`);
 pod2usage("$0:  '$dump_partition' is not a mounted partition.")
-    unless -d $mount_point;
+    unless $mount_point && -d $mount_point;
 # Compute the dump file name.
 if (! $dump_name) {
     # Must make our own dump name.  To do that, we must find a partition
