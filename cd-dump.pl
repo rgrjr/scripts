@@ -19,8 +19,9 @@
 BEGIN { unshift(@INC, '/root/bin/') if -r '/root/bin'; }
 
 use strict;
-use Data::Dumper;
+use Getopt::Long;
 use Pod::Usage;
+use Data::Dumper;
 require 'rename-into-tree.pm';
 
 my $warn = 'cd-dump.pl';
@@ -43,72 +44,42 @@ my $cd_max_size = 715000;
 my @cdrecord_options = ();
 my @mkisofs_options = ();
 my $dev_spec = '';
-my %options = ();
 
-foreach my $opt (qw(max-iso9660-filenames relaxed-filenames V=s)) {
-    my ($name, $type) = ($opt, '!');
-    $name = $1, $type = $2
-	if $opt =~ /^(.*)([=:!+].*)$/;
-    $options{"-$name"} = [\@mkisofs_options, $type];
-}
-foreach my $opt (qw(dev=s speed=s)) {
-    my ($name, $type) = split(/=/, $opt);
-    $options{"-$name"} = [\@cdrecord_options, "=$type"];
-}
-# print Data::Dumper->Dump([\@cdrecord_options, \@mkisofs_options, \%options],
-# 			 [qw(*cdrecord_options *mkisofs_options *options)]);
-
-# Parse arguments.  This does limited Getopt::Long emulation; we don't need the
-# full set, but do need to do some special handling.
-my $arg_errors = 0;
+# Option variables.
+my $man = 0;
+my $help = 0;
+my $usage = 0;
 my $verbose_p = 0;
 my $test_p = 0;
 my $leave_mounted_p = 0;
-while (@ARGV) {
-    my $arg = shift(@ARGV);
-    my ($arg_name, $arg_value) = split(/=/, $arg, 2);
-    $arg_name =~ s/^--/-/;
-    my $option_entry = $options{$arg_name};
-    my ($arg_array, $type);
-    if ($arg_name eq '-verbose') {
-	$verbose_p++;
+
+sub make_option_forwarders {
+    my $arg_array = shift;
+
+    my @result;
+    for my $entry (@_) {
+	push(@result, $entry, sub {
+	    my ($arg_name, $arg_value) = @_;
+	    my $arg = (defined($arg_value) && $arg_value != 1
+		       ? "$arg_name='$arg_value'"
+		       : $arg_name);
+	    push(@$arg_array, "--$arg");
+	});
     }
-    elsif ($arg_name eq '-help') {
-	pod2usage(1);
-    }
-    elsif ($arg_name eq '-man') {
-	pod2usage(-exitstatus => 0, -verbose => 2);
-    }
-    elsif ($arg_name eq '-test') {
-	$test_p++;
-    }
-    elsif ($arg_name =~ /^-(no)?mount$/) {
-	$leave_mounted_p = ! $1;
-    }
-    elsif (! defined($option_entry)) {
-	warn "Unknown argument:  '$arg'\n";
-	$arg_errors++;
-    }
-    elsif (($arg_array, $type) = @$option_entry,
-	   defined($arg_array)) {
-        $arg_value = shift(@ARGV)
-	    if ! defined($arg_value)
-		&& $type eq '=s';
-	$dev_spec = $arg_value
-	    if $arg_name eq '-dev';
-	$arg = defined($arg_value) ? "$arg_name='$arg_value'" : $arg_name;
-	push(@$arg_array, $arg);
-    }
-    else {
-	warn "Unknown argument:  '$arg'\n";
-	$arg_errors++;
-    }
+    @result;
 }
-$verbose_p++
-    if $test_p;
-pod2usage("$warn:  Must specify '-dev=x,y,z' in order to write a CD.\n")
-    unless $dev_spec;
-pod2usage if $arg_errors;
+
+GetOptions('help' => \$help, 'man' => \$man, 'verbose+' => \$verbose_p,
+	   'test' => \$test_p, 'mount!' => \$leave_mounted_p,
+	   'dev=s' => \$dev_spec,
+	   make_option_forwarders(\@mkisofs_options, 
+				  qw(max-iso9660-filenames relaxed-filenames
+				     V=s)),
+	   make_option_forwarders(\@cdrecord_options, qw(speed=s)))
+    or pod2usage(2);
+pod2usage(2) if $usage;
+pod2usage(1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # Check directories.
 die "No ./to-write/ directory; died"
@@ -127,7 +98,7 @@ sub ensure_mount {
 	warn "$warn: Mounting $mount_point ...\n"
 	    if $verbose_p;
 	system($mount_command, $mount_point) == 0
-	    || die "$warn:  '$mount_command $mount_point' failed:  !?\nDied";
+	    || die "$warn:  '$mount_command $mount_point' failed:  $?\nDied";
     }
 }
 
