@@ -2,17 +2,18 @@
 #
 # backup.pl:  Create and verify a dump file.
 #
-# Copyright (C) 2000-2002 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+# Copyright (C) 2000-2003 by Bob Rogers <rogers@rgrjr.dyndns.org>.
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-#    Modification history:
+#    [original] Modification history:
 #
 # created, based heavily on shell script (bash) version.  -- rgr, 21-Oct-02.
 # change $destination_dir dflt, do_or_die '-ignore-return'.  -- rgr, 27-Oct-02.
 # more changes in dump/dest dir defaulting.  -- rgr, 17-Nov-02.
 # update doc.  -- rgr, 27-Feb-03.
 #
+# $Id$
 
 use strict;
 use Getopt::Long;
@@ -121,7 +122,7 @@ else {
     $dump_volume_size ||= 94000;
     $dump_dir ||= '/mnt/zip';
 }
-pod2usage("$warn:  --dest-dir value must be an exisiting writable directory.")
+pod2usage("$warn:  --dest-dir value must be an existing writable directory.")
     if ($destination_dir
 	&& ! (-d $destination_dir && -w $destination_dir));
 if ($destination_dir && (! $dump_dir || $dump_dir eq $destination_dir)) {
@@ -131,7 +132,7 @@ if ($destination_dir && (! $dump_dir || $dump_dir eq $destination_dir)) {
     $destination_dir = '';
 }
 $dump_dir ||= '.';
-pod2usage("$warn:  --dump-dir value must be an exisiting writable directory.")
+pod2usage("$warn:  --dump-dir value must be an existing writable directory.")
     unless -d $dump_dir && -w $dump_dir;
 # [should make sure that $destination_dir and $dump_dir are on the same
 # partition if both are specified.  -- rgr, 17-Nov-02.]
