@@ -92,7 +92,7 @@ sub site_list_files {
 	# print "[file $file, line '$line']\n";
 	my ($perms, $nlink, $owner, $group, $size) = split(' ', $`);
 	next
-	    unless $file =~ /^(.+)-(\d+)-l(\d)\.(g?tar|dump)$/;
+	    unless $file =~ /^(.+)-(\d+)-l(\d)\.(g?tar|tgz|dump)$/;
 	my ($tag, $date, $level) = $file =~ //;
 	if (! defined($levels{$tag})
 	    || $level < $levels{$tag}) {
@@ -311,10 +311,10 @@ Dump file names look something like C<home-20021021-l9.dump>, and
 consist of (a) a prefix tag ("home"), which is normally the last
 component of the directory where the directory is mounted, (b) the
 date the backup was made, e.g. '20021021', and (c) the dump level,
-e.g. '9'.  The suffix can be one of ".dump", ".tar", or ".gtar" (for
-"GNU tar").  The prefix can be used to select a subset of backup files
-to transfer; currently, there is no way to change the set of allowed
-suffixes.
+e.g. '9'.  The suffix can be one of ".dump", ".tar", ".tgz", or
+".gtar" (for "GNU tar").  The prefix can be used to select a subset of
+backup files to transfer; currently, there is no way to change the set
+of allowed suffixes.
 
 The backup date and backup level that are encoded in the file name are
 used to decide which files are still current.  We use the 'official'
