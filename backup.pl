@@ -108,7 +108,8 @@ if ($cd_p) {
     # the CD-R and -RW disks are supposed to be 700MB, but leave a little room.
     # [actually, dump appears to leave about 0.1% by itself.  and 712000kB is
     # actually a bit over 695MB, which should be plenty.  -- rgr, 1-Jan-02.]
-    $dump_volume_size ||= 712000;
+    # [use 680000 blocks for nominal 650MB disks.  -- rgr, 18-Dec-04.]
+    $dump_volume_size ||= 680000;
     $dump_dir ||= '/scratch/backups/cd';
 }
 else {
@@ -210,7 +211,7 @@ been verified against the backed-up partition.  If not supplied, a
 suitable name is chosen based on the partition mount point, current
 date, and backup level.  Optionally, the file can be moved to somewhere
 else in the destination file system after it has been verified; this
-makes it easy to use the cd-dump.pl script to write the resulting dump
+makes it easy to use the C<cd-dump.pl> script to write the resulting dump
 file(s) to a CD.  The whole process is readily automatable via cron
 jobs.
 
@@ -312,15 +313,13 @@ option.
 
 [need some.  -- rgr, 7-Jan-03.]
 
-=head1 COPYRIGHT
+=head1 KNOWN BUGS
 
-Copyright (C) 2000-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
-This script is free software; you may redistribute it
-and/or modify it under the same terms as Perl itself.
+If this script used a backup.conf file, it could get per-site defaults,
+plus instructions for doing a number of backups at once,  This would
+greatly simplify backup C<crontab> entries; only one would be needed.
 
-=head1 AUTHOR
-
-Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
+If you find any more, please let me know.
 
 =head1 SEE ALSO
 
@@ -334,6 +333,22 @@ Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
 
 =item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
 
+=item C<cd-dump.pl> (L<http://rgrjr.dyndns.org/linux/cd-dump.pl.html>)
+
 =back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2000-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+This script is free software; you may redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=head1 VERSION
+
+$Id$
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
 
 =cut

@@ -25,7 +25,6 @@ use Data::Dumper;
 require 'rename-into-tree.pm';
 
 my $warn = 'cd-dump.pl';
-my $VERSION = '0.2';
 
 my $cdrecord_command = '/usr/bin/cdrecord';
 my $mkisofs_command = '/usr/bin/mkisofs';
@@ -52,6 +51,8 @@ my $usage = 0;
 my $verbose_p = 0;
 my $test_p = 0;
 my $leave_mounted_p = 0;
+my $written_subdir = 'written';
+my $to_write_subdir = 'to-write';
 
 sub make_option_forwarders {
     my $arg_array = shift;
@@ -72,7 +73,9 @@ sub make_option_forwarders {
 GetOptions('help' => \$help, 'man' => \$man, 'verbose+' => \$verbose_p,
 	   'test' => \$test_p, 'mount!' => \$leave_mounted_p,
 	   'dev=s' => \$dev_spec,
-	   make_option_forwarders(\@mkisofs_options, 
+	   'to-write-subdir=s' => \$to_write_subdir,
+	   'written-subdir=s' => \$written_subdir,
+	   make_option_forwarders(\@mkisofs_options,
 				  qw(max-iso9660-filenames relaxed-filenames
 				     V=s)),
 	   make_option_forwarders(\@cdrecord_options, qw(speed=s)))
@@ -82,9 +85,10 @@ pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # Check directories.
-die "No ./to-write/ directory; died"
-    unless -d './to-write';
-mkdir("written", 0700) or die "Can't create ./written/ directory:  $!"
+die "No $to_write_subdir directory; died"
+    unless -d $to_write_subdir;
+mkdir($written_subdir, 0700)
+        or die "Can't create ./$written_subdir/ directory:  $!"
     unless -d './written';
 
 ### Subroutines.
@@ -104,12 +108,12 @@ sub ensure_mount {
 
 ### Look for data, and how to write it.
 
-# take inventory, and exit silently if ./to-write/ is empty.
-opendir(TW, 'to-write') || die;
+# take inventory, and exit silently if $to_write_subdir is empty.
+opendir(TW, $to_write_subdir) || die;
 my @files_to_write = grep { ! /^\./; } readdir(TW);
 closedir(TW);
 if (@files_to_write == 0) {
-    warn "$warn:  Nothing in ./to-write/ to write.\n"
+    warn "$warn:  Nothing in $to_write_subdir to write.\n"
 	if $verbose_p;
     exit(0);
 }
@@ -142,8 +146,8 @@ if (! $dev_spec) {
 	die "$0:  No CD burner available.\n";
     }
     else {
-	die("$0:  Multiple CD burners available; must specify one of ",
-	    join(', ', @specs), " to --dev.\n");
+	die("$0:  Multiple CD burners available; must specify one of '",
+	    join("', '", @specs), "' to --dev.\n");
     }
 }
 
@@ -187,7 +191,7 @@ else {
 }
 
 # ensure that the data will fit.
-my ($space_needed_estimate) = split(' ', `du -s to-write`);
+my ($space_needed_estimate) = split(' ', `du -s $to_write_subdir`);
 warn("$warn:  Estimate ${cd_used_estimate}K used, ",
      "${space_needed_estimate}K needed, with ${cd_max_size}K max.\n")
     if $verbose_p;
@@ -198,7 +202,8 @@ die("$warn:  Not enough disk left:  ${cd_used_estimate}K used ",
 ### all clear, write the disk.
 unshift(@mkisofs_options, '-quiet')
     unless $verbose_p;
-my $mkisofs_cmd = join(' ', $mkisofs_command, @mkisofs_options, './to-write/');
+my $mkisofs_cmd
+    = join(' ', $mkisofs_command, @mkisofs_options, $to_write_subdir);
 my $cdrecord_cmd
     = join(' ', $cdrecord_command, "-dev=$dev_spec",
 	   '-multi', @cdrecord_options, '-');
@@ -214,20 +219,23 @@ system("$mkisofs_cmd | $cdrecord_cmd") == 0
 # fatal at this point: the data is there, or it isn't.
 ensure_mount($cd_mount_point);
 foreach my $file (@files_to_write) {
-    if ((-f "to-write/$file"
-	 ? system($cmp_command, "to-write/$file", "$cd_mount_point/$file")
+    my $to_write_file = "$to_write_subdir/$file";
+    my $cd_file = "$cd_mount_point/$file";
+    my $written_file = "$written_subdir/$file";
+    if ((-f $to_write_file
+	 ? system($cmp_command, $to_write_file, $cd_file)
 	 : system($diff_command, '--recursive', '--brief',
-		  "to-write/$file", "$cd_mount_point/$file"))
+		  $to_write_file, $cd_file))
 	!= 0) {
 	# cmp/diff will have generated a message.
-	warn "$warn:  Leaving to-write/$file in place.\n";
+	warn "$warn:  Leaving '$to_write_file' in place.\n";
     }
-    elsif (! rename_subtree("to-write/$file", "written/$file", 1)) {
-	# rename_subtree issues a warning.  -- rgr, 27-Oct-02.
-	# warn "$warn:  Can't rename to-write/$file:  $?";
+    elsif (! rename_subtree($to_write_file, $written_file, 1)) {
+	# rename_subtree issues its own warning if it fails.  -- rgr, 27-Oct-02.
+	# warn "$warn:  Can't rename '$to_write_file':  $?";
     }
     elsif ($verbose_p) {
-	warn "$warn:  Renamed 'to-write/$file' to 'written/$file'.\n";
+	warn("$warn:  Renamed '$to_write_file' to '$written_file'.\n");
     }
 }
 
@@ -252,7 +260,33 @@ cd-dump.pl -- Interface to `mkisofs' and `cdrecord' programs.
 
 =head1 DESCRIPTION
 
-[finish.  -- rgr, 6-Nov-03.]
+C<cd-dump.pl> is a utility that uses C<mkisofs> and C<cdrecord> to
+burn files to CD.  It does the following:
+
+=over 4
+
+=item 1.
+
+Burns files from a source directory (./to-write/ by default; see the
+C<--to-write-subdir> option) as the first (or subsequent) "session" of
+a multisession CD.
+
+=item 2.
+
+Mounts the CD and compares the data to the originals.
+
+=item 3.
+
+Moves each file/directory that was successfully written to a
+destination directory (./written/ by default; see the
+C<--written-subdir> option).  If the same subdirectory exists in both
+the source and destination, then its files are moved recursively; this
+maintains the ./written/ directory as a copy of the CD contents.
+
+=back
+
+C<cd-dump.pl> also accepts a subset of C<mkisofs> and C<cdrecord>
+options, which it passes along.
 
 =head1 OPTIONS
 
@@ -281,34 +315,45 @@ hard disk file system.  This implies some verbosity.
 
 =item B<--nomount>
 
-Leaves the newly written disk mounted, if C<--mount> is specified.
+If C<--mount> is specified, leaves the newly written disk mounted.
 The default is C<--nomount>.
 
 =item B<--max-iso9660-filenames>
 
-Passed to C<mkisofs>.
+Passed directly to C<mkisofs>.
 
 =item B<--relaxed-filenames>
 
-Passed to C<mkisofs>.
+Passed directly to C<mkisofs>.
 
 =item B<--V>
 
-Passed to C<mkisofs>.
+Passed directly to C<mkisofs>.
 
 =item B<--dev>
 
 Specifies the SCSI device, needed by C<cdrecord> to address the CD
-drive.  By default, C<cd-dump.pl> looks through all SCSI devices for a
-CD burner, and dies with an appropriate message if it can't find
-exactly one.  See the C<cdrecord> "man" page for details.  In
-particular, see the description of the C<scanbus> option to
-C<-cdrecord>.
+drive.  If not specified, C<cd-dump.pl> looks through all SCSI devices
+listed by C<cdrecord -scanbus>; if it finds exactly one that appears
+to be a CD burner, it uses that device.  See the description of the
+C<scanbus> option on the C<cdrecord> "man" page for details.
 
 =item B<--speed>
 
 Write speed, as a multiple of the "standard" read speed for an audio
-disk.  Passed to C<cdrecord>, which defines the default.
+disk.  Passed directly to C<cdrecord>, which defines the default.
+
+=item B<--to-write-subdir>
+
+Defines the directory of files and subdirectories that need to be
+written.  If not specified, "./to_write/" is used.
+
+=item B<--written-subdir>
+
+Defines the place where files that have successfully been written
+should be moved (via rename).  This should be on the same partition as
+the C<--to-write-subdir>, so that files can be efficiently renamed.
+If not specified, "./written/" is used.
 
 =back
 
@@ -321,19 +366,15 @@ the C</usr/bin/> directory.
 
 [need some.  -- rgr, 7-Jan-03.]
 
-=head1 COPYRIGHT
+=head1 KNOWN BUGS
 
-Copyright (C) 2002-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
-This script is free software; you may redistribute it
-and/or modify it under the same terms as Perl itself.
+The subset of C<mkisofs> and C<cdrecord> options accepted is small and
+arbitrary.
 
-=head1 VERSION
+C<cd-dump.pl> should probably emit a warning at least if it finds
+itself renaming files across partitions.
 
-This is C<cd-dump.pl> version 0.2.
-
-=head1 AUTHOR
-
-Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
+If you find any more, please let me know.
 
 =head1 SEE ALSO
 
@@ -348,5 +389,19 @@ Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
 =item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
 
 =back
+
+=head1 COPYRIGHT
+
+Copyright (C) 2002-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+This script is free software; you may redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=head1 VERSION
+
+$Id$
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
 
 =cut

@@ -14,6 +14,7 @@ bin-directory = ${root}/bin
 pm-directory = /usr/lib/perl5/site_perl
 public-html-directory = /srv/www/htdocs/linux
 published-scripts = backup.pl cd-dump.pl vacuum.pl
+published-modules = rename-into-tree.pm
 html-pages = ${published-scripts:.pl=.pl.html}
 
 base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
@@ -99,5 +100,5 @@ diff-firewall:
 ${html-pages}:   %.pl.html:	%.pl
 	pod2html $^ > $@
 
-publish:	${published-scripts} ${html-pages}
+publish:	${published-scripts} ${published-modules} ${html-pages}
 	install -c -m 444 $^ ${public-html-directory}
