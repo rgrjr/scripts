@@ -1,0 +1,8 @@
+2003-07-15  Bob Rogers  <rogers@rgrjr.dyndns.org>
+
+	* cd-dump.pl: Finished new --[no]mount option, converted to
+	Getopt::Long usage.
+
+	* Started ChangeLog file.
+	
+
