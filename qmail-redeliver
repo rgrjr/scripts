@@ -1,0 +1,10 @@
+#!/bin/csh -f
+#
+# Force qmail to restart delivery.
+#
+#    Modification history:
+#
+# created.  -- rgr, 17-Feb-00.
+#
+
+kill -ALRM `ps aux | grep 'qmail[-]send' | cut -c8-14`

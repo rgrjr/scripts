@@ -1,0 +1,367 @@
+syslogd 1.3-3: restart.
+syslogd 1.4.1: restart.
+syslog: syslogd startup succeeded
+usb.rc: loaded HCD: usb-ohci
+syslog: klogd startup succeeded
+kernel: klogd 1.3-3, log source = /proc/kmsg started.
+kernel: klogd 1.4.1, log source = /proc/kmsg started.
+kernel: Inspecting /boot/System.map-2.2.5-15
+kernel: Inspecting /boot/System.map-2.2.16-3
+kernel: Inspecting /boot/System.map-2.2.17-14
+kernel: Inspecting /boot/System.map-2.2.19-6.2.1
+kernel: Inspecting /boot/System.map-2.2.19-6.2.15
+kernel: Inspecting /boot/System.map-2.2.19-6.2.16
+kernel: Inspecting /boot/System.map-2.4.19-4GB
+kernel: Loaded 6721 symbols from /boot/System.map-2.2.5-15.
+kernel: Loaded 7423 symbols from /boot/System.map-2.2.16-3.
+kernel: Loaded 7661 symbols from /boot/System.map-2.2.17-14.
+kernel: Loaded 7713 symbols from /boot/System.map-2.2.19-6.2.1.
+kernel: Loaded 7745 symbols from /boot/System.map-2.2.19-6.2.15.
+kernel: Loaded 7745 symbols from /boot/System.map-2.2.19-6.2.16.
+kernel: Loaded 14329 symbols from /boot/System.map-2.4.19-4GB.
+kernel: Symbols match kernel version 2.2.5.
+kernel: Symbols match kernel version 2.2.16.
+kernel: Symbols match kernel version 2.2.17.
+kernel: Symbols match kernel version 2.2.19.
+kernel: Symbols match kernel version 2.4.19.
+kernel: Loaded 17 symbols from 3 modules.
+kernel: Loaded 56 symbols from 5 modules.
+kernel: Loaded 87 symbols from 6 modules.
+kernel: Loaded 141 symbols from 8 modules.
+kernel: Loaded 127 symbols from 7 modules.
+kernel: Loaded 147 symbols from 8 modules.
+kernel: Loaded 80 symbols from 7 modules.
+kernel: usb.c: registered new driver usbdevfs
+kernel: usb.c: registered new driver hub
+kernel: usb-uhci.c: $Revision$ time 13:53:01 Sep 13 2002
+kernel: usb-uhci.c: High bandwidth mode enabled
+kernel: usb-uhci.c: v1.275:USB Universal Host Controller Interface driver
+kernel: uhci.c: USB Universal Host Controller Interface driver v1.1
+kernel: PCI: Found IRQ 4 for device 00:01.2
+kernel: usb-ohci.c: usb-00:01.2, PCI device 1039:7001
+kernel: usb.c: new USB bus registered, assigned bus number 1
+kernel: hub.c: USB hub found
+kernel: hub.c: 2 ports detected
+kernel: sg: find_free_slot ...<7>sg: initializing sg_major_array ...<4>sg: allocated major 21
+kernel: sg: ... found 15:00
+kernel: sg_attach: dev0=(21:0)
+kernel: Linux version 2.2.5-15 (root@porky.devel.redhat.com) (gcc version egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)) #1 Mon Apr 19 22:21:09 EDT 1999 
+kernel: Linux version 2.2.16-3 (root@porky.devel.redhat.com) (gcc version egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)) #1 Mon Jun 19 18:10:14 EDT 2000 
+kernel: Linux version 2.2.17-14 (root@porky.devel.redhat.com) (gcc version egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)) #1 Mon Feb 5 17:53:36 EST 2001 
+kernel: Linux version 2.2.19-6.2.1 (root@porky.devel.redhat.com) (gcc version egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)) #1 Mon Apr 9 21:59:11 EDT 2001 
+kernel: Linux version 2.2.19-6.2.15 (root@porky.devel.redhat.com) (gcc version egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)) #1 Wed Feb 27 11:05:02 EST 2002 
+kernel: Linux version 2.2.19-6.2.16 (root@porky.devel.redhat.com) (gcc version egcs-2.91.66 19990314/Linux (egcs-1.1.2 release)) #1 Wed Mar 13 13:03:05 EST 2002 
+kernel: BIOS-provided physical RAM map: 
+kernel:  BIOS-e820: 0009f000 @ 00000000 (usable) 
+kernel:  BIOS-e820: 05af0000 @ 00100000 (usable) 
+kernel: Detected 300682971 Hz processor. 
+kernel: Detected 300681 kHz processor. 
+kernel: Detected 300683 kHz processor. 
+kernel: Detected 300684 kHz processor. 
+kernel: Detected 300685 kHz processor. 
+kernel: Detected 300682635 Hz processor. 
+kernel: Console: colour VGA+ 80x25 
+kernel: Calibrating delay loop... 599.65 BogoMIPS 
+kernel: Memory: 26576k/28608k available (996k kernel code, 412k reserved, 564k data, 60k init) 
+kernel: Memory: 91468k/94144k available (996k kernel code, 412k reserved, 1208k data, 60k init) 
+kernel: Memory: 26068k/28608k available (1100k kernel code, 416k reserved, 684k data, 64k init, 0k bigmem) 
+kernel: Memory: 91172k/94144k available (1128k kernel code, 416k reserved, 1360k data, 68k init, 0k bigmem) 
+kernel: Memory: 91164k/94144k available (1132k kernel code, 416k reserved, 1360k data, 72k init, 0k bigmem) 
+kernel: Memory: 91156k/94144k available (1140k kernel code, 412k reserved, 1364k data, 72k init, 0k bigmem) 
+kernel: Dentry hash table entries: 262144 (order 9, 2048k) 
+kernel: Dentry hash table entries: 16384 (order 5, 128k) 
+kernel: Buffer cache hash table entries: 32768 (order 5, 128k) 
+kernel: Buffer cache hash table entries: 131072 (order 7, 512k) 
+kernel: Page cache hash table entries: 8192 (order 3, 32k) 
+kernel: Page cache hash table entries: 32768 (order 5, 128k) 
+kernel: VFS: Diskquotas version dquot_6.4.0 initialized 
+kernel: CPU: L1 I Cache: 32K  L1 D Cache: 32K 
+kernel: Enabling old style K6 write allocation for 27 Mb 
+kernel: Enabling old style K6 write allocation for 91 Mb 
+kernel: CPU: AMD AMD-K6tm w/ multimedia extensions stepping 00 
+kernel: CPU: AMD-K6tm w/ multimedia extensions stepping 00 
+kernel: Checking 386/387 coupling... OK, FPU using exception 16 error reporting. 
+kernel: Checking 'hlt' instruction... OK. 
+kernel: Checking for popad bug... OK. 
+kernel: POSIX conformance testing by UNIFIX 
+kernel: PCI: PCI BIOS revision 2.10 entry at 0xfb460 
+kernel: PCI: Using configuration type 1 
+kernel: PCI: Probing PCI hardware 
+kernel: Linux NET4.0 for Linux 2.2 
+kernel: Based upon Swansea University Computer Society NET3.039 
+kernel: NET4: Unix domain sockets 1.0 for Linux NET4.0. 
+kernel: NET4: Linux TCP/IP 1.0 for NET4.0 
+kernel: IP Protocols: ICMP, UDP, TCP, IGMP 
+kernel: TCP: Hash tables configured (ehash 32768 bhash 32768) 
+kernel: TCP: Hash tables configured (ehash 131072 bhash 65536) 
+kernel: IPVS: Connection hash table configured (size=4096, memory=32Kbytes) 
+kernel: Linux IP multicast router 0.06 plus PIM-SM 
+kernel: Toshiba System Managment Mode driver v1.7 22/6/2000 
+kernel: Initializing RT netlink socket 
+kernel: Starting kswapd v 1.5  
+kernel: Detected PS/2 Mouse Port. 
+kernel: Serial driver version 4.27 with MANY_PORTS MULTIPORT SHARE_IRQ enabled 
+kernel: ttyS01 at 0x02f8 (irq = 3) is a 16550A 
+kernel: pty: 256 Unix98 ptys configured 
+kernel: apm: BIOS version 1.2 Flags 0x07 (Driver version 1.9) 
+kernel: apm: BIOS version 1.2 Flags 0x07 (Driver version 1.13) 
+kernel: Real Time Clock Driver v1.09 
+kernel: RAM disk driver initialized:  16 RAM disks of 4096K size 
+kernel: SIS5513: IDE controller on PCI bus 00 dev 01 
+kernel: SIS5513: not 100% native mode: will probe irqs later 
+kernel: SIS5513: not 100%% native mode: will probe irqs later 
+kernel: ide0: BM-DMA at 0x4000-0x4007, BIOS settings: hda:pio, hdb:pio 
+kernel:     ide0: BM-DMA at 0x4000-0x4007, BIOS settings: hda:pio, hdb:pio 
+kernel: ide1: BM-DMA at 0x4008-0x400f, BIOS settings: hdc:pio, hdd:pio 
+kernel:     ide1: BM-DMA at 0x4008-0x400f, BIOS settings: hdc:pio, hdd:pio 
+kernel: hda: ST33210A, ATA DISK drive 
+kernel: hda: ST330630A, ATA DISK drive 
+kernel: hdc: FX4010M, ATAPI CDROM drive 
+kernel: hdc: HL-DT-ST RW/DVD GCC-4120B, ATAPI CDROM drive 
+kernel: ide0 at 0x1f0-0x1f7,0x3f6 on irq 14 
+kernel: ide1 at 0x170-0x177,0x376 on irq 15 
+kernel: hda: ST33210A, 3098MB w/256kB Cache, CHS=787/128/63 
+kernel: hda: ST330630A, 29188MB w/2048kB Cache, CHS=3720/255/63 
+kernel: hdc: ATAPI 40X CD-ROM drive, 256kB Cache 
+kernel: Uniform CDROM driver Revision: 2.54 
+kernel: Uniform CD-ROM driver Revision: 3.10 
+kernel: Floppy drive(s): fd0 is 1.44M 
+kernel: FDC 0 is a post-1991 82077 
+kernel: md driver 0.90.0 MAX_MD_DEVS=256, MAX_REAL=12 
+kernel: raid5: measuring checksumming speed 
+kernel: raid5: using high-speed MMX checksum routine 
+kernel: raid5: MMX detected, trying high-speed MMX checksum routines 
+kernel:    pII_mmx   :   475.869 MB/sec 
+kernel:    pII_mmx   :   476.250 MB/sec 
+kernel:    pII_mmx   :   477.774 MB/sec 
+kernel:    pII_mmx   :   474.726 MB/sec 
+kernel:    pII_mmx   :   478.155 MB/sec 
+kernel:    p5_mmx    :   441.579 MB/sec 
+kernel:    p5_mmx    :   397.383 MB/sec 
+kernel:    p5_mmx    :   449.580 MB/sec 
+kernel:    p5_mmx    :   439.674 MB/sec 
+kernel:    8regs     :   425.196 MB/sec 
+kernel:    8regs     :   423.672 MB/sec 
+kernel:    8regs     :   425.958 MB/sec 
+kernel:    8regs     :   422.910 MB/sec 
+kernel:    32regs    :   304.419 MB/sec 
+kernel:    32regs    :   304.800 MB/sec 
+kernel:    32regs    :   302.514 MB/sec 
+kernel:    32regs    :   308.991 MB/sec 
+kernel:    32regs    :   302.895 MB/sec 
+kernel: using fastest function: pII_mmx (475.107 MB/sec) 
+kernel: using fastest function: pII_mmx (476.250 MB/sec) 
+kernel: using fastest function: pII_mmx (475.869 MB/sec) 
+kernel: using fastest function: pII_mmx (477.774 MB/sec) 
+kernel: using fastest function: pII_mmx (474.726 MB/sec) 
+kernel: using fastest function: pII_mmx (478.155 MB/sec) 
+kernel: scsi : 0 hosts. 
+kernel: scsi : 2 hosts. 
+kernel: scsi : detected total. 
+kernel: md.c: sizeof(mdp_super_t) = 4096 
+kernel: Partition check: 
+kernel:  hda: hda1 hda2 < hda5 hda6 hda7 > 
+kernel: hda: hda1 hda2 < hda5 hda6 hda7 hda8 hda9 hda10 hda11 hda12 > 
+kernel: RAMDISK: Compressed image found at block 0 
+kernel: autodetecting RAID arrays 
+kernel: autorun ... 
+kernel: ... autorun DONE. 
+kernel: VFS: Mounted root (ext2 filesystem) readonly. 
+kernel: VFS: Mounted root (ext2 filesystem). 
+kernel: Freeing unused kernel memory: 60k freed 
+kernel: Freeing unused kernel memory: 64k freed 
+kernel: Freeing unused kernel memory: 68k freed 
+kernel: Freeing unused kernel memory: 72k freed 
+kernel: Adding Swap: 68508k swap-space (priority -1) 
+kernel: Adding Swap: 305192k swap-space (priority -1) 
+kernel: Adding Swap: 305196k swap-space (priority -1) 
+kernel: parport0: PC-style at 0x378 (0x778) [SPP,ECP,ECPEPP,ECPPS2] 
+kernel: parport0: detected irq 7; use procfs to enable interrupt-driven operation. 
+kernel: parport0: no IEEE-1284 device present. 
+kernel: imm: Version 0.18 
+kernel: imm: Probing port 03bc 
+kernel: imm: Probing port 0378 
+kernel: imm:     SPP port present 
+kernel: imm:     ECP with a 16 byte FIFO present 
+kernel: imm:     PS/2 bidirectional port present 
+kernel: imm:     Passed Intel bug check. 
+kernel: imm:     EPP 1.9 with hardware direction protocol 
+kernel: imm: Probing port 0278 
+kernel: imm: Version 2.03 (for Linux 2.0.0) 
+kernel: imm: Found device at ID 5, Attempting to use EPP 32 bit 
+kernel: imm: Communication established with ID 5 using EPP 32 bit 
+kernel: imm: Communication established at 0x378 with ID 5 using EPP 32 bit 
+kernel: scsi0 : Iomega ZIP Plus drive 
+kernel: scsi0 : Iomega VPI2 (imm) interface 
+kernel: scsi : 1 host. 
+kernel:   Vendor: IOMEGA    Model: ZIP 100 PLUS      Rev: J.66 
+kernel:   Type:   Direct-Access                      ANSI SCSI revision: 02 
+kernel: Detected scsi removable disk sda at scsi0, channel 0, id 5, lun 0 
+kernel: scsi1 : SCSI host adapter emulation for IDE ATAPI devices 
+kernel: scsi : 2 hosts. 
+kernel:   Vendor: HL-DT-ST  Model: RW/DVD GCC-4120B  Rev: 2.01 
+kernel:   Type: CD-ROM                             ANSI SCSI revision: 02 
+kernel: Detected scsi CD-ROM sr0 at scsi1, channel 0, id 0, lun 0 
+kernel: sr0: scsi3-mmc drive: 0x/32x writer cd/rw xa/form2 cdda tray 
+kernel: Uniform CD-ROM driver Revision: 3.11 
+kernel: 3c59x.c:v0.99H 11/17/98 Donald Becker http://cesdis.gsfc.nasa.gov/linux/drivers/vortex.html 
+kernel: 3c59x.c:v0.99H 27May00 Donald Becker http://cesdis.gsfc.nasa.gov/linux/drivers/vortex.html 
+kernel: 3c59x.c 16Aug00 Donald Becker and others http://www.scyld.com/network/vortex.html 
+kernel: 3c59x.c 18Feb01 Donald Becker and others http://www.scyld.com/network/vortex.html 
+kernel: eth0: 3Com 3c905B Cyclone 100baseTx at 0xe000,  00:50:da:61:5e:79, IRQ 10 
+kernel: eth0: Intel PCI EtherExpress Pro100 82557, 00:90:27:BD:F2:6F, I/O at 0xe000, IRQ 11. 
+kernel:   8K byte-wide RAM 5:3 Rx:Tx split, autoselect/Autonegotiate interface. 
+kernel:   MII transceiver found at address 24, status 786d. 
+kernel:   MII transceiver found at address 0, status 786d. 
+kernel:   Enabling bus-master transmits and whole-frame receives. 
+kernel: eth0: Initial media type Autonegotiate. 
+kernel: eth0: MII #24 status 786d, link partner capability 0020, setting half-duplex. 
+kernel: e100: eth0 NIC Link is Up 10 Mbps Half duplex
+kernel: eth0: no IPv6 routers present
+kernel: PCI: Found IRQ 4 for device 00:0c.0
+kernel: eepro100.c:v1.09j-t 9/29/99 Donald Becker http://cesdis.gsfc.nasa.gov/linux/drivers/eepro100.html 
+kernel: eepro100.c: $Revision$ 2000/05/31 Modified by Andrey V. Savochkin <saw@saw.sw.com.sg> and others 
+kernel: eepro100.c: VA Linux custom, Dragan Stancevic <visitor@valinux.com> 2000/11/15 
+kernel: eth1: Intel PCI EtherExpress Pro100 82557, 00:90:27:BD:F2:6F, IRQ 4. 
+kernel: eth1: Intel EtherExpress Pro 10/100 at 0xe400, 00:90:27:BD:F2:6F, IRQ 4. 
+kernel: eth1: Intel PCI EtherExpress Pro100 82557, 00:90:27:BD:F2:6F, I/O at 0xe400, IRQ 4. 
+kernel: eth1: 3Com 3c905B Cyclone 100baseTx at 0xe400,  00:50:da:61:5e:79, IRQ 10 
+kernel: eth1: Initial media type Autonegotiate. 
+kernel: eth1: MII #24 status 786d, link partner capability 45e1, setting full-duplex. 
+kernel:   Receiver lock-up bug exists -- enabling work-around. 
+kernel:   Board assembly 721383-007, Physical connectors present: RJ45 
+kernel:   Primary interface chip i82555 PHY #1. 
+kernel:   General self-test: passed. 
+kernel:   Serial sub-system self-test: passed. 
+kernel:   Internal registers self-test: passed. 
+kernel:   ROM checksum self-test: passed (0x04f4518b). 
+kernel: PCI: Found IRQ 11 for device 00:0a.0
+kernel: e100: eth0: Intel(R) PRO/100+ Management Adapter
+kernel:   Mem:0xe6a00000  IRQ:11  Speed:0 Mbps  Dx:N/A
+kernel:   Failed to detect cable link
+kernel:   Speed and duplex will be determined at time of connection
+kernel:   Hardware receive checksums enabled
+kernel:   cpu cycle saver enabled
+kernel: e100: eth0 NIC Link is Up 10 Mbps Half duplex
+kernel: PCI: Found IRQ 10 for device 00:0b.0
+kernel: 3c59x: Donald Becker and others. www.scyld.com/network/vortex.html
+kernel: 00:0b.0: 3Com PCI 3c905B Cyclone 100baseTx at 0xe400. Vers LK1.1.16
+atd: atd startup succeeded
+crond: crond startup succeeded
+kernel: eth1: no IPv6 routers present
+kernel: eth0: no IPv6 routers present
+ntpd: ntpd 4.0.99k Thu Nov 16 21:56:40 EST 2000 (1)
+ntpd: precision = 7 usec
+ntpd: precision = 11 usec
+ntpd: using kernel phase-lock loop 0040
+inet: inetd startup succeeded
+sshd: Starting sshd: 
+sshd: sshd
+sshd: Server listening on 0.0.0.0 port 22.
+sshd: Generating 768 bit RSA key.
+sshd: RSA key generation complete.
+rc: Starting sshd succeeded
+kernel: ide-floppy driver 0.99.newide
+kernel: hdc: driver not present
+kernel: Device not ready.  Make sure there is a disc in the drive.
+other: rc.sysinit: Loading default keymap succeeded 
+other: rc.sysinit: Setting default font succeeded 
+other: rc.sysinit: Activating swap partitions succeeded 
+other: rc.sysinit: Setting hostname h0050da615e79.ne.mediaone.net succeeded 
+fsck: /dev/hda6: clean, 60597/499712 files, 942659/1991776 blocks 
+other: rc.sysinit: Checking root filesystem succeeded 
+other: rc.sysinit: Remounting root filesystem in read-write mode succeeded 
+other: rc.sysinit: Finding module dependencies succeeded 
+fsck: /dev/hda5: clean, 23/5040 files, 2924/20128 blocks 
+other: rc.sysinit: Checking filesystems succeeded 
+other: rc.sysinit: Mounting local filesystems succeeded 
+other: rc.sysinit: Turning on user and group quotas for local filesystems succeeded 
+date: Tue Mar  7 00:07:28 EST 2000 
+other: rc.sysinit: Setting clock : Tue Mar  7 00:07:28 EST 2000 succeeded 
+other: rc.sysinit: Enabling swap space succeeded 
+init: Entering runlevel: 3 
+apmd: Version 3.0beta4 (APM BIOS 1.2, Linux driver 1.9) 
+apmd: apmd startup succeeded 
+network: Enabling IPv4 packet forwarding succeeded 
+network: Bringing up interface lo succeeded 
+ifup: Determining IP information for eth0... 
+pumpd: starting at Tue Mar  7 00:07:33 2000   
+pumpd: configured interface eth0 
+ifup: done. 
+network: Bringing up interface eth0 succeeded 
+network: Bringing up interface eth1 succeeded 
+network: Bringing up interface ppp0 succeeded 
+portmap: portmap startup succeeded 
+firewall: ipchains: Chain already exists 
+rc: Starting firewall succeeded 
+kernel: IPv6 v0.8 for NET4.0
+kernel: IPv6 over IPv4 tunneling driver
+netfs: Mounting other filesystems succeeded 
+random: Initializing random number generator succeeded 
+crond: crond startup succeeded
+cron: (CRON) STARTUP (fork ok) 
+rc: Starting pcmcia succeeded
+inet: inetd startup succeeded
+sshd: Starting sshd: 
+sshd: sshd
+rc: Starting sshd succeeded
+sshd: log: Server listening on port 22.
+sshd: Server listening on :: port 22.
+sshd: log: Generating 768 bit RSA key.
+sshd: log: RSA key generation complete.
+lpd: lpd startup succeeded
+nfs: Starting NFS services:  succeeded
+nfs: rpc.statd startup succeeded
+nfs: rpc.rquotad startup succeeded
+nfs: rpc.mountd startup succeeded
+kernel: Installing knfsd (copyright (C) 1996 okir@monad.swb.de) 
+nfs: rpc.nfsd startup succeeded
+keytable: Loading keymap: 
+keytable: Loading /usr/lib/kbd/keymaps/i386/qwerty/us.kmap.gz
+keytable: Loading system font: 
+rc: Starting keytable succeeded
+qmail: Starting qmail:
+qmail: Starting qmail
+qmail: qmail
+qmail: qmail-smtpd
+qmail: qmail-pop3d
+qmail: Starting qmail-pop3d
+qmail: 
+qmail: Starting qmail-smtpd:
+rc: Starting qmail succeeded
+gpm: gpm startup succeeded
+sound: Starting sound configuration: sound
+sound: Starting sound configuration: 
+rc: Starting sound succeeded
+postgresql: Starting PostgreSQL: 
+PAM_pwdb: (su) session opened for user postgres by (uid=0)
+PAM_pwdb: (su) session closed for user postgres
+postgresql: ok
+rc: Starting postgresql succeeded
+PAM_pwdb: (su) session opened for user xfs by (uid=0)
+PAM_pwdb: (su) session closed for user xfs
+xfs: xfs startup succeeded
+kernel: NET4: AppleTalk 0.18 for Linux NET4.0 
+rc: Starting local succeeded
+kernel: Linux video capture interface: v1.00
+atalkd: restart (1.4b2+asun2.1.3)
+atalkd: restart (1.5.5)
+atalkd: zip_getnetinfo for eth1
+PAM_pwdb: (login) session opened for user rogers by (uid=0)
+atalkd: zip_getnetinfo for eth1
+atalkd: zip_getnetinfo for eth1
+atalkd: config for no router
+atalkd: ready 0/0/0
+atalk: atalkd startup succeeded
+atalk: papd startup succeeded
+papd: restart (1.4b2+asun2.1.3)
+papd: restart (1.5.5)
+atalk: afpd startup succeeded
+afpd: h0050da615e79:AFPServer@* started on 65280.85:254 (1.4b2+asun2.1.3)
+afpd: rgrjr:AFPServer@* started on 65280.85:254 (1.4b2+asun2.1.3)
+afpd: rgrjr:AFPServer@* started on 65280.40:254 (1.5.5)
+afpd: ASIP started on 192.168.1.1:548(2) (1.4b2+asun2.1.3) 
+afpd: ASIP started on 192.168.57.1:548(2) (1.4b2+asun2.1.3) 
+afpd: ASIP started on 192.168.57.1:548(2) (1.5.5)
+afpd: uam: uams_dhx.so loaded
+afpd: uam: "DHCAST128" available

@@ -1,0 +1,46 @@
+   * backup.pl -- Create and verify a dump file.
+
+   * cd-dump.pl -- Dump the contents of the ./to-write/ directory to a
+new session on a (possibly multisession) CDROM.
+
+   * check-logs.pl -- Hack to look over the /var/log/messages file,
+printing a summary.  This uses the "nominal-*.text" files to flush
+uninteresting lines.
+
+   * daily-status.pl -- Generate daily status message.  Use this to run
+a cron job that sends periodic emails with check-logs.pl summaries.
+
+   * extract-subnet.pl -- Given an interface, extract and print the
+network address in CIDR format, e.g. "192.168.1.0/24".
+
+   * partition-backup-sizes.pl -- Report the number of file blocks
+(kilobytes) that need to be dumped at the given backup level (default is
+9) for each mounted ext2/3 filesystem.
+
+   * squid-log.pl -- Convert dates into human-readable form (one-liner
+cribbed from perl squid FAQ 6.6).
+
+   * tripwire-verify -- Do batch tripwire verification.  This is meant
+to be used from a cron job.
+
+qmail hacks:
+
+   * qifq.pl -- crude hack to snarf qmail files out of a "dead" queue
+directory tree and re-inject them into a live qmail system.
+
+   * qmail-redeliver -- Force qmail to restart delivery.
+
+   * qmail-restart -- Force qmail to re-examine its control files.
+
+Other stuff:
+
+   * atwho.pl, afpd-stat.pl -- netatalk afpd hackery.  These are
+modified versions of scripts posted to netatalk-admins@umich.edu
+
+   * cp-if-newer.pl -- copies changed files, treating .AppleDouble
+directories specially.
+
+   * rename-into-tree.pl -- hack for merging directory trees.
+
+   * rgr-dehex.el -- hacks for looking at tcpdump output.
+

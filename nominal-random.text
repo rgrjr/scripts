@@ -1,0 +1,20 @@
+other: -- MARK --
+CRON: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.hourly) 
+CRON: (root) CMD (/root/bin/daily-status.pl) 
+CRON: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.daily) 
+kernel: klogd 1.4.1, ---------- state change ---------- 
+kernel: Loaded 1042 symbols from 41 modules.
+kernel: Disc change detected. 
+kernel: SCSI device sda: hdwr sector= 512 bytes. Sectors= 196608 [96 MB] [0.1 GB] 
+kernel: sda: Write Protect is off 
+kernel:  sda: sda4 
+kernel: sda : READ CAPACITY failed. 
+kernel: sda : status = 0, message = 00, host = 0, driver = 28  
+kernel: sda : extended sense code = 2  
+kernel: sda : block size assumed to be 512 bytes, disk size 1GB.   
+kernel: sda: scsidisk I/O error: dev 08:00, sector 0 
+kernel: unable to read partition table 
+kernel: sd_init_onedisk (0,0), sda 08:00
+kernel: SCSI device sda: 196608 512-byte hdwr sectors (101 MB)
+sda: Write Protect is off
+sda: sda4

@@ -1,0 +1,59 @@
+xfs: xfs shutdown succeeded
+gpm: Shutting down gpm mouse services: 
+gpm: gpm
+gpm: 
+gpm: gpm shutdown succeeded
+rc: Stopping gpm succeeded
+sound: Saving sound configuration: 
+sound: sound
+sound: 
+rc: Stopping sound succeeded
+nfs: Shutting down NFS services:  succeeded
+mountd: Caught signal 15, un-registering and exiting. 
+rpc.mountd: Caught signal 15, un-registering and exiting. 
+nfs: rpc.mountd shutdown succeeded
+kernel: nfsd: terminating on signal 9 
+other: last message repeated 7 times
+kernel: nfsd: last server exiting 
+nfs: nfsd shutdown succeeded
+nfs: rpc.rquotad shutdown succeeded
+nsd: Shutting down AOLserver: 
+nsd: 
+rc: Stopping nsd succeeded
+other: rpc.statd[pid]: Caught signal 15, un-registering and exiting.
+nfs: rpc.statd shutdown succeeded
+qmail: qmail-send shutdown succeeded
+qmail: tcpserver shutdown succeeded
+atalk: Shutting down AppleTalk services: 
+afpd: shutting down on signal 15
+atalkd: done
+atalk: 
+rc: Stopping atalk succeeded
+sshd: Stopping sshd: 
+sshd: log: Received signal 15; terminating.
+sshd: Received signal 15; terminating.
+sshd: sshd
+rc: Stopping sshd succeeded
+inet: inetd shutdown succeeded
+atd: atd shutdown succeeded
+crond: crond shutdown succeeded
+nfslock: lockd shutdown succeeded
+rpc.statd: Caught signal 15, un-registering and exiting.
+nfslock: rpc.statd shutdown succeeded
+lpd: lpd shutdown succeeded
+dd: 1+0 records in
+dd: 1+0 records out
+random: Saving random seed succeeded
+ypserv: ypserv shutdown succeeded
+ypbind: ypbind shutdown succeeded
+portmap: portmap shutdown succeeded
+pumpd: terminating as there are no more devices under management
+network: Shutting down interface eth0 succeeded
+network: Shutting down interface eth1 succeeded
+network: Shutting down interface ppp0 succeeded
+network: Disabling IPv4 packet forwarding succeeded
+apmd: Exiting
+apmd: apmd shutdown succeeded
+kernel: Kernel logging (proc) stopped.
+kernel: Kernel log daemon terminating.
+syslog: klogd shutdown succeeded

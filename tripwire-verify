@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+#    Do batch tripwire verification.  This is meant to be used as a cron job.
+#
+#    Modification history:
+#
+# created.  -- rgr, 12-Jan-02.
+# oops; must verify the /var/adm/tripwire/tw.config sig.  -- rgr, 12-Sep-02.
+#
+
+cd /var/adm/tripwire
+/usr/bin/gpg --verify tw.config.sig tw.config
+cd /var/adm/tripwire/db
+/usr/bin/gpg --verify tw.db_rgrjr.dyndns.org.sig tw.db_rgrjr.dyndns.org
+time ../bin/tripwire
