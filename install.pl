@@ -59,6 +59,8 @@ sub x11_install {
 	if $show_p || $verbose_p;
     warn("$0:  Destination directory '$directory' is not writable.\n")
 	if ! $rename_into_place_p && $verbose_p;
+    return 0
+	if ! $install_p;
     $target_name = ($rename_into_place_p
 		    ? "$directory/ins$$.tmp"
 		    : $installed_program_name);
