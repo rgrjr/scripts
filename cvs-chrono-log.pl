@@ -8,7 +8,6 @@
 # $Id$
 
 use strict;
-# use Data::Dumper;
 use Date::Parse;
 use Date::Format;
 
@@ -35,7 +34,7 @@ sub record_file_rev_comment {
 }
 
 sub print_file_rev_comments {
-    # Print all revision comments.
+    # Print all revision comments, sorted by date and grouped by comment.
 
     # examine entries by comment, then by date, combining all that have the
     # identical comment and nearly the same date.
@@ -44,7 +43,7 @@ sub print_file_rev_comments {
 	my $last_date;
 	my @entries;
 	for my $date (sort(keys(%{$modifications{$comment}}))) {
-	    if ($last_date && $last_date-$date > $date_fuzz) {
+	    if ($last_date && $date-$last_date > $date_fuzz) {
 		# the current entry probably represents a "cvs commit" event
 		# that is distinct from the previous entry(ies).
 		push(@combined_entries, [$last_date, $comment, @entries]);
@@ -57,8 +56,7 @@ sub print_file_rev_comments {
 	push(@combined_entries, [$last_date, $comment, @entries])
 	    if @entries;
     }
-    # print Dumper(\%modifications, \@combined_entries);
-    # now sort and print them out.
+    # now resort by date and print them out.
     for my $date_entry (sort { -($a->[0] <=> $b->[0]); } @combined_entries) {
 	my $date = time2str($date_format_string, shift(@$date_entry));
 	my $comment = shift(@$date_entry);
