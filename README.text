@@ -53,9 +53,9 @@ stands for "qmail-inject into foreign queue," but that's a misnomer;
 the file system somewhere, and the destination is always the current
 queue, via qmail-inject.
 
-   * qmail-redeliver -- Force qmail to restart delivery.
+   * qmail-redeliver -- instruct qmail to restart delivery.
 
-   * qmail-restart -- Force qmail to re-examine its control files.
+   * qmail-restart -- instruct qmail to re-examine its control files.
 
 Other stuff:
 

@@ -1,4 +1,4 @@
-other: -- MARK --
+-- MARK --
 CRON: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.hourly) 
 CRON: (root) CMD (/root/bin/daily-status.pl) 
 CRON: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.daily) 

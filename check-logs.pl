@@ -2,15 +2,15 @@
 #
 # Hack to look over the log files.  Do (e.g.)
 #
-#   /root/bin/check-logs.pl messages.4 messages.3 messages.2 messages.1 messages
+#     check-logs.pl messages.4 messages.3 messages.2 messages.1 messages
 #
 # in /var/log to do the standard grovel in chronological order.  Or
 #
-#   check-logs.pl -from 'May 25' -ignore smtp/tcp messages
+#     check-logs.pl -from 'May 25' -ignore smtp/tcp messages
 #
-# for another example.
+# as another example.
 #
-#    Modification history:
+#    [old] Modification history:
 #
 # created.  -- rgr, 13-Feb-00.
 # added host_ip_and_name lookup.  -- rgr, 26-Feb-00.
@@ -30,19 +30,22 @@
 # initialize_local_addresses: work around pipe flakiness.  -- rgr, 9-Nov-01.
 # ignore web/smtp, improve -ignore syntax, cache DNS misses.  -- rgr, 1-Jul-02.
 #
+# $Id$
 
+use strict;
 use Socket;	# for inet_aton
 
-$nominal_file_directory = '/root/bin';	# where to look for nominal-*.text files
+my $nominal_file_directory	# where to look for nominal-*.text files
+    = (-r '/root/bin' ? '/root/bin/' : '');
 
 chomp(my $host_name = `hostname`);
 $host_name =~ s/\..*//;
 my $use_dns_names_p = 1;
-my $use_etc_services_p = 0;
+my $use_etc_services_p = 0;		# [not a parameter.  -- rgr, 5-Aug-03.]
 my $from_date_string = '';		# optional starting date string
 
 # [need a command line interface for this.  -- rgr, 4-Mar-00.]
-%standard_module_dispositions =
+my %standard_module_dispositions =
     ('pumpd' => 'report',
      'PAM_pwdb' => 'report',
      'named' => 'ignore',
@@ -60,15 +63,15 @@ my $from_date_string = '';		# optional starting date string
      'default' => 'report');
 
 ### Process arguments.
-while ($ARGV[0] =~ /^-./) {
-    $arg = shift(@ARGV);
+while (@ARGV && $ARGV[0] =~ /^-./) {
+    my $arg = shift(@ARGV);
     if ($arg eq '-nodns' || $arg eq '-n') {
 	$use_dns_names_p = 0;
     }
     elsif ($arg =~ /^-(ignore|report)($|=)/) {
-	$disposition = $1;
-	$modules = ($2 ? $' : shift(@ARGV));
-	foreach $module (split(',', $modules)) {
+	my $disposition = $1;
+	my $modules = ($2 ? $' : shift(@ARGV));
+	foreach my $module (split(',', $modules)) {
 	    $standard_module_dispositions{$module} = $disposition;
 	}
     }
@@ -82,6 +85,7 @@ while ($ARGV[0] =~ /^-./) {
 
 ### Subroutines.
 
+my %local_ip_address_p;
 sub initialize_local_addresses {
     my ($line);
 
@@ -100,6 +104,7 @@ sub initialize_local_addresses {
     close(IFC);
 }
 
+my %ip_to_host_name_cache;
 sub nslookup_ptr {
     my $ip = shift;
 
@@ -136,6 +141,7 @@ sub host_ip_and_name {
     }
 }
 
+my %port_proto_to_service_map;
 sub read_port_proto_to_service_map {
     # Read and parse /etc/services in order to build a table of "port/protocol"
     # to service name in the %port_proto_to_service_map hash.
@@ -152,7 +158,7 @@ sub read_port_proto_to_service_map {
     # [complete and total kludge.  this is because a popular trojan, known as
     # "sub 7", has usurped this port.  so calling it "asp" is misleading.  --
     # rgr, 24-Oct-00.]  -- rgr, 24-Oct-00.]
-    foreach $medium ('tcp', 'udp') {
+    foreach my $medium ('tcp', 'udp') {
 	my $svc = $port_proto_to_service_map{"27374/$medium"};
 	undef($port_proto_to_service_map{"27374/$medium"})
 	    if $svc && $svc eq 'asp';
@@ -177,18 +183,18 @@ sub pretty_port_proto {
     # we want to be able to see it.  -- rgr, 16-Apr-00.
     my $port_proto = shift;
     my $result = $port_proto;	# default
-    my ($port, $proto);
 
     read_port_proto_to_service_map()
 	if $use_etc_services_p && ! %port_proto_to_service_map;
-    if (defined($port_proto_to_service_map{lc($port_proto)})) {
-	($port, $proto) = split('/', $port_proto);
-	$result = "$port_proto_to_service_map{lc($port_proto)}/$proto";
+    my $pretty_name = $port_proto_to_service_map{lc($port_proto)};
+    if (defined($pretty_name)) {
+	my ($port, $proto) = split('/', $port_proto);
+	$result = "$pretty_name/$proto";
     }
     $result;
 }
 
-$todays_heading_printed_p = '';
+my $todays_heading_printed_p = '';
 sub day_print {
     # generate the day's heading, if not already done.
     my ($day, $line) = @_;
@@ -201,6 +207,11 @@ sub day_print {
 	if $line;
 }
 
+my %attempts;
+my %broadcasts;
+my %filtered_source_ip_totals;
+my %source_ip_totals;
+my %dest_port_totals;
 sub day_report {
     # Generate this day's report of internet connection attempts from the
     # %attempts hash, sorted by source host, port/protocol, and disposition, and
@@ -224,19 +235,21 @@ sub day_report {
 	print $string;
     };
 
-    foreach $source_ip (sort(keys(%attempts))) {
+    foreach my $source_ip (sort(keys(%attempts))) {
 	$report_string = '';
-	foreach $dest_port (sort { $a cmp $b } keys(%{$attempts{$source_ip}})) {
+	foreach my $dest_port (sort { $a cmp $b }
+			       keys(%{$attempts{$source_ip}})) {
 	    my $disp = $standard_module_dispositions{$dest_port};
 	    next
 		if $disp && $disp eq 'ignore';
-	    $pretty_dest_port = pretty_port_proto($dest_port);
+	    my $pretty_dest_port = pretty_port_proto($dest_port);
 	    $disp = $standard_module_dispositions{$pretty_dest_port};
 	    next
 		if $disp && $disp eq 'ignore';
-	    foreach $disposition (sort(keys(%{$attempts{$source_ip}{$dest_port}}))) {
-		$count = $attempts{$source_ip}{$dest_port}{$disposition};
-		$bcasts = $broadcasts{$source_ip}{$dest_port}{$disposition};
+	    foreach my $disposition 
+		    (sort(keys(%{$attempts{$source_ip}{$dest_port}}))) {
+		my $count = $attempts{$source_ip}{$dest_port}{$disposition};
+		my $bcasts = $broadcasts{$source_ip}{$dest_port}{$disposition};
 		$filtered_source_ip_totals{$source_ip} += $count;
 		$report_string
 		    .= ("      $pretty_dest_port"
@@ -254,6 +267,7 @@ sub day_report {
     $printed_host_p;
 }
 
+my %module_messages;
 sub parse_firewall_log_event { 
     use strict;
     # given a description (part of a log line), parse it into a hash.
@@ -308,9 +322,11 @@ sub parse_firewall_log_event {
 
 ### Initialize shutdown/startup ignored messages, local IP addresses.
 initialize_local_addresses();
-foreach $file ('nominal-shutdown.text', 'nominal-startup.text',
-	       'nominal-random.text') {
-    if (open(FILE, "$nominal_file_directory/$file")) {
+my %ignored_lines;
+foreach my $file ('nominal-shutdown.text', 'nominal-startup.text',
+		  'nominal-random.text') {
+    if (open(FILE, $nominal_file_directory.$file)) {
+	my $line;
 	while ($line = <FILE>) {
 	    chomp($line);
 	    $ignored_lines{$line}++;
@@ -320,13 +336,16 @@ foreach $file ('nominal-shutdown.text', 'nominal-startup.text',
 }
 
 ### Main loop.
-$previous_day = '';
+my $previous_day = '';
+my $line;
+my $day;
 while (defined($line = <>)) {
     chomp($line);
     # $report_p = 0;
     next
 	unless $line =~ / +($host_name|h0050da615e79) +/o;
-    $date = $`;  $description = $';
+    my $date = $`;  
+    my $description = $';
     if ($from_date_string) {
 	# bogus date testing, should be good enough if all you want is "Apr 16".
 	# -- rgr, 16-Apr-00.
@@ -338,7 +357,7 @@ while (defined($line = <>)) {
     # check for quick win.
     next if $ignored_lines{$description};
     $day = substr($date, 0, 6);
-    $time = substr($date, 7);
+    my $time = substr($date, 7);
     if ($day ne $previous_day) {
 	day_report($previous_day)
 	    unless $previous_day eq '';
@@ -348,7 +367,7 @@ while (defined($line = <>)) {
     # space and a version number after them, and others (e.g. pumpd, named) have
     # the pid in square brackets.  -- rgr, 4-Mar-00.  [the "." is necessary to
     # match (e.g.) rpc.statd.  -- rgr, 7-Oct-00.]
-    $reporting_module = 'other';
+    my $reporting_module = 'other';
     if ($description =~ m@^([\w\d/.]+)(\[\d+\]| [-.\d]+)?: +@g) {
 	$reporting_module = $1;
 	$description = substr($description, pos($description));
@@ -374,7 +393,7 @@ while (defined($line = <>)) {
 	}
     }
     # find disposition.
-    $disp = $standard_module_dispositions{$reporting_module};
+    my $disp = $standard_module_dispositions{$reporting_module};
     $disp = $standard_module_dispositions{'default'} || 'unknown'
         unless defined($disp);
     next if $disp eq 'ignore';
@@ -422,20 +441,20 @@ while (defined($line = <>)) {
 day_report($day);
 # report totals
 print "\nMessage totals (unfiltered):\n";
-foreach $reporting_module (sort(keys(%module_messages))) {
+foreach my $reporting_module (sort(keys(%module_messages))) {
     print "  $module_messages{$reporting_module} from $reporting_module\n";
 }
 print "\nIP host totals:\n";
-foreach $source_ip (keys(%source_ip_totals)) {
-    $raw_count = 0 + $source_ip_totals{$source_ip};
-    $filtered_count = 0 + $filtered_source_ip_totals{$source_ip};
+foreach my $source_ip (keys(%source_ip_totals)) {
+    my $raw_count = 0 + $source_ip_totals{$source_ip};
+    my $filtered_count = 0 + $filtered_source_ip_totals{$source_ip};
     print("  ", host_ip_and_name($source_ip),
 	  ($raw_count == $filtered_count
 	   ? " ($raw_count connects)\n"
 	   : " ($filtered_count/$raw_count connects)\n"));
 }
 print "\nDestination port totals:\n";
-foreach $dest_port (sort { $a cmp $b } keys(%dest_port_totals)) {
+foreach my $dest_port (sort { $a cmp $b } keys(%dest_port_totals)) {
     print("  ", pretty_port_proto($dest_port),
 	  " ($dest_port_totals{$dest_port} connects)\n");
 }
