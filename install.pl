@@ -38,7 +38,7 @@ my $show_p = 0;
 my $verbose_p = 0;
 
 my $directory = pop(@ARGV) || die "$0:  No destination directory.\nDied";
-$directory = $` if $directory =~ m:/$:;	# canonicalize without the slash.
+$directory =~ s:/$::;	# canonicalize without the slash.
 die "$0:  Last arg is '$directory', which is not a writable directory.\nDied"
     unless -d $directory && -w $directory;
 
@@ -169,17 +169,15 @@ sub install_program {
     # Have a real program to install; decide how & whether to do it.
     my ($program) = @_;
     my $program_base_name = $program;
-    my ($installed_program_name, $source_mtime, $dest_mtime, $target_name);
-
-    $program_base_name = $'
-	if $program =~ m@^.*/@;
-    $installed_program_name = "$directory/$program_base_name";
+    $program_base_name =~ s@^.*/@@;
+    my $installed_program_name = "$directory/$program_base_name";
+    my ($source_mtime, $dest_mtime, $target_name);
 
     # See if installation is necessary.
     unless ($force_p) {
 	$source_mtime = mtime($program);
 	$dest_mtime = mtime($installed_program_name);
-	if ($source_mtime <= $dest_mtime) {
+	if ($dest_mtime && $source_mtime <= $dest_mtime) {
 	    warn "$0:  $program is up to date in $directory\n"
 		if $verbose_p;
 	    return 0;
