@@ -39,8 +39,8 @@ my $verbose_p = 0;
 
 my $directory = pop(@ARGV) || die "$0:  No destination directory.\nDied";
 $directory = $` if $directory =~ m:/$:;	# canonicalize without the slash.
-die "$0:  Last arg is '$directory', which is not a directory.\nDied"
-    unless -d $directory;
+die "$0:  Last arg is '$directory', which is not a writable directory.\nDied"
+    unless -d $directory && -w $directory;
 
 my $perl_prefix_string = '';
 my $perl_prefix_n_lines = 0;
