@@ -68,8 +68,16 @@ sub process_rpm_file {
     my $new_package = new rgrjr::RPM(file_name => $file);
     my $package_name = $new_package->name;
     my $installed = as_installed rgrjr::RPM($package_name);
+    my $other_version = $rpms_to_install{$package_name};
     my $install_p = '';
-    if (! $new_package->newer_than($rpms_to_install{$package_name})) {
+    warn("[checking $package_name file $file vs installed ",
+	 ($installed && $installed->version
+	  ? $installed->file_name_stem
+	  : '(not)'),
+	 " and previous file ",
+	 ($other_version ? $other_version->file_name_stem : '(none)'), ".]\n")
+	if $verbose_p > 1;
+    if (! $new_package->newer_than($other_version)) {
 	# Oops; we've already found a newer RPM file.
     }
     elsif (! defined($installed->version)) {
@@ -83,8 +91,11 @@ sub process_rpm_file {
 	$install_p = 'upgrade';
     }
     $new_package->action($install_p);
-    $rpms_to_install{$package_name} = $new_package
-	if $install_p;
+    if ($install_p) {
+	$rpms_to_install{$package_name} = $new_package;
+	warn "[decided to $install_p $package_name.]\n"
+	    if $verbose_p > 1;
+    }
     $install_p;
 }
 
@@ -165,6 +176,12 @@ sub new {
     $self;
 }
 
+sub file_name_stem {
+    my $self = shift;
+
+    join('-', $self->name, $self->version, $self->release);
+}
+
 sub file_name {
     my $self = shift;
 
@@ -232,6 +249,8 @@ sub newer_than {
 	if ! defined($other_version);
     my $cmp = _compare_versions([split(/\./, $self->version)],
 				[split(/\./, $other_version)]);
+    $cmp = $self->release <=> $other_package->release
+	if defined($cmp) && ! $cmp;
     warn "[got '$cmp' for ", $self->version, " vs. $other_version.]\n"
 	if 0;
     # note that this preserves the distinction between undef and 0.
