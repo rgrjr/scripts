@@ -16,7 +16,7 @@ public-html-directory = /usr/local/aolserver/servers/rgrjr/pages/linux
 published-scripts = backup.pl cd-dump.pl
 html-pages = ${published-scripts:.pl=.pl.html}
 
-root-scripts = ${backup-scripts} ${log-scripts}
+base-scripts = ${backup-scripts} ${log-scripts} install.pl
 backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl vacuum.pl
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
@@ -48,7 +48,7 @@ test-chrono-log:
 install:	install-base
 install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
-	${INSTALL} -m 555 ${root-scripts} ${pm-log-scripts} ${bin-directory}
+	${INSTALL} -m 555 ${base-scripts} ${pm-log-scripts} ${bin-directory}
 	${INSTALL} -m 444 ${log-files} /root/bin
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
