@@ -16,7 +16,7 @@ chomp($host_name);
 my @search_roots = @ARGV;
 if (! @search_roots) {
     for my $root ('scratch', 'scratch2', 'scratch.old') {
-	for my $base ('', '/alt') {
+	for my $base ('', '/alt', '/old', '/new') {
 	    my $dir = "$base/$root/backups";
 	    push (@search_roots, $dir)
 		if -d $dir;
