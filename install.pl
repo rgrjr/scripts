@@ -234,6 +234,8 @@ while (@ARGV) {
 	$perl_prefix_string .= "unshift(\@INC, '$directory');\n#\n"
 	    unless $include_p;
 	$include_p = $program;
+	# this also implies '-magic'.
+	$install_perl_magic_p = $program;
     }
     elsif ($program =~ /^-./) {
 	warn "$0:  Unknown option '$program; ignoring.\n";
