@@ -71,8 +71,9 @@ sub mtime {
     # Return the modification time of the file given as an argument.  This not
     # only hides the magic number, but it gets around the fact that perl doesn't
     # like subscripting of function return values.  -- rgr, 22-Oct-96.
+    # [this seems to have been changed in perl5.  -- rgr, 15-Jul-03.]
     my $file = shift;
-    my @stat = stat($file );
+    my @stat = stat($file);
 
     warn "$0:  modification time of $file is $stat[9].\n"
 	if $verbose_p > 1;
@@ -235,7 +236,7 @@ while (@ARGV) {
     }
     elsif (! -r $program || -d $program) {
 	# This is actually an error (possibly a misspelled program name).
-	warn "$0:  $program does not exist.\n";
+	warn "$0:  '$program' does not exist.\n";
 	$n_errors++;
     }
     else {
@@ -243,4 +244,5 @@ while (@ARGV) {
     }
 }
 
-die "$0:  $n_errors errors encountered; died" if $n_errors;
+die "$0:  $n_errors errors encountered; died" 
+    if $n_errors;
