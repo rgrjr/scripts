@@ -9,6 +9,9 @@
 # rgr, 28-Jul-03.]
 INSTALL = perl ./install.pl -show
 
+root = /usr/local
+bin-directory = ${root}/bin
+pm-directory = /usr/lib/perl5/site_perl
 public-html-directory = /usr/local/aolserver/servers/rgrjr/pages/linux
 published-scripts = backup.pl cd-dump.pl
 html-pages = ${published-scripts:.pl=.pl.html}
@@ -42,22 +45,23 @@ test-chrono-log:
 	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
 	rm -f test-cvs-chrono-log.tmp
 
-install:	install-base install-qmail install-afpd install-squid
+install:	install-base
 install-base:
-	${INSTALL} -m 555 ${root-scripts} -inc ${pm-log-scripts} /root/bin
-	${INSTALL} -m 444 ${perl-modules} ${log-files} /root/bin
+	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
+	${INSTALL} -m 555 ${root-scripts} ${pm-log-scripts} ${bin-directory}
+	${INSTALL} -m 444 ${log-files} /root/bin
 install-qmail:
-	${INSTALL} -m 555 ${qmail-scripts} /root/bin
+	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
 install-afpd:
-	${INSTALL} -m 555 ${afpd-scripts} /root/bin
+	${INSTALL} -m 555 ${afpd-scripts} ${bin-directory}
 install-squid:
-	${INSTALL} -m 555 ${squid-scripts} /usr/sbin
+	${INSTALL} -m 555 ${squid-scripts} ${root}/sbin
 	squid -k reconfigure
 
 diff:
-	for file in `ls /root/bin | fgrep -v '~'`; do \
+	for file in `ls ${bin-directory} | fgrep -v '~'`; do \
 	    if [ -r $$file ]; then \
-		diff -u /root/bin/$$file $$file; \
+		diff -u ${bin-directory}/$$file $$file; \
 	    fi; \
 	done
 
