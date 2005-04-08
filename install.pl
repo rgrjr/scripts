@@ -10,14 +10,44 @@
 
 use strict;
 
+use Getopt::Long;
+
 my $mode = 0444;		# default permissions.
 my $force_p = 0;		# overrides contents checking.
 my $install_p = 1;		# whether to actually do it, or just show.
+my $create_directories_p = 0;
 my $show_p = 0;
 my $verbose_p = 0;
 my $make_numbered_backup_p = 1;
 my @old_file_versions;
 my $n_errors = 0;
+my $ignore;
+
+GetOptions('mode|m=i' => sub {
+	       # Explicit mode specification.
+	       $mode = oct($_[1]);
+	   },
+	   'c' => \$ignore,
+	   'verbose' => sub {
+	       $show_p = 1; $verbose_p++;
+	   },
+	   'show!' => \$show_p,
+	   'quiet!' => sub {
+	       $show_p = $verbose_p = $_[1];
+	   },
+	   'create-dir!' => \$create_directories_p,
+	   'noinstall|n' => sub { 
+	       $install_p = 0;
+	       $show_p = '-noinstall';
+	   },
+	   'diff' => sub { 
+	       $install_p = 0;
+	       $show_p = '-diff';
+	   },
+	   'backup!' => \$make_numbered_backup_p,
+	   'force!' => \$force_p,
+	   'old=s' => \@old_file_versions)
+    or die;
 
 my $destination = pop(@ARGV) || die "$0:  No destination directory.\nDied";
 $destination =~ s:/$::;		# canonicalize without the slash.
@@ -26,10 +56,18 @@ if (! -d $directory) {
     # the destination is a file name; find its directory portion.
     $directory =~ s:/[^/]+$:: || die "'$directory'";
 }
-die("$0:  Last arg is '$destination', which is not ",
-    ($directory eq $destination ? '' : 'in '),
-    "a directory.  [got $directory]\nDied")
-    unless -d $directory;
+if (-d $directory) {
+    # OK.
+}
+elsif ($create_directories_p) {
+    mkdir($directory)
+	or die "$0:  Couldn't create '$directory' as a directory:  $!";
+}
+else {
+    die("$0:  Last arg is '$destination', which is not ",
+	($directory eq $destination ? '' : 'in '),
+	"a directory that exists.  [got $directory]\nDied");
+}
 my $rename_into_place_p = -w $directory;
 
 ### Subroutines.
@@ -181,47 +219,9 @@ sub install_program {
 
 ### Main loop
 
-# Parse args, installing files in the process.
-while (@ARGV) {
-    my $program = shift(@ARGV);
-    $program =~ s/^--/-/;
-    if ($program eq '-m' || $program eq '-mode') {
-	# Explicit mode specification.
-	$mode = oct(shift(@ARGV));
-    }
-    elsif ($program eq '-c') {
-	# ignore, for BSD install compatibility.
-    }
-    elsif ($program eq '-verbose') {
-	$show_p = $program;
-	$verbose_p++;
-    }
-    elsif ($program eq '-show') {
-	$show_p = $program;
-	$verbose_p = 0;
-    }
-    elsif ($program eq '-quiet') {
-	$show_p = $verbose_p = 0;
-    }
-    elsif ($program eq '-noinstall' || $program eq '-n' 
-	   || $program eq '-diff') {
-	$install_p = 0;
-	$show_p = ($program eq '-diff' ? $program : '-noinstall');
-    }
-    elsif ($program =~ /^-(no)?backup$/) {
-	$make_numbered_backup_p = ! $1;
-    }
-    elsif ($program eq '-force') {
-	$force_p = $program;
-    }
-    elsif ($program eq '-old') {
-	push(@old_file_versions, shift(@ARGV));
-    }
-    elsif ($program =~ /^-./) {
-	warn "$0:  Unknown option '$program'.\n";
-	$n_errors++;
-    }
-    elsif (! -r $program || -d $program) {
+# Process all remaining args as files to be installed.
+for my $program (@ARGV) {
+    if (! -r $program || -d $program) {
 	# This is actually an error (possibly a misspelled program name).
 	warn "$0:  '$program' does not exist.\n";
 	$n_errors++;
@@ -230,6 +230,5 @@ while (@ARGV) {
 	install_program($program);
     }
 }
-
-die "$0:  $n_errors errors encountered; died" 
+die "$0:  $n_errors errors encountered.\n"
     if $n_errors;
