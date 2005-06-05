@@ -2,7 +2,7 @@
 #
 # backup.pl:  Create and verify a dump file.
 #
-# Copyright (C) 2000-2003 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+# Copyright (C) 2000-2005 by Bob Rogers <rogers@rgrjr.dyndns.org>.
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
@@ -141,7 +141,25 @@ my ($part, $mount_point)
     = split(' ', `$grep_program "^$dump_partition " /etc/mtab`);
 pod2usage("$0:  '$dump_partition' is not a mounted partition.")
     unless $mount_point && -d $mount_point;
-# Compute the dump file name.
+# Estimate how big the dump will be.
+my $estd_dump_size = `$dump_program -S -u$level $dump_partition`;
+chomp($estd_dump_size);
+my $n_vols = ($estd_dump_size/1024.0)/$dump_volume_size;
+if ($n_vols > 1.5) {
+    # Add 10% slop and then round up, to be sure we have enough dump files.
+    $n_vols = int(1+1.1*$n_vols);
+}
+elsif ($n_vols >= 0.80) {
+    # Offer two volume names, just to be safe.  There is no penalty for this; if
+    # dump doesn't need the second, we'll just rename the first to the original.
+    $n_vols = 2;
+}
+else {
+    $n_vols = 1;
+}
+warn "[got estd_dump_size $estd_dump_size, n_vols $n_vols]\n"
+    if $verbose_p;
+# Compute the dump file name(s).
 if (! $dump_name) {
     # Must make our own dump name.  To do that, we must find a partition
     # abbreviation (if it hasn't been given), and the dump date (if that hasn't
@@ -157,6 +175,20 @@ if (! $dump_name) {
 	unless $file_date;
     $dump_name = "$partition_abbrev-$file_date-l$level.dump";
 }
+my $orig_dump_name = $dump_name;
+my @dump_names = ($dump_name);
+# Handle extra dump files.
+if ($n_vols > 1) {
+    my $stem = $dump_name;
+    $stem =~ s/\.dump$//;
+    my $suffix = 'a';
+    @dump_names = ();
+    for (1..$n_vols) {
+	push(@dump_names, $stem.$suffix++.'.dump');
+    }
+    $dump_name = $dump_names[0];
+}
+# These are for testing whether the file exists.
 my $dump_file = "$dump_dir/$dump_name";
 my $cd_dump_file = "$destination_dir/$dump_name";
 
@@ -166,21 +198,68 @@ die "$0:  '$dump_file' already exists; remove it if you want to overwrite.\n"
 die("$0:  '$cd_dump_file' already exists; ",
     "remove it if you want to overwrite.\n")
     if $destination_dir && -e $cd_dump_file;
-print "Backing up $dump_partition \($mount_point\) to $dump_file\n";
+print("Backing up $dump_partition \($mount_point\) to $dump_file",
+      (@dump_names > 1 ? ' etc.' : ''), "\n");
 umask(066);
 do_or_die($dump_program, "-u$level",
 	  ($dump_volume_size ? ('-B', $dump_volume_size) : ()),
-	  '-f', $dump_file, $dump_partition);
+	  '-f', join(',', map { "$dump_dir/$_"; } @dump_names),
+	  $dump_partition);
+if ($dump_names[1] && ! -r $dump_dir.'/'.$dump_names[1] && ! $test_p) {
+    # We offered a second dump file name, but it seems that dump didn't need it.
+    # Rename it to the original name (without the suffix letter), and treat that
+    # as our only dump file.
+    my $orig_dump_file = "$dump_dir/$orig_dump_name";
+    if (rename($dump_file, $orig_dump_file)) {
+	warn "[renamed $dump_file to $orig_dump_file]\n"
+	    if $verbose_p;
+	$dump_name = $orig_dump_name;
+	$dump_file = $orig_dump_file;
+	@dump_names = ($dump_name);
+    }
+    else {
+	warn("$0:  rename('$dump_file', '$orig_dump_file') failed:  $?");
+    }
+}
+
 print "Done creating $dump_file; verifying . . .\n";
-do_or_die('-ignore-return', $restore_program, '-C', '-y', '-f', $dump_file);
+# [getting restore to deal with multivolume dump files is more of a pain; it
+# doesn't understand comma-separated filenames.  -- rgr, 4-Jun-05.]
+open(RESTORE, "| $restore_program -C -y -f $dump_file")
+    unless $test_p;
+for my $i (1..@dump_names-1) {
+    my $name = $dump_names[$i];
+    my $dump_file = "$dump_dir/$name";
+    if ($test_p || -r $dump_file) {
+	print RESTORE "$dump_file\n"
+	    unless $test_p;
+	print "[also verifying $dump_file]\n"
+	    if $verbose_p;
+    }
+    else {
+	# Optimization.  The trouble with this is that we can't be sure how many
+	# volumes dump should have written, so we don't know if a missing file
+	# is due to (e.g.) a "disk full" problem, or is really past the end of
+	# the series.
+	@dump_names = @dump_names[0..$i-1];
+	last;
+    }
+}
+# [can't usefully test the return code from restore.  -- rgr, 4-Jun-05.]
+close(RESTORE)
+    unless $test_p;
 
 ### Cleanup.
 if ($destination_dir) {
-    rename($dump_file, $cd_dump_file)
-	|| die("$0:  rename('$dump_file', '$cd_dump_file') failed:  $?")
-	    unless $test_p;
-    warn "$0:  Renamed '$dump_file' to '$cd_dump_file'.\n"
-	if $test_p || $verbose_p;
+    for my $name (@dump_names) {
+	my $dump_file = "$dump_dir/$name";
+	my $cd_dump_file = "$destination_dir/$name";
+	rename($dump_file, $cd_dump_file)
+	    || die("$0:  rename('$dump_file', '$cd_dump_file') failed:  $?")
+	        unless $test_p;
+	warn "$0:  Renamed '$dump_file' to '$cd_dump_file'.\n"
+	    if $test_p || $verbose_p;
+    }
 }
 # Phew.
 print "Done.\n";
@@ -247,10 +326,13 @@ If specified, gives the name of the dump file excluding the directory.
 The default looks something like C<home-20021021-l9.dump>, and depends
 on (a) the last component of the directory where the partition is
 normally mounted, e.g. 'home', (b) the current date, e.g. '20021021',
-and (c) the dump level, e.g. '9'.  If some of the default values are
+and (c) the dump level, e.g. '9'.  Suffixes of 'a', 'b', etc., will be 
+added after the dump level if needed for a multivolume dump.
+
+If some of the default values are
 not acceptable, you can either specify a specific file name, or use
 the C<--name-prefix> or C<--date> parameters to override how the
-default name is constructed.  Say if you had C<'/usr/local'> and
+default name is constructed.  For example, if you had C<'/usr/local'> and
 C<'/seq/local'> partitions and needed to make the resulting file names
 distinct, you could say C<"--name-prefix=usr-local"> for the first,
 and C<"--name-prefix=seq-local"> for the second.
@@ -276,7 +358,7 @@ defaults to C</mnt/zip>.
 
 If specified, names a directory to which we should move the dump file
 after it has been verified successfully.  It doesn't have anything to
-do with CDs per se, it's just that the C<-cd-dir> can be used as the
+do with CDs per se, it's just that the C<--cd-dir> can be used as the
 communication interface to C<cd-dump.pl> when both are running as cron
 jobs.  If there are files in this directory, then C<cd-dump.pl>
 assumes they are good backups and need to be written to the CD; if
@@ -301,11 +383,24 @@ compatibility.
 =item B<--volsize>
 
 Specifies the size of the largest dump file that the backup medium can
-hold, in 1 kilobyte blocks.  If the backup requires more than this,
+hold, in 1 kilobyte blocks.  If the backup medium fills up before
+this limit is reached, 
 then dump will pause and wait for you to "change volumes" (by renaming
 the current dump file) before continuing, which will mess up the
 'restore' phase of the operation.  The default depends on the C<--cd>
 option.
+
+If the dump requires multiple volumes, C<backup.pl> will instruct
+C<dump> to write a series of files into the same directory (so the
+directory must have enough space for all of them).  This is ideal for
+unattended creation of multiple backup files to be copied onto
+multiple physical volumes at a later time.  Just be sure to specify a
+C<--volsize> that fits on the ultimate storage medium.
+
+Note that C<dump> can do physical end-of-media (tape) and disk-full
+detection on its own.  This is only useful if (a) you are writing
+directly to the end medium, and (b) you are around to change media
+when they fill up.
 
 =back
 
@@ -318,6 +413,10 @@ option.
 If this script used a backup.conf file, it could get per-site defaults,
 plus instructions for doing a number of backups at once,  This would
 greatly simplify backup C<crontab> entries; only one would be needed.
+
+C<backup.pl> should refuse to proceed if the size of the dumps it
+produces are expected to be larger than the free space remaining on
+the disk.  If you can't finish, there's no point getting started.
 
 If you find any more, please let me know.
 
@@ -339,7 +438,7 @@ If you find any more, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2000-2005 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
