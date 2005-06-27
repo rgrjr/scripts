@@ -5,4 +5,4 @@
 
 cd /scratch/backups/cd
 cd-dump.pl --dev ATAPI:0,0,0 --max-iso9660-filenames --relaxed-filenames \
-    --mount -V 2004Q3a
+    --mount -V 2005Q3a --to-write-subdir to-write/cd2005q3a
