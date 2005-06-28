@@ -96,11 +96,19 @@ sub site_list_files {
     my %levels = ();
     for my $line (reverse(<IN>)) {
 	chomp($line);
-	next
-	    # look for the file date as a way of recognizing the size and name.
-	    unless $line =~ /(\d+) ([A-Z][a-z][a-z] +\d+|\d\d-\d\d) +[\d:]+ (.+)$/;
-	my $size = $1;
-	my $file = $3;
+	my ($size, $file);
+	# look for the file date as a way of recognizing the size and name.
+	if ($line =~ /(\d+) ([A-Z][a-z][a-z] +\d+|\d\d-\d\d) +[\d:]+ (.+)$/) {
+	    ($size, $file) = ($1, $3);
+	}
+	elsif ($line =~ /(\d+) \d+-\d\d-\d\d +\d\d:\d\d (.+)$/) {
+	    # numeric ISO date.
+	    ($size, $file) = $line =~ //;
+	}
+	else {
+	    # not a file line.
+	    next;
+	}
 	next
 	    if $prefix && (substr($file, 0, length($prefix)) ne $prefix);
 	next
@@ -217,6 +225,8 @@ sub find_files_to_copy {
 	my $name = $from->[0];
 	if (! defined($to{$name})) {
 	    $total_space += $from->[1];
+	    warn "[$from needs copying.]\n"
+		if $verbose_p > 1;
 	    push(@need_copying, $from);
 	}
     }
