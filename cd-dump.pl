@@ -385,7 +385,7 @@ If you find any more, please let me know.
 
 =over 4
 
-=item The C<dump.pl> script (L<http://rgrjr.dyndns.org/linux/dump.pl.html>).
+=item The C<backup.pl> script (L<http://rgrjr.dyndns.org/linux/backup.pl.html>).
 
 =item L<dump(8)>
 
