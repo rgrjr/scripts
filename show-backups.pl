@@ -7,10 +7,15 @@
 # $Id$
 
 use strict;
+use Getopt::Long;
 # use Data::Dumper;
 
 my $host_name = `hostname`;
 chomp($host_name);
+my $prefix = 'home';
+
+GetOptions('prefix=s' => \$prefix, 'host=s' => \$host_name)
+    or die;
 
 # Figure out where to search for backups.
 my @search_roots = @ARGV;
@@ -27,7 +32,7 @@ if (! @search_roots) {
 }
 
 # Find backup dumps on disk.
-my $command = join(' ', 'find', @search_roots, '-name', "'home-*.dump'");
+my $command = join(' ', 'find', @search_roots, '-name', "'$prefix-*.dump'");
 open(IN, "$command |")
     or die;
 my %date_to_dumps;
