@@ -32,14 +32,17 @@ if (! @search_roots) {
 }
 
 # Find backup dumps on disk.
-my $command = join(' ', 'find', @search_roots, '-name', "'$prefix-*.dump'");
+my $find_glob_pattern = '*.dump';
+$find_glob_pattern = join('-', $prefix, $find_glob_pattern)
+    if $prefix ne '*';
+my $command = join(' ', 'find', @search_roots, '-name', "'$find_glob_pattern'");
 open(IN, "$command |")
-    or die;
-my %date_to_dumps;
+    or die "Oops; could not open pipe from '$command':  $!";
+my %prefix_and_date_to_dumps;
 while (<IN>) {
     chomp;
-    if (/-(\d+)-l(\d)\.dump$/) {
-	my ($date, $level) = //;
+    if (m@([^/]+)-(\d+)-l(\d)\w*\.dump$@) {
+	my ($pfx, $date, $level) = //;
 	my $file = $_;
 	my @stat = stat($file);
 	my $size = $stat[7];
@@ -47,19 +50,28 @@ while (<IN>) {
 	# [sprintf can't handle huge numbers.  -- rgr, 28-Jun-04.]
 	# my $listing = sprintf('%14i %s', $size, $file);
 	my $listing = (' 'x(14-length($size))).$size.' '.$file;
-	push(@{$date_to_dumps{$date}}, [$date, $level, $listing]);
+	push(@{$prefix_and_date_to_dumps{$pfx}->{$date}},
+	     [$date, $level, $listing]);
     }
 }
 
-# Generate output sorted with the most recent at the top, and a '*' marking the
-# current backup files.
+# For each prefix, generate output sorted with the most recent at the top, and a
+# '*' marking the current backup files.  (Of course, we only know what is
+# "current" in local terms.)
 my $last_level = 10;
-# warn Dumper(\%date_to_dumps);
-for my $date (sort { $b <=> $a; } keys(%date_to_dumps)) {
-    for my $entry (@{$date_to_dumps{$date}}) {
-	my ($ignored_date, $level, $listing) = @$entry;
-	substr($listing, 1, 1) = '*', $last_level = $level
-	    if $level < $last_level;
-	print $listing, "\n";
+# warn Dumper(\%prefix_and_date_to_dumps);
+my $n_prefixes = 0;
+for my $pfx (sort(keys(%prefix_and_date_to_dumps))) {
+    my $date_to_dumps = $prefix_and_date_to_dumps{$pfx};
+    print "\n"
+	if $n_prefixes;
+    for my $date (sort { $b <=> $a; } keys(%$date_to_dumps)) {
+	for my $entry (@{$date_to_dumps->{$date}}) {
+	    my ($ignored_date, $level, $listing) = @$entry;
+	    substr($listing, 1, 1) = '*', $last_level = $level
+		if $level < $last_level;
+	    print $listing, "\n";
+	}
     }
+    $n_prefixes++;
 }
