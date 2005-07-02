@@ -4,10 +4,13 @@
 #
 # $Id$
 
+# make INSTALL_OPTS=--diff install
+
 # [for some reason, this does not work without "perl" as root on alexandria; it
 # says "make: execvp: ./install.pl: Permission denied", for reasons obscure.  --
 # rgr, 28-Jul-03.]
-INSTALL = perl ./install.pl -show
+INSTALL_OPTS = --show
+INSTALL = perl ./install.pl ${INSTALL_OPTS}
 
 root = /usr/local
 bin-directory = ${root}/bin
