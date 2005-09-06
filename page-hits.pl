@@ -92,6 +92,8 @@ my $robot_re = join('|', qw(Ask.Jeeves/Teoma Gaisbot Googlebot grub-client
 		    qw(appie BecomeBot Faxobot HooWWWer LinkWalker MSIECrawler
 		       Nutch psbot www.steiermarksuche.at TurnitinBot
 		       Ultraseek VoilaBot),
+		    # [found in the august 2005 log.  -- rgr, 5-Sep-05.]
+		    qw(ConveraCrawler TutorGigBot http://www.WISEnutbot.com),
 		    # [these patterns need to have a little more than just the
 		    # name, so that I don't exclude other user agents by
 		    # mistake.  ".*" matches a version.  -- rgr, 25-Dec-04.]
