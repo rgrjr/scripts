@@ -1,7 +1,15 @@
 -- MARK --
+CRON: (rogers) CMD (echo "From cron job." | mail -s '$$status$$' psa-request@darwin.bu.edu) 
+CRON: (root) CMD ( /usr/lib/sa/sa2 -A   #update reports every 6 hour) 
 CRON: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.hourly) 
 CRON: (root) CMD (/root/bin/daily-status.pl) 
 CRON: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.daily) 
+CRON: (root) CMD (/sbin/evlogmgr -c "severity=DEBUG") 
+CRON: (root) CMD (/sbin/evlogmgr -c 'age > "30d"') 
+CRON: (root) CMD (/usr/local/bin/backup.pl -cd-dir /scratch/backups/cd/to-write /dev/hda5 7) 
+CRON: (root) CMD (/usr/local/bin/daily-status.pl) 
+CRON: (root) CMD (/usr/local/bin/vacuum.pl --mode=cp --min-free 100 /scratch/backups/cd/to-write tal:/scratch2/backups/cd/to-write) 
+CRON: (root) CMD (find /var/qmail/queue/info -type f -mtime +2 -size 2c | xargs -r touch -d '8 days ago') 
 kernel: klogd 1.4.1, ---------- state change ---------- 
 kernel: Loaded 1042 symbols from 41 modules.
 kernel: Disc change detected. 
