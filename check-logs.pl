@@ -62,6 +62,16 @@ my %standard_module_dispositions =
      # better safe than sorry.
      'default' => 'report');
 
+my @sshd_probe_attempt_regexes
+    = ('Did not receive identification string from',
+       'Failed password for ',
+       'fatal: Read from socket failed: Connection reset by peer',
+       '^Illegal user',
+       'input_userauth_request: illegal user',
+       'Connection closed by',
+       'Received disconnect from',
+       'User \w+ not allowed');
+
 ### Process arguments.
 while (@ARGV && $ARGV[0] =~ /^-./) {
     my $arg = shift(@ARGV);
@@ -428,6 +438,13 @@ while (defined($line = <>)) {
 	else {
 	    # couldn't parse.
 	    $disp = 'unknown';
+	}
+    }
+    elsif ($reporting_module eq 'sshd') {
+	# Maybe reclassify if it's in the @sshd_probe_attempt_regexes list.
+	for my $re (@sshd_probe_attempt_regexes) {
+	    $disp = 'ignore', last
+		if $description =~ /$re/;
 	}
     }
     # Handle leftovers.
