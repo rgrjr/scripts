@@ -76,14 +76,17 @@ sub print_items {
 	   $name, display_mb($size, 8), $level);
 }
 
+# Figurative constants for converting bytes to megabytes.
+my $mega = 1024.0*1024.0;
+my $mega_per_million = $mega/1000000;
+
 sub site_list_files {
-    # parse directory listings, dealing with remote file syntax.
+    # Parse directory listings, dealing with remote file syntax.
     my ($dir, $prefix) = @_;
     my @result = ();
 
     if ($dir =~ /:/) {
-	my $host = $`;
-	my $spec = $';
+	my ($host, $spec) = split(':', $dir, 2);
 	open(IN, "ssh '$host' \"ls -l '$spec'\" |")
 	    or die;
     }
@@ -112,25 +115,34 @@ sub site_list_files {
 	next
 	    if $prefix && (substr($file, 0, length($prefix)) ne $prefix);
 	next
-	    unless $file =~ /^(.+)-(\d+)-l(\d)\.(g?tar|tgz|dump)$/;
+	    unless $file =~ /^(.+)-(\d+)-l(\d)\w*\.(g?tar|tgz|dump)$/;
 	my ($tag, $date, $level) = $file =~ //;
-	if (! defined($levels{$tag})
-	    || $level < $levels{$tag}) {
-	    # it's a keeper.  first, though, convert the size into MB.  do this
-	    # in two chunks, because perl 5.6 thinks the answer is always 4095
-	    # for values above 2^32.  -- rgr, 9-Sep-03.
-	    my $mega = 1024.0*1024.0;
-	    my $mega_per_million = $mega/1000000;
-	    my $mb = (length($size) <= 6 ? $size : substr($size, -6))/$mega;
-	    $mb += substr($size, 0, -6)/$mega_per_million
-		if length($size) > 6;
-	    # print "[file $file, tag $tag, date $date, level $level]\n";
+	my $entry = $levels{$tag};
+	my ($entry_tag, $entry_date, $entry_level)
+	    = ($entry ? @$entry : ('', '', undef));
+	# convert the size into MB.  do this in two chunks, because perl 5.6
+	# thinks it's always 4095 for values above 2^32.  -- rgr, 9-Sep-03.
+	my $mb = (length($size) <= 6 ? $size : substr($size, -6))/$mega;
+	$mb += substr($size, 0, -6)/$mega_per_million
+	    if length($size) > 6;
+	if (! defined($entry_level) || $level < $entry_level) {
+	    # it's a keeper.
+	    # warn "[file $file, tag $tag, date $date, level $level]\n";
+	    $levels{$tag} = [$tag, $date, $level];
 	    push(@result, [$file, $mb, $level]);
-	    $levels{$tag} = $level;
+	}
+	elsif ($level == $entry_level
+	       && $tag eq $entry_tag && $date eq $entry_date) {
+	    # another file of the current set.
+	    # warn "[another file $file, tag $tag, date $date, level $level]\n";
+	    push(@result, [$file, $mb, $level]);
+	}
+	else {
+	    # must have been superceded by something we've seen already.
 	}
     }
     close(IN);
-    @result;
+    reverse(@result);
 }
 
 sub free_disk_space {
