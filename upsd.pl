@@ -43,10 +43,17 @@ my $log_handle;
 ### configuration setup.
 
 my $config_file_name = '/etc/upsd.conf';
-if (@ARGV && $ARGV[0] eq '--config') {
-    # this is our only keyword argument, designed mainly for testing.
-    shift(@ARGV);
-    $config_file_name = shift(@ARGV) || '-';
+while (@ARGV > 1 && $ARGV[0] =~ /^-./) {
+    my $arg = shift(@ARGV);
+    if ($arg eq '--config') {
+	$config_file_name = shift(@ARGV);
+    }
+    elsif ($arg eq '--verbose') {
+	$verbose_p++;
+    }
+    else {
+	die "$0:  Unknown option '$arg'; died";
+    }
 }
 my %config;
 fetch_configuration($config_file_name);
@@ -118,8 +125,17 @@ sub fetch_ups_status {
     # authentication thing to go properly.
     my $res = $ua->request($req);
     while (! $res->is_success) {
-	print "Page request failed, code ", $res->code, ".\n"
-	    if $verbose_p && $res->code != 401;
+	if ($res->code != 401) {
+	    # [dying at this point might be suboptimal; it is probably a
+	    # configuration error, but it seems excessive to kill the daemon for
+	    # something that could be transient.  -- rgr, 2-Jul-04.]
+	    die("$0:  Fatal:  Page request failed, code ", $res->code,
+		", message '", $res->message, "'.\n")
+		if $res->code >= 400;
+	    print("$0:  Page request failed, code ", $res->code, ", message '",
+		  $res->message, "'; retrying.\n")
+		if $verbose_p;
+	}
 	$res = $ua->request($req);
     }
 
