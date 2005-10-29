@@ -13,8 +13,6 @@ use Pod::Usage;
 my $warn = $0;
 $warn =~ s@.*/@@;
 
-my $VERSION = '0.3';
-
 my $scp_program_name = '/usr/bin/scp';
 my $from = '';		# source directory; required arg.
 my $to = '';		# destination directory; required arg.
@@ -291,8 +289,11 @@ sub copy_backup_files {
 
     my ($total_space, @need_copying) 
 	= find_files_to_copy($from, $to, $prefix);
-    return 1
-	if @need_copying == 0;
+    if (@need_copying == 0) {
+	warn "$0:  Nothing to copy.\n"
+	    if $verbose_p;
+	return 1;
+    }
     my $free_space = free_disk_space($to);
     my ($enough_space_p, $pretty_free_space, $pretty_free_left, $message)
 	= (defined($free_space)
@@ -338,7 +339,8 @@ vacuum.pl - Suck backup files across the network.
 This script selectively copies backup dumps over the network via
 C<ssh> (though it can also be used to copy them locally).  It only
 sees backup dump and tar files that follow the naming convention used
-by the C<backup.pl> script.  Furthermore, it only copies or moves
+by the C<backup.pl> script, and described below.
+Furthermore, it only copies or moves
 those files that are both (a) still current and (b) do not already
 exist at the destination.  A dump file is current if there is no more
 recent dump file with the same prefix at the same or lower dump level.
@@ -349,12 +351,45 @@ When files are copied across the network (as opposed to being moved
 locally), C<vacuum.pl> always does an C<md5sum> on them to verify the
 copy, and the original is not deleted unless the checksums match.
 
-Dump file names look something like C<home-20021021-l9.dump>, and
-consist of (a) a prefix tag ("home"), which is normally the last
-component of the directory where the directory is mounted, (b) the
-date the backup was made, e.g. '20021021', and (c) the dump level,
-e.g. '9'.  The suffix can be one of ".dump", ".tar", ".tgz", or
-".gtar" (for "GNU tar").  The prefix can be used to select a subset of
+Each dump file name looks something like C<home-20021021-l9a.dump>, and
+consists of the following five components:
+
+=over 4
+
+=item 1.
+
+A prefix tag (e.g. C<home>), which is normally the last component of
+the directory where the partition is mounted.  The tag is arbitrary
+and may consist of multiple words, as in C<usr-local>; its purpose is
+solely to group all of the backups make for a given volume.
+
+=item 2.
+
+The date the backup was made in "YYYYMMDD" format, e.g. '20021021'.
+We assume that at most one backup is made per partition per day.
+
+=item 3.
+
+The dump level, a digit from 0 to 9, with a lowercase "L" prefix, as
+in C<l9>.
+
+=item 4.
+
+An optional volume letter from "a" to "z".  If the backup requires two
+or more volumes, then alphabetic volume designators are assigned from
+'a', as in C<home-20021021-l9a.dump>, C<home-20021021-l9b.dump>,
+C<home-20021021-l9c.dump>, etc.  This is only necessary for large
+backups that are later copied to physical media.
+
+=item 5.
+
+A file suffix (extension), which can be one of ".dump", ".tar",
+".tgz", or ".gtar" (for "GNU tar").  Files with other suffixes are
+assumed to be something other than backup dumps, and are not copied.
+
+=back
+
+The prefix can be used to select a subset of
 backup files to transfer.  Currently, there is no way to change the
 set of allowed suffixes.
 
@@ -373,14 +408,13 @@ refuse to copy in any of the following situations:
 
 =item 1.
 
-If C<vacuum.pl> can't run C<ls> on the source machine to establish the
+If C<vacuum.pl> can't run C<ls> on either machine to establish the
 list of files that need to be transferred.
 
 =item 2.
 
-If C<vacuum.pl> can't run C<df> (to determine the current free space)
-or C<ls> (to determine which files are already present) on the
-destination machine
+If C<vacuum.pl> can't run C<df> to determine the current free space on
+the destination machine
 
 =item 3.
 
@@ -411,6 +445,14 @@ just be echoed to C<STDERR>.
 
 If specified, extra information messages are printed before and during
 the copy.
+
+=item B<--usage>
+
+Prints a brief usage message.
+
+=item B<--help>
+
+Prints a more detailed help message.
 
 =item B<--from>
 
@@ -469,17 +511,17 @@ more than this, then no files will be copied.
 
 =head1 VERSION
 
-    $Version:$
+ $Id$
 
 =head1 BUGS
 
-None known.
+If you find any, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2003 by Bob Rogers <rogers@rgrjr.dyndns.org>.
-This script is free software; you may redistribute it and/or modify it
-under the same terms as Perl itself.
+ Copyright (C) 2002-2005 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+ This script is free software; you may redistribute it and/or modify it
+ under the same terms as Perl itself.
 
 =head1 AUTHOR
 
