@@ -12,15 +12,13 @@ use Date::Parse;
 use Date::Format;
 
 my $date_format_string = '%Y-%m-%d %H:%M';
-my $date_fuzz = 60;		# in seconds.
+my $date_fuzz = 120;		# in seconds.
 my %modifications;
 
 sub record_file_rev_comment {
     my ($file_name, $file_rev, $date_etc, $comment) = @_;
 
-    my $date = ($date_etc =~ /date: *([^;]+); */ 
-		? ($date_etc =~ s///, $1)
-		: '???');
+    my $date = $date_etc =~ s/date: *([^;]+); *// && $1 || '???';
     # warn "[got ($file_name, $file_rev, $date_etc):]\n";
     if ($date eq '???') {
 	warn "Oops; can't identify date in '$date_etc' -- skipping.\n";
@@ -37,7 +35,9 @@ sub print_file_rev_comments {
     # Print all revision comments, sorted by date and grouped by comment.
 
     # examine entries by comment, then by date, combining all that have the
-    # identical comment and nearly the same date.
+    # identical comment and nearly the same date.  [perhaps we should also
+    # refuse to merge them if their modified files are not disjoint.  -- rgr,
+    # 29-Aug-05.]
     my @combined_entries;
     for my $comment (sort(keys(%modifications))) {
 	my $last_date;
