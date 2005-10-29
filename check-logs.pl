@@ -70,6 +70,7 @@ my @sshd_probe_attempt_regexes
        'input_userauth_request: illegal user',
        'Connection closed by',
        'Received disconnect from',
+       'reverse mapping checking getaddrinfo for',
        'User \w+ not allowed');
 
 ### Process arguments.
