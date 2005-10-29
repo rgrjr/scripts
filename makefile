@@ -32,7 +32,7 @@ log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
 		squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 # mail manipulation scripts.
-mail-scripts = mbox-grep.pl mbox2maildir.pl
+mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl
 # installation of various things, including these guys.
 install-scripts = install.pl install-rpms.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
