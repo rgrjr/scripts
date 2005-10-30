@@ -51,7 +51,7 @@ while (<IN>) {
 	# my $listing = sprintf('%14i %s', $size, $file);
 	my $listing = (' 'x(14-length($size))).$size.' '.$file;
 	push(@{$prefix_and_date_to_dumps{$pfx}->{$date}},
-	     [$date, $level, $listing]);
+	     ["$pfx-$date", $level, $listing]);
     }
 }
 
@@ -59,6 +59,7 @@ while (<IN>) {
 # '*' marking the current backup files.  (Of course, we only know what is
 # "current" in local terms.)
 my $last_level = 10;
+my $last_pfx_date = '';
 # warn Dumper(\%prefix_and_date_to_dumps);
 my $n_prefixes = 0;
 for my $pfx (sort(keys(%prefix_and_date_to_dumps))) {
@@ -67,10 +68,12 @@ for my $pfx (sort(keys(%prefix_and_date_to_dumps))) {
 	if $n_prefixes;
     for my $date (sort { $b <=> $a; } keys(%$date_to_dumps)) {
 	for my $entry (@{$date_to_dumps->{$date}}) {
-	    my ($ignored_date, $level, $listing) = @$entry;
+	    my ($pfx_date, $level, $listing) = @$entry;
 	    substr($listing, 1, 1) = '*', $last_level = $level
-		if $level < $last_level;
+		if ($level < $last_level
+		    || ($level == $last_level && $pfx_date eq $last_pfx_date));
 	    print $listing, "\n";
+	    $last_pfx_date = $pfx_date;
 	}
     }
     $n_prefixes++;
