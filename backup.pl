@@ -281,9 +281,9 @@ backup.pl -- Interface to `dump' and `restore' for automating backups.
 =head1 DESCRIPTION
 
 This script creates a backup dump using the `dump' program, and
-verifies it with the `restore' program, both of which are published as the
-Dump/Restore ext2/ext3 filesystem backup utilities by Stelian Pop
-(see L<http://sourceforge.net/projects/dump/>).
+verifies it with the `restore' program, both of which are published as
+the Dump/Restore ext2/ext3 filesystem backup (see
+L<http://sourceforge.net/projects/dump/>).
 
 The product of this procedure is a dump file on disk somewhere that has
 been verified against the backed-up partition.  If not supplied, a
