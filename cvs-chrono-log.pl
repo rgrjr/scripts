@@ -96,9 +96,8 @@ while (defined($line = <>)) {
 	$state = 'headings';
     }
     elsif ($state eq 'descriptions') {
-	# print($line);
 	$line =~ /^revision (.*)$/
-	    or warn "[oops; expected revision here.]\n";
+	    or warn "[oops; expected revision on line $.]\n";
 	my $file_rev = $1;
 	chomp(my $date_etc = <>);
 	my $comment = '';
@@ -120,7 +119,13 @@ while (defined($line = <>)) {
 	# processing the file header.
 	my $tag = $1;
 	if ($tag eq 'description') {
+	    # eat the description.
 	    $line = <>;
+	    # [there are 28 hyphens and 77 equal signs printed by my CVS
+	    # version.  how many are printed by yours?  -- rgr, 16-Feb-06.]
+	    while ($line && $line !~ /^(========|--------)/) {
+		$line = <>;
+	    }
 	    $state = ($line =~ /^========/ ? 'none' : 'descriptions');
 	}
 	elsif ($tag eq 'Working file') {
