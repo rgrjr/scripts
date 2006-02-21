@@ -43,7 +43,7 @@ sub record_file_rev_comment {
 }
 
 my $per_entry_fields = [ qw(author commitid) ];
-my $per_file_fields = [ qw(state lines) ];
+my $per_file_fields = [ qw(state lines branches) ];
 sub print_file_rev_comments {
     # Print all revision comments, sorted by date and grouped by comment.
 
@@ -93,8 +93,8 @@ sub print_file_rev_comments {
 	my ($n_matches, $n_files) = (0, 0);
 	my ($lines_removed, $lines_added);
 	for my $entry (sort { $a->file_name cmp $b->file_name; } @$date_entry) {
-	    print(join(' ', "  =>", $entry->file_name, $entry->file_rev,
-		       ': ', $entry->join_fields($per_file_fields)),
+	    print(join(' ', "  =>", $entry->file_name, $entry->file_rev.': ',
+		       $entry->join_fields($per_file_fields)),
 		  "\n");
 	    my $lines = $entry->lines;
 	    $lines_added += $1, $lines_removed += $2, $n_matches++
@@ -171,7 +171,7 @@ package RGR::CVS::FileRevision;
 sub BEGIN {
   no strict 'refs';
   for my $method (qw(comment raw_date encoded_date file_name file_rev
-		     author state lines commitid)) {
+		     author state lines commitid branches)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift;
