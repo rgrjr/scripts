@@ -14,7 +14,9 @@
 # don't die when no disk if --test, --test implies --verbose, started doc.
 #	-- rgr, 1-Mar-03.
 # update for SuSE 8.1 (cdrecord in /usr/bin, /mnt => /media).  -- rgr, 4-May-03.
+# added to CVS, which now keeps the version history.  -- rgr, 16-Jun-03.
 #
+# $Id$
 
 BEGIN { unshift(@INC, '/root/bin/') if -r '/root/bin'; }
 
@@ -32,9 +34,7 @@ my $diff_command = '/usr/bin/diff';
 my $cmp_command = '/usr/bin/cmp';
 my $mount_command = 'mount';
 my $unmount_command = 'umount';
-my $cd_mount_point = '/mnt/cdrom';
-$cd_mount_point = '/media/cdrecorder'
-    if ! -d $cd_mount_point && -d '/media/cdrecorder';
+my $cd_mount_point;
 
 # the CD-R and -RW disks are supposed to be 700MB, but leave a little room.
 # [backup.pl uses 695MB, so put the ceiling at 698MB.  -- rgr, 21-Oct-02.]
@@ -50,6 +50,7 @@ my $help = 0;
 my $usage = 0;
 my $verbose_p = 0;
 my $test_p = 0;
+my $dvd_p = 0;
 my $leave_mounted_p = 0;
 my $written_subdir = 'written';
 my $to_write_subdir = 'to-write';
@@ -61,10 +62,10 @@ sub make_option_forwarders {
     for my $entry (@_) {
 	push(@result, $entry, sub {
 	    my ($arg_name, $arg_value) = @_;
-	    my $arg = (defined($arg_value) && $arg_value ne 1
-		       ? "$arg_name='$arg_value'"
-		       : $arg_name);
-	    push(@$arg_array, "-$arg");
+	    my $arg = (defined($arg_value) && $entry =~ /=/
+		       ? "-$arg_name='$arg_value'"
+		       : "-$arg_name");
+	    push(@$arg_array, $arg);
 	});
     }
     @result;
@@ -72,7 +73,8 @@ sub make_option_forwarders {
 
 GetOptions('help' => \$help, 'man' => \$man, 'verbose+' => \$verbose_p,
 	   'test' => \$test_p, 'mount!' => \$leave_mounted_p,
-	   'dev=s' => \$dev_spec,
+	   'cd-mount-point=s' => \$cd_mount_point,
+	   'dev=s' => \$dev_spec, 'dvd!' => \$dvd_p,
 	   'to-write-subdir=s' => \$to_write_subdir,
 	   'written-subdir=s' => \$written_subdir,
 	   make_option_forwarders(\@mkisofs_options,
@@ -85,6 +87,20 @@ pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # Check directories.
+if (! $cd_mount_point) {
+    # look for a likely candidate.
+    for my $mp (qw(/mnt/cdrom /media/cdrecorder /media/sr0)) {
+	if (-d $mp) {
+	    # found it.
+	    $cd_mount_point = $mp;
+	    last;
+	}
+    }
+}
+die "$0:  Can't find written CD mount point; use --cd-mount-point to specify.\n"
+    unless $cd_mount_point;
+die "$0:  CD mount point '$cd_mount_point' does not exist.\n"
+    unless -d $cd_mount_point;
 die "No $to_write_subdir directory; died"
     unless -d $to_write_subdir;
 mkdir($written_subdir, 0700)
@@ -107,6 +123,20 @@ sub ensure_mount {
 }
 
 ### Look for data, and how to write it.
+
+# set up for DVD writing, if requested.
+if ($dvd_p) {
+    # cdrecord-wrapper.sh invokes cdrecord-ProDVD after setting up license info.
+    # both can be downloaded from the ftp://ftp.berlios.de/pub/cdrecord/ProDVD/
+    # directory.
+    $cdrecord_command = '/usr/local/bin/cdrecord-wrapper.sh';
+    # [single-sided DVDs are 4.7G; call it 4.5 for safety.  -- rgr, 28-Oct-05.]
+    $cd_max_size = 45000000;
+    # [this may be a peculiarity of my particular DVD burner, which cdrecord
+    # identifies as a MAD DOG 'MD-16XDVD9A2' rev 1.F0.  in any case, it doesn't
+    # handle track-at-once, which is why we need -tsize.  -- rgr, 28-Oct-05.]
+    unshift(@cdrecord_options, '-dao');
+}
 
 # take inventory, and exit silently if $to_write_subdir is empty.
 opendir(TW, $to_write_subdir) || die;
@@ -190,8 +220,18 @@ else {
     die("$warn: Error in '$msinfo_command':\n   $msinfo\nDied");
 }
 
+# check how much data we want to write in this session.
+unshift(@mkisofs_options, '-quiet')
+    unless $verbose_p;
+my $mkisofs_cmd = join(' ', $mkisofs_command, @mkisofs_options);
+my $disk_size = `$mkisofs_cmd -print-size $to_write_subdir 2>/dev/null`;
+chomp($disk_size);
+die("$0:  Couldn't get disk size from ",
+    "'$mkisofs_cmd -print-size $to_write_subdir'.\n")
+    unless $disk_size && $disk_size =~ /^\d+$/;
+
 # ensure that the data will fit.
-my ($space_needed_estimate) = split(' ', `du -s $to_write_subdir`);
+my $space_needed_estimate = 2*$disk_size;
 warn("$warn:  Estimate ${cd_used_estimate}K used, ",
      "${space_needed_estimate}K needed, with ${cd_max_size}K max.\n")
     if $verbose_p;
@@ -200,19 +240,15 @@ die("$warn:  Not enough disk left:  ${cd_used_estimate}K used ",
     if $cd_used_estimate+$space_needed_estimate > $cd_max_size;
 
 ### all clear, write the disk.
-unshift(@mkisofs_options, '-quiet')
-    unless $verbose_p;
-my $mkisofs_cmd
-    = join(' ', $mkisofs_command, @mkisofs_options, $to_write_subdir);
 my $cdrecord_cmd
     = join(' ', $cdrecord_command, "-dev=$dev_spec",
-	   '-multi', @cdrecord_options, '-');
-print("$warn:  Executing '$mkisofs_cmd\n",
+	   "-tsize=${disk_size}s", '-multi', @cdrecord_options, '-');
+print("$warn:  Executing '$mkisofs_cmd $to_write_subdir\n",
       "\t\t\t| $cdrecord_cmd'\n")
     if $verbose_p || $test_p;
-system("$mkisofs_cmd | $cdrecord_cmd") == 0
-    || die "$warn:  '$mkisofs_cmd | $cdrecord_cmd' failed:  $?"
-    unless $test_p;
+system("$mkisofs_cmd $to_write_subdir | $cdrecord_cmd") == 0
+    || die "$warn:  '$mkisofs_cmd $to_write_subdir | $cdrecord_cmd' failed:  $?"
+        unless $test_p;
 
 # now get rid of what we've written successfully.  if the disk is mountable,
 # then none of the possible error cases should die, as they are certainly not
@@ -254,7 +290,7 @@ cd-dump.pl -- Interface to `mkisofs' and `cdrecord' programs.
 
 =head1 SYNOPSIS
 
-    cd-dump.pl [--help] [--man] [--verbose] [--test] 
+    cd-dump.pl [--help] [--man] [--verbose] [--test] [--[no]dvd]
                [ --dev=x,y,z ] [--[no]mount] [--max-iso9660-filenames]
                [--relaxed-filenames] [-V=<volname>] [--speed=n]
 
@@ -310,6 +346,14 @@ greater verbosity.
 Specifies testing mode, in which C<cd-dump.pl> goes through all the
 motions, but doesn't actually write anything on the CD, or touch the
 hard disk file system.  This implies some verbosity.
+
+=item B<--dvd>
+
+Specifies writing to a DVD burner.  This affects the size of images
+that can be written, alters where C<cd-dump.pl> expects to find the
+burner program, and selects the C<-dao> option.
+
+[need much more detail, cdrecord-ProDVD link.  -- rgr, 5-Mar-06.]
 
 =item B<--mount>
 
@@ -379,6 +423,8 @@ arbitrary.
 C<cd-dump.pl> should probably emit a warning at least if it finds
 itself renaming files across partitions.
 
+The C<--dvd> stuff is not well tested.
+
 If you find any more, please let me know.
 
 =head1 SEE ALSO
@@ -397,13 +443,13 @@ If you find any more, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2002-2003 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2002-2006 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
 =head1 VERSION
 
-$Id$
+ $Id$
 
 =head1 AUTHOR
 
