@@ -158,16 +158,28 @@ sub free_disk_space {
 	open(IN, "df '$dir' |")
 	    or die;
     }
-    my $line;
-    while (! defined($result)
-	   && defined($line = <IN>)) {
+    my $line = <IN>;
+    while (! defined($result) && defined($line)) {
+	if ($line =~ /^Filesystem/) {
+	    $line = <IN>;
+	    next;
+	}
+	chomp($line);
+	my $peek = <IN>;
+	while (defined($peek) && $peek =~ /^ /) {
+	    # continuation line.  this is especially likely for LVM volumes,
+	    # which have device files with long names.
+	    chomp($peek);
+	    $line .= $peek;
+	    $peek = <IN>;
+	}
+	# line now contains all continuations.
 	die "$0:  '$dir' is mounted via NFS on $host.\n"
 	    if $line =~ /^[-\w\d.]+:/;
-	next
-	    unless $line =~ m@^/dev/@;
 	my @fields = split(' ', $line);
 	$result = $fields[3] >> 10
 	    if $fields[3] =~ /^\d+$/;
+	$line = $peek;
     }
     close(IN);
     die "$0:  Couldn't determine free space for '$spec' on $host.\n"
