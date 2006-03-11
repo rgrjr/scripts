@@ -29,7 +29,7 @@ use Date::Format;
 # define instance accessors.
 sub BEGIN {
   no strict 'refs';
-  for my $method (qw(revision author encoded_date msg files)) {
+  for my $method (qw(revision commitid author encoded_date msg files)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift;
@@ -47,29 +47,6 @@ sub new {
 	    if $self->can($attr);
     }
     $self;
-}
-
-sub _add_file_information {
-    # add file information.
-    my $entries = shift;
-
-    open(IN, "svn status --verbose |")
-	or die;
-    while (<IN>) {
-	next
-	    if /^\?/;
-	chomp;
-	s/^.\s*//;
-	my ($current_rev, $file_rev, $author, $file_name) = split(' ');
-	my $entry = $entries->{$file_rev};
-	# [this is kind of lame; we can only attribute the file author if it is
-	# the latest revision, in which case the revision already knows who the
-	# author is.  -- rgr, 26-Nov-05.]
-	push(@{$entry->{_files}},
-	     [ $file_name, $file_rev, "author: $author" ])
-	    if $entry && ! -d $file_name;
-    }
-    close(IN);
 }
 
 sub extract_subfield_string {
@@ -112,20 +89,49 @@ sub parse_svn_log_xml {
 		 msg => extract_subfield_string($keyed_content{msg}),
 		 author => $author,
 		 encoded_date => $encoded_date);
+	    my $files = $keyed_content{paths};
+	    if ($files && ref($files) eq 'ARRAY') {
+		my $parsed_files = [ ];
+		my @files_content = @$files;
+		# no useful attributes.
+		shift(@files_content);
+		while (my ($token, $content) = splice(@files_content, 0, 2)) {
+		    next
+			if $token eq 0 || ! ref($content);
+		    die "Unexpected <$token> element [2].\n"
+			unless $token eq 'path';
+		    my ($attrs, $tag, $file_name, $extra) = @$content;
+		    die "Oops; expected only a single path"
+			if $tag ne '0' || $extra || ref($file_name);
+		    my $rev = RGR::CVS::FileRevision->new
+			(file_name => $file_name,
+			 file_rev => $revision,
+			 author => $author,
+			 %$attrs);
+		    push(@$parsed_files, $rev);
+		}
+		$entry->files($parsed_files);
+	    }
 	    $entries{$revision} = $entry;
 	}
     }
-    _add_file_information(\%entries)
-	if %entries;
     \%entries;
 }
 
 sub report {
     my $self = shift;
 
+    # [can't seem to make these work at top level.  -- rgr, 11-Mar-06.]
+    my $per_entry_fields = [ qw(revision author commitid) ];
+    my $per_file_fields = [ qw(state action lines branches) ];
+
     my $date_format_string = '%Y-%m-%d %H:%M:%S';
     my $formatted_date = time2str($date_format_string, $self->encoded_date);
-    print("$formatted_date:\n");
+    my $files = $self->files;
+    print("$formatted_date:\n",
+	  "  ",
+	  # [kludge.  -- rgr, 11-Mar-06.]
+	  RGR::CVS::FileRevision::join_fields($self, $per_entry_fields), "\n");
     for my $line (split("\n", $self->msg)) {
 	# indent by two, skipping empty lines.
 	unless ($line =~ /^\s*$/) {
@@ -133,16 +139,61 @@ sub report {
 	    print "$line\n";
 	}
     }
-    print("  => Revision ", $self->revision,
-	  ":  author: ", $self->author, "\n");
-    my $files = $self->files;
     if ($files) {
-	for my $entry (sort { $a->[0] cmp $b->[0]; } @$files) {
-	    my ($file_name, $file_rev, $date_etc) = @$entry;
-	    # [this is kinda lame.  -- rgr, 26-Nov-05.]
-	    # print "  => $file_name $file_rev:  $date_etc\n";
-	    print "  => $file_name\n";
+	for my $entry (sort { $a->file_name cmp $b->file_name; } @$files) {
+	    my $file_name = $entry->file_name;
+	    print(join(' ', "  => $file_name: ",
+		       $entry->join_fields($per_file_fields)),
+		  "\n");
 	}
     }
     print "\n";
+}
+
+package RGR::CVS::FileRevision;
+
+# [this is CVS-oriented; gotta fix that.  we're looking for an eventual
+# unification of the svn-chrono-log.pl and cvs-chrono-log.pl scripts, but first
+# we need a way to install modules.  -- rgr, 11-Mar-06.]
+
+# E.g.: date: 2006-02-20 23:37:32 +0000; author: rogers; state: Exp; lines: +1
+# -3; commitid: 4b443fa52b84567;
+
+# define instance accessors.
+sub BEGIN {
+  no strict 'refs';
+  for my $method (qw(comment raw_date encoded_date file_name file_rev
+		     action author state lines commitid branches)) {
+    my $field = '_' . $method;
+    *$method = sub {
+      my $self = shift;
+      @_ ? ($self->{$field} = shift, $self) : $self->{$field};
+    }
+  }
+}
+
+sub new {
+  my $class = shift;
+
+  my $self = bless({}, $class);
+  while (@_) {
+      my $method = shift;
+      my $argument = shift;
+      $self->$method($argument)
+	  if $self->can($method);
+  }
+  $self;
+}
+
+sub join_fields {
+    my ($self, $fields) = @_;
+
+    join(';  ',
+	 map {
+	     my $name = $_;
+	     my $value = $self->$name;
+	     (defined($value)
+	      ? "$name: $value"
+	      : ());
+	 } @$fields);
 }
