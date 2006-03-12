@@ -11,7 +11,7 @@ use strict;
 use Date::Parse;
 use Date::Format;
 
-my $date_format_string = '%Y-%m-%d %H:%M';
+my $date_format_string = '%Y-%m-%d %H:%M:%S';
 my $date_fuzz = 120;		# in seconds.
 my %commit_mods;		# arrayrefs keyed on commitid.
 my %comment_mods;		# arrayrefs keyed on comment and date.
@@ -58,10 +58,11 @@ sub print_file_rev_comments {
 	     [$entry->encoded_date, $entry->comment, @$entries]);
     }
     # examine remaining entries by comment, then by date, combining all that
-    # have the identical comment and nearly the same date.  [perhaps we should
+    # have the identical comment and nearly the same date.  [we should
     # also refuse to merge them if their modified files are not disjoint.  --
     # rgr, 29-Aug-05.]
     for my $comment (sort(keys(%comment_mods))) {
+	# this is the latest date for a set of commits that we consider related.
 	my $last_date;
 	my @entries;
 	for my $date (sort(keys(%{$comment_mods{$comment}}))) {
@@ -72,7 +73,8 @@ sub print_file_rev_comments {
 		@entries = ();
 		undef($last_date);
 	    }
-	    $last_date ||= $date;
+	    $last_date = $date
+		if ! $last_date || $date > $last_date;
 	    push(@entries, @{$comment_mods{$comment}{$date}});
 	}
 	push(@combined_entries, [$last_date, $comment, @entries])

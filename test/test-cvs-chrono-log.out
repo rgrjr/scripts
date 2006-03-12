@@ -1,4 +1,4 @@
-2003-08-05 20:22:
+2003-08-05 20:22:18:
   author: rogers
   Updated check-logs.pl to 'use strict;'.
   => README.text 1.8:  state: Exp;  lines: +2 -2
@@ -6,17 +6,17 @@
   => nominal-random.text 1.2:  state: Exp;  lines: +1 -1
      Total lines: +59 -40
 
-2003-08-03 20:42:
+2003-08-03 20:42:50:
   author: rogers
   Make vacuum.pl deal better with inability to open a connection.
   => vacuum.pl 1.3:  state: Exp;  lines: +10 -5
 
-2003-07-28 16:59:
+2003-07-28 16:59:39:
   author: rogers
   Also copy .tgz files if found.
   => vacuum.pl 1.2:  state: Exp;  lines: +5 -5
 
-2003-07-28 12:59:
+2003-07-28 12:59:46:
   author: rogers
   Revamped makefile install targets, fixed module installation.
   New vacuum.pl script.
@@ -34,7 +34,7 @@
   => vacuum.pl 1.1:  state: Exp
      Total lines: +39 -15 (incomplete)
 
-2003-07-26 22:40:
+2003-07-26 22:41:02:
   author: rogers
   Added Weblog/Squid hacks to the collection.
   => README.text 1.6:  state: Exp;  lines: +13 -0
@@ -44,13 +44,13 @@
   => squid2std.pl 1.1:  state: Exp
   => squint.pl 1.1:  state: Exp
 
-2003-07-25 22:19:
+2003-07-25 22:19:49:
   author: rogers
   Chronological log reformatting hack -- needs documentation.
   => README.text 1.5:  state: Exp;  lines: +3 -0
   => cvs-chrono-log.pl 1.1:  state: Exp
 
-2003-07-18 22:01:
+2003-07-18 22:01:25:
   author: rogers
   Random cleaning up.
   => ChangeLog 1.3:  state: Exp;  lines: +1 -1
@@ -58,45 +58,45 @@
   => install.pl 1.5:  state: Exp;  lines: +5 -3
      Total lines: +16 -10
 
-2003-07-15 07:26:
+2003-07-15 07:26:34:
   author: rogers
   extract-subnet.pl:  Added 'use strict' and -w.
   => ChangeLog 1.2:  state: Exp;  lines: +2 -0
   => extract-subnet.pl 1.2:  state: Exp;  lines: +20 -15
      Total lines: +22 -15
 
-2003-07-15 07:15:
+2003-07-15 07:15:45:
   author: rogers
   Started ChangeLog.
   => ChangeLog 1.1:  state: Exp
   => README.text 1.3:  state: Exp;  lines: +2 -0
 
-2003-07-15 07:10:
+2003-07-15 07:10:55:
   author: rogers
   Oops; supply explicit -dev to cdrecord, use one dash in option names.
   => cd-dump.pl 1.6:  state: Exp;  lines: +4 -3
 
-2003-07-13 21:34:
+2003-07-13 21:34:37:
   author: rogers
   More perl style improvements.
   => install.pl 1.4:  state: Exp;  lines: +5 -7
 
-2003-07-13 21:22:
+2003-07-13 21:22:27:
   author: rogers
   Improve error message if install dir is not writable.
   => install.pl 1.3:  state: Exp;  lines: +2 -2
 
-2003-07-13 11:47:
+2003-07-13 11:47:15:
   author: rogers
   Converted to Getopt::Long usage.
   => cd-dump.pl 1.5:  state: Exp;  lines: +33 -62
 
-2003-07-13 11:03:
+2003-07-13 11:03:47:
   author: rogers
   Change $arg to $arg_name to fix "--" handling.
   => cd-dump.pl 1.4:  state: Exp;  lines: +6 -6
 
-2003-07-11 06:53:
+2003-07-11 06:53:42:
   author: rogers
   Clean up install.pl script.
   => cd-dump.pl 1.3:  state: Exp;  lines: +1 -1
@@ -104,25 +104,25 @@
   => makefile 1.3:  state: Exp;  lines: +1 -1
      Total lines: +41 -35
 
-2003-07-10 08:07:
+2003-07-10 08:07:37:
   author: rogers
   New --[no]mount option (untested), Pod::Usage, update doc.
   => README.text 1.2:  state: Exp;  lines: +6 -0
   => cd-dump.pl 1.2:  state: Exp;  lines: +63 -17
      Total lines: +69 -17
 
-2003-06-17 09:08:
+2003-06-17 09:08:31:
   author: rogers
   Fix typos in comments.
   => backup.pl 1.2:  state: Exp;  lines: +5 -4
 
-2003-06-15 21:08:
+2003-06-15 21:08:13:
   author: rogers
   Machinery for installing this in the /root/bin dir.
   => install.pl 1.1:  state: Exp
   => makefile 1.2:  state: Exp;  lines: +11 -1
 
-2003-06-15 20:47:
+2003-06-15 20:47:57:
   author: rogers
   Initial revision
   => README.text 1.1:  state: Exp;  branches: 1.1.1
@@ -149,7 +149,7 @@
   => status-since 1.1:  state: Exp;  branches: 1.1.1
   => tripwire-verify 1.1:  state: Exp;  branches: 1.1.1
 
-2003-06-15 20:47:
+2003-06-15 20:47:57:
   author: rogers
   Initial sources.
   => README.text 1.1.1.1:  state: Exp;  lines: +0 -0
