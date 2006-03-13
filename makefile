@@ -12,15 +12,15 @@
 INSTALL_OPTS = --show
 INSTALL = perl ./install.pl ${INSTALL_OPTS}
 
-root = /usr/local
-bin-directory = ${root}/bin
+PREFIX = /usr/local
+bin-directory = ${PREFIX}/bin
 pm-directory = /usr/lib/perl5/site_perl
 public-html-directory = /srv/www/htdocs/linux
 published-scripts = backup.pl cd-dump.pl vacuum.pl
 published-modules = rename-into-tree.pm
 html-pages = ${published-scripts:.pl=.pl.html}
 
-base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts}
+base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts} ${vc-scripts}
 backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl \
 		show-backups.pl vacuum.pl
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
@@ -35,6 +35,8 @@ log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl
 # installation of various things, including these guys.
 install-scripts = install.pl install-rpms.pl
+# utility scripts for version control systems.
+vc-scripts = cvs-chrono-log.pl svn-chrono-log.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
 # Note that tar-backup.pm is not used by anything at the moment.
