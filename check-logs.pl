@@ -69,6 +69,7 @@ my @sshd_probe_attempt_regexes
        '^Illegal user',
        'input_userauth_request: illegal user',
        'Connection closed by',
+       'maps to [^ ,]*, but this does not map back to the address',
        'Received disconnect from',
        'reverse mapping checking getaddrinfo for',
        'User \w+ not allowed');
