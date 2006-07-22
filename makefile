@@ -32,7 +32,8 @@ log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
 		squid2std.pl
 log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 # mail manipulation scripts.
-mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl
+mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
+		email/forged-local-address.pl
 # installation of various things, including these guys.
 install-scripts = install.pl install-rpms.pl
 # utility scripts for version control systems.
@@ -51,13 +52,19 @@ all:
 	@echo Nobody here but us scripts.
 	@echo So tell me what you really want to do, e.g. \"make publish\".
 
-test:	test-chrono-log
+test:	test-chrono-log test-email
 
 test-chrono-log:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text \
 		> test-cvs-chrono-log.tmp
 	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
 	rm -f test-cvs-chrono-log.tmp
+test-email:	test-forged-address
+test-forged-address:
+	SENDER=rogers@rgrjr.dyndns.org email/forged-local-address.pl --not < email/from-bob.text
+	SENDER=jan@rgrjr.com email/forged-local-address.pl --not < email/from-jan.text
+	SENDER=debra@somewhere.com email/forged-local-address.pl --not < email/from-debra.text
+	SENDER=rogers@rgrjr.com email/forged-local-address.pl < email/spam-1.text
 
 install:	install-base
 install-base:
