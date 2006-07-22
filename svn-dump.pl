@@ -12,6 +12,10 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 
+# this is where the Subversion binaries live on my system, and it's not part of
+# $PATH as supplied by cron.
+$ENV{PATH} = '/usr/local/bin:'.$ENV{PATH};
+
 my ($from_revision, $to_revision, $incremental_p, $repository);
 my $deltas_p = 1;
 my $verbose_p = 0;
