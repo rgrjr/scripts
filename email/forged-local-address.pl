@@ -34,7 +34,7 @@ my ($spam_exit, $legit_exit) = ($not_p ? (1, 0) : (0, 1));
 my $message = Mail::Header->new(\*STDIN);
 my $hdr = $message->get('Received', 0);
 my $local_p;
-if ($hdr =~ /qmail \d+ invoked by uid \d+/) {
+if ($hdr =~ /qmail \d+ invoked by /) {
     $local_p = 'local';
 }
 else {
@@ -113,7 +113,8 @@ There are three cases:
 =item 1.
 
 Locally injected, in which case the first 'Received:' header contains
-something like "qmail 20512 invoked by uid 500".  This is legitimate.
+something like "qmail 20512 invoked by uid 500" or "qmail 20513
+invoked by alias".  This is legitimate.
 
 =item 2.
 
