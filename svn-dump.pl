@@ -35,76 +35,93 @@ pod2usage(-verbose => 2) if $help;
 
 $repository ||= shift(@ARGV)
     or die "$0:  No repository specified.\n";
-die "$0:  Extra arguments:  '", join("', '", @ARGV), "'.\n"
-    if @ARGV;
 
-# Default the 'to' revision number.
-chomp($to_revision = `svnlook youngest '$repository'`)
-    if ! $to_revision;
-die "$0:  'To' revision is not an integer.\n"
-    unless $to_revision =~ /^\d+$/;
+### Subroutine.
 
-# Construct the file name, and ensure that we haven't already made it.
-my $output_file_name = "$repository-$to_revision.svndump";
-$output_file_name =~ s@.*/@@;
-exit(0)
-    # Apparently, there have been no changes since the last dump.
-    if -e $output_file_name;
+sub svn_dump {
+    my ($repository, $from_revision, $to_revision) = @_;
 
-# Default the 'from' revision number to one more than the last revision of this
-# repository that we dumped.
-if (! defined($from_revision)) {
-    # Look for previously created files.
-    $from_revision = 0;
-    my $prefix = $output_file_name;
-    $prefix =~ s/-\d+\.svndump$//;
-    opendir(FILES, '.')
-	or die;
-    while (my $file_name = readdir(FILES)) {
-	next
-	    unless $file_name =~ /$prefix-(\d+)\.svndump$/;
-	$from_revision = $1
-	    if $from_revision < $1;
+    $repository =~ s{ / $ }{}x;
+    die "$0:  '$repository' is not a directory.\n"
+	unless -d $repository;
+
+    # Default the 'to' revision number.
+    chomp($to_revision = `svnlook youngest '$repository'`)
+	if ! $to_revision;
+    die "$0:  'To' revision is not an integer.\n"
+	unless $to_revision =~ /^\d+$/;
+
+    # Construct the file name, and ensure that we haven't already made it.
+    my $output_file_name = "$repository-$to_revision.svndump";
+    $output_file_name =~ s@.*/@@;
+    return
+	# Apparently, there have been no changes since the last dump.
+	if -e $output_file_name;
+
+    # Default the 'from' revision number to one more than the last revision of
+    # this repository that we dumped.
+    if (! defined($from_revision)) {
+	# Look for previously created files.
+	$from_revision = 0;
+	my $prefix = $output_file_name;
+	$prefix =~ s/-\d+\.svndump$//;
+	opendir(FILES, '.')
+	    or die;
+	while (my $file_name = readdir(FILES)) {
+	    next
+		unless $file_name =~ /$prefix-(\d+)\.svndump$/;
+	    $from_revision = $1
+		if $from_revision < $1;
+	}
+	# $from_revision may still be 0 if there are no matching files; that's
+	# OK.  if not, increment to the next rev.
+	$from_revision++
+	    if $from_revision;
     }
-    # $from_revision may still be 0 if there are no matching files; that's OK.
-    # if not, increment to the next rev.
-    $from_revision++
-	if $from_revision;
+    die "$0:  Nothing to dump into $output_file_name.\n"
+	# This shouldn't happen unless the user specified some odd combination
+	# of options.
+	if $from_revision > $to_revision;
+
+    # Default $incremental_p.
+    $incremental_p = ($from_revision > 0)
+	if ! defined($incremental_p);
+
+    # Make the dump.
+    my @command_and_options = qw(svnadmin dump);
+    push(@command_and_options, '--incremental')
+	if $incremental_p;
+    push(@command_and_options, '--deltas')
+	if $deltas_p;
+    open(STDOUT, ">$output_file_name")
+	or die "$0:  Couldn't redirect stdout to '$output_file_name':  $!";
+    my $error_file_name = "$output_file_name.err";
+    # We need to redirect stderr, because 'svnadmin dump' keeps a running tally
+    # of versions dumped there, and we don't want that to mess up cron use.
+    open(STDERR, ">$error_file_name")
+	or die "$0:  Couldn't redirect stderr to '$error_file_name':  $!";
+    my $result
+	= system(@command_and_options,
+		 '--revision', "$from_revision:$to_revision",
+		 $repository);
+    if (0 != $result) {
+	unlink($output_file_name);	# just in case.
+	die("$0:  Oops -- got result $result; ",
+	    "see $error_file_name for details.\n");
+    }
+
+    # Clean up.
+    close(STDOUT);
+    close(STDERR);
+    unlink($error_file_name);
 }
-die "$0:  Nothing to dump.\n"
-    # This shouldn't happen unless the user specified some odd combination of
-    # options.
-    if $from_revision == $to_revision;
 
-# Default $incremental_p.
-$incremental_p = ($from_revision > 0)
-    if ! defined($incremental_p);
+### Main code.
 
-# Make the dump.
-my @command_and_options = qw(svnadmin dump);
-push(@command_and_options, '--incremental')
-    if $incremental_p;
-push(@command_and_options, '--deltas')
-    if $deltas_p;
-open(STDOUT, ">$output_file_name")
-    or die "$0:  Couldn't redirect stdout to '$output_file_name':  $!";
-my $error_file_name = "$output_file_name.err";
-# We need to redirect stderr, because 'svnadmin dump' keeps a running tally of
-# versions dumped there, and we don't want that to mess up cron use.
-open(STDERR, ">$error_file_name")
-    or die "$0:  Couldn't redirect stderr to '$error_file_name':  $!";
-my $result
-    = system(@command_and_options, '--revision', "$from_revision:$to_revision",
-	     $repository);
-if (0 != $result) {
-    unlink($output_file_name);	# just in case.
-    die "$0:  Oops -- got result $result; see $error_file_name for details.\n";
+svn_dump($repository, $from_revision, $to_revision);
+for my $other_repository (@ARGV) {
+    svn_dump($other_repository);
 }
-
-# Clean up.
-close(STDOUT);
-close(STDERR);
-unlink($error_file_name);
 
 __END__
 
@@ -117,17 +134,20 @@ svn-dump.pl - Dump a Subversion repository
     svn-dump.pl [ --verbose ] [ --usage|-? ] [ --help ]
                 [ --from-revision=<int> ] [ --to-revision=<int> ]
                 [ --[no]deltas ] [ --[no]incremental ]
-                [ --repository=<repos-path> | <repos-path> ]
+                [ --repository=<repos-path> | <repos-path> ... ]
 
 =head1 DESCRIPTION
 
-Dumps a Subversion repository to the latest of a series of numbered
-files in the current directory.  If the C</home/me/svn/foo> repository
-is being dumped, and its latest revision is 317, then the file will be
-written to the C<foo-317.svndump> file; if this file already exists,
-then C<svn-dump.pl> exits immediately.  This is useful for using from
-a C<cron> job; the resulting series of dump files play nicely with
-incremental filesystem dumps.
+Dumps one or more Subversion repositories, each to the latest of a series
+of numbered files in the current directory.  If the C</home/me/svn/foo>
+repository is being dumped, and its latest revision is 317, then the
+file will be written to the C<foo-317.svndump> file; if this file
+already exists, then C<svn-dump.pl> exits immediately.  This is useful
+for using from a C<cron> job; the resulting series of dump files play
+nicely with incremental filesystem dumps.
+
+If more than one repository path is specified on the command line, then the
+C<--from-revision> and C<--to-revision> options apply only to the first.
 
 =head1 OPTIONS
 
@@ -148,15 +168,18 @@ Prints a more detailed help message.
 
 =item B<--from-revision>
 
-Specifies the starting revision to dump.  The default is one plus the
-revision in the latest C<foo-*.svndump> file, or zero if there are no
-matching files.  Specify C<--from-revision=0> to get everything.
+Specifies the starting revision to dump; this only applies to the
+first repository if more than one is specified.  The default is one
+plus the revision in the latest C<foo-*.svndump> file, or zero if
+there are no matching files.  Specify C<--from-revision=0> to get
+everything.
 
 =item B<--to-revision>
 
-Specifies the latest revision to dump.  If not specified,
-C<svn-dump.pl> asks Subversion for the number of the latest revision.
-If the C</home/me/svn/foo> repository is being dumped, and its latest
+Specifies the latest revision to dump; this only applies to the first
+repository if more than one is specified.  If omitted, C<svn-dump.pl>
+asks Subversion for the number of the latest revision.  If the
+C</home/me/svn/foo> repository is being dumped, and its latest
 revision is 317, then the file will be written to the
 C<foo-317.svndump> file in the current directory.
 
@@ -180,7 +203,9 @@ anyway), and C<--incremental> otherwise (the usual case).
 
 Specifies the path to the Subversion repository to be dumped.  This
 may also be specified as a positional argument, i.e. without the
-C<--repository> prefix.
+C<--repository> prefix.  Any number of positional repository paths may
+be specified; if C<--repository> is also specified, then that path is
+considered to be the first.
 
 =back
 
