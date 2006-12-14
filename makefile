@@ -25,7 +25,7 @@ backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl \
 		show-backups.pl svn-dump.pl vacuum.pl
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
 # rgr, 5-Dec-04.]
-root-scripts = xauth-local-host burn-backups
+root-scripts = xauth-local-host
 # [tripwire-verify used to be on ${log-scripts}, but it's too system-dependent;
 # it has hardwired executable paths and system names.  -- rgr, 8-Aug-03.]
 log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
@@ -72,6 +72,11 @@ install-base:
 	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
 	${INSTALL} -m 555 ${root-scripts} /root/bin
 	${INSTALL} -m 444 ${log-files} /root/bin
+	# install burn-backups only if not already there; usually it gets
+	# customized per host.
+	if [ ! -r /root/bin/burn-backups ]; then \
+	    ${INSTALL} -m 555 burn-backups /root/bin; \
+	fi
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
 install-afpd:
