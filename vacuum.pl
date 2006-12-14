@@ -7,6 +7,8 @@
 # [$Id$]
 
 use strict;
+use warnings;
+
 use Getopt::Long;
 use Pod::Usage;
 
@@ -17,6 +19,7 @@ my $scp_program_name = '/usr/bin/scp';
 my $from = '';		# source directory; required arg.
 my $to = '';		# destination directory; required arg.
 my $prefix = '';	# file name prefix, to limit file choices.
+my $since;		# date string, e.g. 200611 or 20061203.
 my $mode = 'cp';	# 'mv' or 'cp'.
 my $min_free_left = 1024;	# min. disk space in MB to leave after copy.
 my $test_p = 0;
@@ -27,6 +30,7 @@ GetOptions('test+' => \$test_p, 'verbose+' => \$verbose_p,
 	   'usage|?' => \$usage, 'help' => \$help,
 	   'from=s' => \$from, 'to=s' => \$to,
 	   'mode=s' => \$mode, 'prefix=s' => \$prefix,
+	   'since=s' => \$since,
 	   'min-free-left=i' => \$min_free_left)
     or pod2usage(-verbose => 0);
 pod2usage(-verbose => 1) if $usage;
@@ -41,6 +45,9 @@ $to = shift(@ARGV)
     if @ARGV && ! $to;
 pod2usage("$warn:  Missing --to arg.\n")
     unless $to;
+pod2usage("$warn:  --since must be a date in the form '2006' or '200611' "
+	  ."or '20061203'.\n")
+    if $since && $since !~ /^\d{4,8}$/;
 pod2usage("$warn:  '".shift(@ARGV)."' is an extraneous positional arg.\n")
     if @ARGV;
 pod2usage("$warn:  Either --from or --to must be a local directory.\n")
@@ -127,13 +134,13 @@ sub site_list_files {
 	    # it's a keeper.
 	    # warn "[file $file, tag $tag, date $date, level $level]\n";
 	    $levels{$tag} = [$tag, $date, $level];
-	    push(@result, [$file, $mb, $level]);
+	    push(@result, [$file, $mb, $level, $date]);
 	}
 	elsif ($level == $entry_level
 	       && $tag eq $entry_tag && $date eq $entry_date) {
 	    # another file of the current set.
 	    # warn "[another file $file, tag $tag, date $date, level $level]\n";
-	    push(@result, [$file, $mb, $level]);
+	    push(@result, [$file, $mb, $level, $date]);
 	}
 	else {
 	    # must have been superceded by something we've seen already.
@@ -228,8 +235,9 @@ sub site_file_md5 {
 
 sub find_files_to_copy {
     # extract lists for the $from and $to directories, and find those files that
-    # need to be copied, i.e. that exist in $from but not in $to (and have the
-    # specified prefix, if any).  returns the list of file structures, prefixed
+    # need to be copied, i.e. that exist in $from but not in $to, have the
+    # specified prefix (if any), and are more recent than the $since date 
+    # (if specified).  returns the list of file structures, prefixed
     # by the total space required.
     my ($from, $to, $prefix) = @_;
 
@@ -245,6 +253,8 @@ sub find_files_to_copy {
     # map &print_items, @from;
     foreach my $from (@from) {
 	my $name = $from->[0];
+	next
+	    if $since && substr($from->[3], 0, length($since)) le $since;
 	if (! defined($to{$name})) {
 	    $total_space += $from->[1];
 	    warn "[$from needs copying.]\n"
@@ -496,6 +506,17 @@ deleted after a successful copy.
 
 Specifies the dump file prefix tag; may be used to select a subset of
 files to transfer.
+
+=item B<--since>
+
+Specifies a cutoff date of the form '2006' or '200611' or '20061209'.
+If specified, only dumps that are still current and are dated
+B<strictly after> this date are copied.  This is a good way to get
+current incrementals without also copying an older full dump.
+
+Note that dump files before the cutoff are still used to determine
+which files are current.  [This may be a misfeature.  -- rgr,
+12-Dec-06.]
 
 =item B<--min-free-left>
 
