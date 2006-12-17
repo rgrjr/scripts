@@ -25,7 +25,6 @@ GetOptions('verbose+' => \$verbose_p,
 	   'locals=s' => \$local_domain_file)
     or pod2usage();
 
-system("env > DEBUG.text");
 my ($spam_exit, $legit_exit) = ($not_p ? (1, 0) : (0, 1));
 
 ### Main code.
