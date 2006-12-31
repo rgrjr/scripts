@@ -54,8 +54,14 @@ all:
 
 test:	test-chrono-log test-email
 
-test-chrono-log:
+test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2
+test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text \
+		> test-cvs-chrono-log.tmp
+	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
+	rm -f test-cvs-chrono-log.tmp
+test-cvs-chrono-log-2:
+	./vc-chrono-log.rb < test/test-cvs-chrono-log.text \
 		> test-cvs-chrono-log.tmp
 	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
 	rm -f test-cvs-chrono-log.tmp
