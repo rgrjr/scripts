@@ -51,37 +51,39 @@ sub svn_dump {
     die "$0:  'To' revision is not an integer.\n"
 	unless $to_revision =~ /^\d+$/;
 
-    # Construct the file name, and ensure that we haven't already made it.
-    my $output_file_name = "$repository-$to_revision.svndump";
-    $output_file_name =~ s@.*/@@;
-    return
-	# Apparently, there have been no changes since the last dump.
-	if -e $output_file_name;
-
     # Default the 'from' revision number to one more than the last revision of
     # this repository that we dumped.
     if (! defined($from_revision)) {
 	# Look for previously created files.
 	$from_revision = 0;
-	my $prefix = $output_file_name;
-	$prefix =~ s/-\d+\.svndump$//;
+	my $prefix = $repository;
+	$prefix =~ s@.*/@@;
+	$prefix =~ s/-[-\d]+\.svndump$//;
 	opendir(FILES, '.')
 	    or die;
 	while (my $file_name = readdir(FILES)) {
-	    next
-		unless $file_name =~ /$prefix-(\d+)\.svndump$/;
-	    $from_revision = $1
-		if $from_revision < $1;
+	    my ($file_rev) = $file_name =~ /$prefix(?:-\d+)?-(\d+)\.svndump$/;
+	    $from_revision = $file_rev
+		if defined($file_rev) && $from_revision < $file_rev;
 	}
 	# $from_revision may still be 0 if there are no matching files; that's
 	# OK.  if not, increment to the next rev.
 	$from_revision++
 	    if $from_revision;
     }
-    die "$0:  Nothing to dump into $output_file_name.\n"
+    return
+	if $from_revision == $to_revision+1;
+    die "$0:  Nothing to dump for $repository.\n"
 	# This shouldn't happen unless the user specified some odd combination
 	# of options.
 	if $from_revision > $to_revision;
+
+    # Construct the file name, and ensure that we haven't already made it.
+    my $output_file_name = "$repository-$from_revision-$to_revision.svndump";
+    $output_file_name =~ s@.*/@@;
+    return
+	# Apparently, there have been no changes since the last dump.
+	if -e $output_file_name;
 
     # Default $incremental_p.
     $incremental_p = ($from_revision > 0)
@@ -140,8 +142,9 @@ svn-dump.pl - Dump a Subversion repository
 
 Dumps one or more Subversion repositories, each to the latest of a series
 of numbered files in the current directory.  If the C</home/me/svn/foo>
-repository is being dumped, and its latest revision is 317, then the
-file will be written to the C<foo-317.svndump> file; if this file
+repository is being dumped, its latest revision is 317, and the most 
+recent previous dump file is C<foo-308-311.svndump>, then the
+dump will be written to a file named C<foo-312-317.svndump>; if this file
 already exists, then C<svn-dump.pl> exits immediately.  This is useful
 for using from a C<cron> job; the resulting series of dump files play
 nicely with incremental filesystem dumps.
@@ -178,10 +181,7 @@ everything.
 
 Specifies the latest revision to dump; this only applies to the first
 repository if more than one is specified.  If omitted, C<svn-dump.pl>
-asks Subversion for the number of the latest revision.  If the
-C</home/me/svn/foo> repository is being dumped, and its latest
-revision is 317, then the file will be written to the
-C<foo-317.svndump> file in the current directory.
+asks Subversion for the number of the latest revision.
 
 =item B<--[no]deltas>
 
