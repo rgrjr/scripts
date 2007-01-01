@@ -37,7 +37,7 @@ mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 # installation of various things, including these guys.
 install-scripts = install.pl install-rpms.pl
 # utility scripts for version control systems.
-vc-scripts = cvs-chrono-log.pl svn-chrono-log.pl
+vc-scripts = cvs-chrono-log.pl svn-chrono-log.pl vc-chrono-log.rb
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
 # Note that tar-backup.pm is not used by anything at the moment.
@@ -57,19 +57,19 @@ test:	test-chrono-log test-email
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 		test-svn-chrono-log-1a test-svn-chrono-log-1b
 test-cvs-chrono-log-1:
-	time ./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
+	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
 	cmp $@.tmp test/test-cvs-chrono-log.out
 	rm -f $@.tmp
 test-cvs-chrono-log-2:
-	time ./vc-chrono-log.rb < test/test-cvs-chrono-log.text > $@.tmp
+	./vc-chrono-log.rb < test/test-cvs-chrono-log.text > $@.tmp
 	cmp $@.tmp test/test-cvs-chrono-log.out
 	rm -f $@.tmp
 test-svn-chrono-log-1a:
-	time ./svn-chrono-log.pl < test/test-svn-chrono-log-1.xml > $@.tmp
+	./svn-chrono-log.pl < test/test-svn-chrono-log-1.xml > $@.tmp
 	cmp $@.tmp test/$@-out.text
 	rm -f $@.tmp
 test-svn-chrono-log-1b:
-	time ./vc-chrono-log.rb < test/test-svn-chrono-log-1.xml > $@.tmp
+	./vc-chrono-log.rb < test/test-svn-chrono-log-1.xml > $@.tmp
 	cmp $@.tmp test/test-svn-chrono-log-1a-out.text
 	rm -f $@.tmp
 
