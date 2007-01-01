@@ -6,31 +6,43 @@
 #
 # $Id$
 
+# [Kernel.require: p528]
 require 'parsedate'
 
 $date_fuzz = 120		# in seconds.
 
+### Hacks.
+
+# [library REXML: p725]
+require 'rexml/document'
+
+# Extend REXML with the collect_text method.  This returns a single string for
+# all of the text in the enclosing content.
+module REXML
+
+    class Text
+        def collect_text
+            value
+        end
+    end
+
+    class Element
+        def collect_text
+            text = ''
+            self.each do | subdatum |
+                text += subdatum.collect_text
+            end
+            text
+        end
+    end
+
+end
+
+
 ### Classes.
 
-# Holds a single file revision.  Slots were chosen to be a superset of CVS and
-# Subversion information; the revision is per-entry for Subversion but
-# per-file for CVS.
-class CVSFileRevision
-    attr_accessor :comment, :raw_date, :encoded_date, :file_name, :file_rev
-    attr_accessor :author, :state, :lines, :commitid, :branches
-
-    def initialize(hash)
-        @raw_date = hash['raw_date']
-        @comment = hash['comment']
-        @encoded_date = hash['encoded_date']
-        @file_name = hash['file_name']
-        @file_rev = hash['file_rev']
-        @author = hash['author']
-        @state = hash['state']
-        @lines = hash['lines']
-        @commitid = hash['commitid']
-        @branches = hash['branches']
-    end
+# Helper class for producing formatted output.
+class LogBase
 
     # Return a string with the specified field "name: value" pairs, omitting
     # any that are false or nil.
@@ -46,18 +58,50 @@ class CVSFileRevision
 
 end
 
+# Holds a single file revision.  Slots were chosen to be a superset of CVS and
+# Subversion information; the revision is per-entry for Subversion but
+# per-file for CVS.
+class CVSFileRevision < LogBase
+    attr_accessor :comment, :raw_date, :encoded_date, :file_name, :file_rev
+    attr_accessor :author, :state, :action
+    attr_accessor :lines, :commitid, :revision, :branches
+
+    @@per_file_fields = %w(state action lines branches)
+
+    def initialize(hash)
+        @raw_date = hash['raw_date']
+        @comment = hash['comment']
+        @encoded_date = hash['encoded_date']
+        @file_name = hash['file_name']
+        @file_rev = hash['file_rev']
+        @author = hash['author']
+        @state = hash['state']
+        @action = hash['action']
+        @lines = hash['lines']
+        @commitid = hash['commitid']
+        @revision = hash['revision']
+        @branches = hash['branches']
+    end
+
+    def display
+        print('  => ', @file_name)
+        print(' ', @file_rev) unless @file_rev.nil?
+        print(':  ', join_fields(@@per_file_fields), "\n")
+    end
+
+end
+
 # Describes a single commit.  Sometimes this is called a "changeset".
-class ChronoLogEntry
+class ChronoLogEntry < LogBase
     attr_accessor :revision, :commitid, :author, :encoded_date, :message, :files
 
-    @@per_entry_fields = %w(author commitid)
-    @@per_file_fields = %w(state lines branches)
+    @@per_entry_fields = %w(revision author commitid)
     @@date_format_string = '%Y-%m-%d %H:%M:%S'
 
     def initialize(hash)
-        @message = hash['message'] || raise("message required")
+        @message = hash['message'] || hash['msg'] || raise("message required")
         @encoded_date = hash['encoded_date'] || raise("encoded_date required")
-        @revision = hash['revision'] || ''
+        @revision = hash['revision']
         @commitid = hash['commitid']
 
 	# CVS sorts the file names, but combining sets of entries with similar
@@ -72,6 +116,7 @@ class ChronoLogEntry
         if ! @author && @files.length then
             @author = @files[0].author
         end
+        raise "ChronoLogEntry init:  No @author in #{self}" if ! @author
     end
 
     def display
@@ -79,7 +124,7 @@ class ChronoLogEntry
 
         # [strftime is on p647.]
 	print(encoded_date.getlocal.strftime(@@date_format_string), ":\n  ",
-              self.files[0].join_fields(@@per_entry_fields), "\n")
+              self.join_fields(@@per_entry_fields), "\n")
 	self.message.split("\n").each do |line|
             print '  ', line, "\n" if line.length
         end
@@ -87,8 +132,7 @@ class ChronoLogEntry
         # list the files now.
 	(n_matches, n_files, lines_removed, lines_added) = [0, 0, 0, 0];
         self.files.each do | entry |
-	    print('  => ', entry.file_name, ' ', entry.file_rev, ':  ',
-                  entry.join_fields(@@per_file_fields), "\n")
+	    entry.display
             lines = entry.lines
             if lines && lines =~ /\+(\d+) -(\d+)/ then
                 lines_added += Integer($1)
@@ -119,8 +163,53 @@ class VCLogParser
     end
 
     def parse(stream)
-        # Generic parser, but we only understand CVS at present.
-        parse_cvs(stream)
+        # Generic parser, assuming we can dispatch on the first character.
+        char = stream.getc
+        stream.ungetc(char)
+        if char == ?< then
+            parse_svn_xml(stream)
+        else
+            parse_cvs(stream)
+        end
+
+        # now resort by date from newest to oldest.
+        # [Array#sort! is on p439.]
+        @log_entries.sort! { |a, b| b.encoded_date <=> a.encoded_date }
+    end
+
+    def parse_svn_xml(stream)
+        # REXML does the hard part; we just need to traverse the returned
+        # document and extract the interesting bits.
+        xml = REXML::Document.new(stream)
+        xml.elements.each("//logentry") do | logentry |
+            rev_number = logentry.attributes['revision']
+            raise "No revision in #{logentry.class.name}" if rev_number.nil?
+            files = [ ]
+            hash = { 'revision' => rev_number, 'files' => files }
+            logentry.each do | datum |
+                # skip whitespace between elements.
+                next if datum.kind_of?(REXML::Text)
+                elt_name = datum.expanded_name
+                if elt_name == 'paths' then
+                    datum.each do | path |
+                        next if path.kind_of?(REXML::Text)
+                        action = path.attributes['action'] || 'M'
+                        text = path.collect_text
+                        files << CVSFileRevision.new('file_name' => text,
+                                                     'action' => action)
+                    end
+                else
+                    hash[elt_name] = datum.collect_text
+                end
+            end
+
+            # Make sure we have all the right values.
+            date = hash['date'] || raise("Bug:  No date")
+            # class Time: p642
+            # library ParseDate: p713
+            hash['encoded_date'] = Time.gm(*ParseDate.parsedate(date))
+            @log_entries << ChronoLogEntry.new(hash)
+        end
     end
 
     def parse_cvs(stream)
@@ -259,10 +348,6 @@ class VCLogParser
                 add_entry(comment, last_date, file_entries)
             end
         end
-
-        # now resort by date from newest to oldest.
-        # [Array#sort! is on p439.]
-        @log_entries.sort! { |a, b| b.encoded_date <=> a.encoded_date }
     end
 
 end
