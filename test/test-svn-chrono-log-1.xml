@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<log>
+<logentry
+   revision="300">
+<author>rogers</author>
+<date>2006-12-24T22:18:04.135368Z</date>
+<paths>
+<path
+   action="M">/trunk/mini-compiler.lisp</path>
+</paths>
+<msg>   + (declare-variable-constant, variable-constant-p):  New internal API
+     for defconstant names.
+   + (walk-form):  Replace constants with their declared values.
+   + (compile-variable-declaration):  Define the constant value.
+   + (walk-let-declaration):  Include INLINE, NOTINLINE, and INTEGER to
+     reduce warnings.
+</msg>
+</logentry>
+<logentry
+   revision="301">
+<author>rogers</author>
+<date>2006-12-25T03:17:36.134636Z</date>
+<paths>
+<path
+   action="M">/trunk/mini-compiler.lisp</path>
+</paths>
+<msg>   + (perform-branch-optimization):  Extend test inversion optimization
+     to :eq, :eq_addr, :ne, and :ne_addr tests.
+   + (complement-test):  Relocate.
+</msg>
+</logentry>
+<logentry
+   revision="302">
+<author>rogers</author>
+<date>2006-12-26T02:41:25.045080Z</date>
+<paths>
+<path
+   action="M">/trunk/toy-lisp.pir</path>
+</paths>
+<msg>* toy-lisp.pir:
+   + (_print_object):  Make printing of a sub more informative.
+</msg>
+</logentry>
+<logentry
+   revision="303">
+<author>rogers</author>
+<date>2006-12-26T03:19:14.023736Z</date>
+<paths>
+<path
+   action="M">/trunk/stream.lisp</path>
+<path
+   action="M">/trunk/print.lisp</path>
+<path
+   action="A">/trunk/t/readtable.t</path>
+<path
+   action="M">/trunk/toy-lisp.pir</path>
+</paths>
+<msg>* print.lisp:
+   + (output-symbol-name):  Finish implementation of symbol quoting and
+     case mangling.  Man am I glad somebody else wrote this.
+* stream.lisp:
+   + Move PRIN1, PRINC, and PRINT to print.lisp, for CMUCL consistency.
+* toy-lisp.pir:
+   + (_main):  array.pbc must be loaded before print.pbc so that the
+     latter can build arrays at load-time.  This is a requirement of the
+     new symbol-printing code.
+* t/readtable.t (added):
+   + Add a single paltry test case.
+</msg>
+</logentry>
+<logentry
+   revision="304">
+<author>rogers</author>
+<date>2006-12-27T21:00:34.351993Z</date>
+<paths>
+<path
+   action="M">/trunk/pred.lisp</path>
+<path
+   action="M">/trunk/print.lisp</path>
+<path
+   action="M">/trunk/mini-compiler.lisp</path>
+</paths>
+<msg>* mini-compiler.lisp:
+   + (walk-let-declaration):  Also handle top-level declarations, widen
+     the set of silently-ignored declarations.
+   + (process-top-level-declaration):  New, handles declaim and
+     (quoted top-level) proclaim forms.
+   + (parrot-compile-top-level-form):  Use instead of ignoring declaim.
+* print.lisp, pred.lisp:
+   + Add declarations to reduce the noise even further.
+</msg>
+</logentry>
+<logentry
+   revision="305">
+<author>rogers</author>
+<date>2006-12-27T22:16:12.944561Z</date>
+<paths>
+<path
+   action="M">/trunk/mini-compiler.lisp</path>
+<path
+   action="M">/trunk/t/string.t</path>
+<path
+   action="M">/trunk/string.lisp</path>
+</paths>
+<msg>* mini-compiler.lisp:
+   + (compile-string-equal):  Generalize compile-string= to handle both
+     the internal common-lisp::%string= and common-lisp::%string-equal
+     fns, each of which takes two args that must be strings.
+   + (parrot-compile-top-level-form):  Handle COMPILE as well as
+     :COMPILE-TOPLEVEL when checking EVAL-WHEN forms.
+* string.lisp:
+   + (with-two-strings):  Added (plus its neighbors).  This is why
+     (eval-when (compile) ...) needs to work.
+   + (string=, string-equal):  Both are now supported, in all their ANSI
+     glory, in terms of SUBSEQ the "%" versions.
+* t/string.t:
+   + Tests for same.
+</msg>
+</logentry>
+<logentry
+   revision="306">
+<author>rogers</author>
+<date>2006-12-27T22:44:38.080836Z</date>
+<paths>
+<path
+   action="M">/trunk/mini-compiler.lisp</path>
+</paths>
+<msg>   + (compile-value-form-for-branch):  Split out of . . .
+   + (parrot-compile-branch):  . . . here, to make it accessible.
+     Turns out not to have been needed, though it's a tad cleaner.
+</msg>
+</logentry>
+<logentry
+   revision="307">
+<author>rogers</author>
+<date>2006-12-28T03:22:14.930042Z</date>
+<paths>
+<path
+   action="M">/trunk/t/list.t</path>
+<path
+   action="M">/trunk/list.lisp</path>
+</paths>
+<msg>* list.lisp:
+   + (assoc, rassoc):  Handle :test args.
+* t/list.t:
+   + Test these.
+</msg>
+</logentry>
+<logentry
+   revision="308">
+<author>rogers</author>
+<date>2006-12-28T16:41:12.188491Z</date>
+<paths>
+<path
+   action="M">/trunk/toy-lisp.pir</path>
+<path
+   action="M">/trunk/t/symbol.t</path>
+<path
+   action="M">/trunk/symbol.lisp</path>
+</paths>
+<msg>* toy-lisp.pir:
+   + (_make_symbol_internal):  Renamed from _make_symbol, moved to
+     '.namespace ["COMMON-LISP"]', exported as common-lisp::%make-symbol
+     for use by . . .
+* symbol.lisp:
+   + (make-symbol):  . . . the real (public) thing, which also coerces
+     its argument to a string.
+* t/symbol.t:
+   + Test same.
+</msg>
+</logentry>
+<logentry
+   revision="309">
+<author>rogers</author>
+<date>2006-12-28T16:55:26.336174Z</date>
+<paths>
+<path
+   action="M">/trunk/makefile</path>
+<path
+   action="A">/trunk/sharpm.lisp</path>
+<path
+   action="M">/trunk/t/char.t</path>
+<path
+   action="M">/trunk/reader.lisp</path>
+<path
+   action="M">/trunk/t/readtable.t</path>
+<path
+   action="M">/trunk/toy-lisp.pir</path>
+</paths>
+<msg>* reader.lisp:
+   + (read-extended-token, read-extended-token-escaped):  #: support.
+   + (make-dispatch-macro-character, etc.):  Support for #-macros.
+* sharpm.lisp (added), toy-lisp.pir, makefile:
+   + CMUCL #-macro functions, starting with #\, #', #(, and #:.
+* t/char.t:
+   + Test #\.
+* t/readtable.t:
+   + Test #', #(, and #:.
+</msg>
+</logentry>
+<logentry
+   revision="310">
+<author>rogers</author>
+<date>2006-12-29T04:29:20.169000Z</date>
+<paths>
+<path
+   action="M">/trunk/makefile</path>
+</paths>
+<msg>   + (clean):  Fix typo in comment.
+</msg>
+</logentry>
+<logentry
+   revision="311">
+<author>rogers</author>
+<date>2006-12-30T02:30:08.811947Z</date>
+<paths>
+<path
+   action="M">/trunk/sharpm.lisp</path>
+<path
+   action="M">/trunk/t/readtable.t</path>
+</paths>
+<msg>* sharpm.lisp:
+   + Add support for the #., #R, #B, #O, and #X reader macros.
+* t/readtable.t:
+   + Test them.
+</msg>
+</logentry>
+<logentry
+   revision="312">
+<author>rogers</author>
+<date>2006-12-30T03:18:28.911794Z</date>
+<paths>
+<path
+   action="M">/trunk/sharpm.lisp</path>
+<path
+   action="M">/trunk/t/readtable.t</path>
+</paths>
+<msg>* sharpm.lisp:
+   + (sharp-vertical-bar):  Added #|...|# support.
+* t/readtable.t:
+   + And a test.
+</msg>
+</logentry>
+</log>

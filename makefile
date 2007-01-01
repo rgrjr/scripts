@@ -54,7 +54,8 @@ all:
 
 test:	test-chrono-log test-email
 
-test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2
+test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
+		test-svn-chrono-log-1a
 test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text \
 		> test-cvs-chrono-log.tmp
@@ -65,6 +66,11 @@ test-cvs-chrono-log-2:
 		> test-cvs-chrono-log.tmp
 	cmp test-cvs-chrono-log.tmp test/test-cvs-chrono-log.out
 	rm -f test-cvs-chrono-log.tmp
+test-svn-chrono-log-1a:
+	./svn-chrono-log.pl < test/test-svn-chrono-log-1.xml > $@.tmp
+	cmp $@.tmp test/$@-out.text
+	rm -f $@.tmp
+
 test-email:	test-forged-address
 test-forged-address:
 	SENDER=rogers@rgrjr.dyndns.org email/forged-local-address.pl --not < email/from-bob.text

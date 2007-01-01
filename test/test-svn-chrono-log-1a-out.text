@@ -1,0 +1,146 @@
+2006-12-29 22:18:28:
+  revision: 312;  author: rogers
+  * sharpm.lisp:
+     + (sharp-vertical-bar):  Added #|...|# support.
+  * t/readtable.t:
+     + And a test.
+  => /trunk/sharpm.lisp:  action: M
+  => /trunk/t/readtable.t:  action: M
+
+2006-12-29 21:30:08:
+  revision: 311;  author: rogers
+  * sharpm.lisp:
+     + Add support for the #., #R, #B, #O, and #X reader macros.
+  * t/readtable.t:
+     + Test them.
+  => /trunk/sharpm.lisp:  action: M
+  => /trunk/t/readtable.t:  action: M
+
+2006-12-28 23:29:20:
+  revision: 310;  author: rogers
+     + (clean):  Fix typo in comment.
+  => /trunk/makefile:  action: M
+
+2006-12-28 11:55:26:
+  revision: 309;  author: rogers
+  * reader.lisp:
+     + (read-extended-token, read-extended-token-escaped):  #: support.
+     + (make-dispatch-macro-character, etc.):  Support for #-macros.
+  * sharpm.lisp (added), toy-lisp.pir, makefile:
+     + CMUCL #-macro functions, starting with #\, #', #(, and #:.
+  * t/char.t:
+     + Test #\.
+  * t/readtable.t:
+     + Test #', #(, and #:.
+  => /trunk/makefile:  action: M
+  => /trunk/reader.lisp:  action: M
+  => /trunk/sharpm.lisp:  action: A
+  => /trunk/t/char.t:  action: M
+  => /trunk/t/readtable.t:  action: M
+  => /trunk/toy-lisp.pir:  action: M
+
+2006-12-28 11:41:12:
+  revision: 308;  author: rogers
+  * toy-lisp.pir:
+     + (_make_symbol_internal):  Renamed from _make_symbol, moved to
+       '.namespace ["COMMON-LISP"]', exported as common-lisp::%make-symbol
+       for use by . . .
+  * symbol.lisp:
+     + (make-symbol):  . . . the real (public) thing, which also coerces
+       its argument to a string.
+  * t/symbol.t:
+     + Test same.
+  => /trunk/symbol.lisp:  action: M
+  => /trunk/t/symbol.t:  action: M
+  => /trunk/toy-lisp.pir:  action: M
+
+2006-12-27 22:22:14:
+  revision: 307;  author: rogers
+  * list.lisp:
+     + (assoc, rassoc):  Handle :test args.
+  * t/list.t:
+     + Test these.
+  => /trunk/list.lisp:  action: M
+  => /trunk/t/list.t:  action: M
+
+2006-12-27 17:44:38:
+  revision: 306;  author: rogers
+     + (compile-value-form-for-branch):  Split out of . . .
+     + (parrot-compile-branch):  . . . here, to make it accessible.
+       Turns out not to have been needed, though it's a tad cleaner.
+  => /trunk/mini-compiler.lisp:  action: M
+
+2006-12-27 17:16:12:
+  revision: 305;  author: rogers
+  * mini-compiler.lisp:
+     + (compile-string-equal):  Generalize compile-string= to handle both
+       the internal common-lisp::%string= and common-lisp::%string-equal
+       fns, each of which takes two args that must be strings.
+     + (parrot-compile-top-level-form):  Handle COMPILE as well as
+       :COMPILE-TOPLEVEL when checking EVAL-WHEN forms.
+  * string.lisp:
+     + (with-two-strings):  Added (plus its neighbors).  This is why
+       (eval-when (compile) ...) needs to work.
+     + (string=, string-equal):  Both are now supported, in all their ANSI
+       glory, in terms of SUBSEQ the "%" versions.
+  * t/string.t:
+     + Tests for same.
+  => /trunk/mini-compiler.lisp:  action: M
+  => /trunk/string.lisp:  action: M
+  => /trunk/t/string.t:  action: M
+
+2006-12-27 16:00:34:
+  revision: 304;  author: rogers
+  * mini-compiler.lisp:
+     + (walk-let-declaration):  Also handle top-level declarations, widen
+       the set of silently-ignored declarations.
+     + (process-top-level-declaration):  New, handles declaim and
+       (quoted top-level) proclaim forms.
+     + (parrot-compile-top-level-form):  Use instead of ignoring declaim.
+  * print.lisp, pred.lisp:
+     + Add declarations to reduce the noise even further.
+  => /trunk/mini-compiler.lisp:  action: M
+  => /trunk/pred.lisp:  action: M
+  => /trunk/print.lisp:  action: M
+
+2006-12-25 22:19:14:
+  revision: 303;  author: rogers
+  * print.lisp:
+     + (output-symbol-name):  Finish implementation of symbol quoting and
+       case mangling.  Man am I glad somebody else wrote this.
+  * stream.lisp:
+     + Move PRIN1, PRINC, and PRINT to print.lisp, for CMUCL consistency.
+  * toy-lisp.pir:
+     + (_main):  array.pbc must be loaded before print.pbc so that the
+       latter can build arrays at load-time.  This is a requirement of the
+       new symbol-printing code.
+  * t/readtable.t (added):
+     + Add a single paltry test case.
+  => /trunk/print.lisp:  action: M
+  => /trunk/stream.lisp:  action: M
+  => /trunk/t/readtable.t:  action: A
+  => /trunk/toy-lisp.pir:  action: M
+
+2006-12-25 21:41:25:
+  revision: 302;  author: rogers
+  * toy-lisp.pir:
+     + (_print_object):  Make printing of a sub more informative.
+  => /trunk/toy-lisp.pir:  action: M
+
+2006-12-24 22:17:36:
+  revision: 301;  author: rogers
+     + (perform-branch-optimization):  Extend test inversion optimization
+       to :eq, :eq_addr, :ne, and :ne_addr tests.
+     + (complement-test):  Relocate.
+  => /trunk/mini-compiler.lisp:  action: M
+
+2006-12-24 17:18:04:
+  revision: 300;  author: rogers
+     + (declare-variable-constant, variable-constant-p):  New internal API
+       for defconstant names.
+     + (walk-form):  Replace constants with their declared values.
+     + (compile-variable-declaration):  Define the constant value.
+     + (walk-let-declaration):  Include INLINE, NOTINLINE, and INTEGER to
+       reduce warnings.
+  => /trunk/mini-compiler.lisp:  action: M
+
