@@ -17,7 +17,7 @@ $date_fuzz = 120		# in seconds.
 require 'rexml/document'
 
 # Extend REXML with the collect_text method.  This returns a single string for
-# all of the text in the enclosing content.
+# all of the text (and none of the elements) in the given element.
 module REXML
 
     class Text
@@ -28,11 +28,7 @@ module REXML
 
     class Element
         def collect_text
-            text = ''
-            self.each do | subdatum |
-                text += subdatum.collect_text
-            end
-            text
+            self.map { | s | s.collect_text }.join('')
         end
     end
 
@@ -47,13 +43,13 @@ class LogBase
     # Return a string with the specified field "name: value" pairs, omitting
     # any that are false or nil.
     def join_fields(field_names)
-        formatted_fields = field_names.map do |name|
-            value = self.send(name)
-            value ? name + ': ' + value : nil
-        end
-        # because compact (and delete) return nil if nothing happens, we can't
-        # just cascade "field_names.map { ... } .compact.join", alas.
-        (formatted_fields.compact || formatted_fields).join(';  ')
+        field_names.reject do | name |
+            # Omit fields that are nil.
+            self.send(name).nil?
+        end .map do |name|
+            # Format the rest.
+            name + ': ' + self.send(name)
+        end.join(';  ')
     end
 
 end
