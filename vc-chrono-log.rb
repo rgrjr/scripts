@@ -57,26 +57,29 @@ end
 # Holds a single file revision.  Slots were chosen to be a superset of CVS and
 # Subversion information; the revision is per-entry for Subversion but
 # per-file for CVS.
-class CVSFileRevision < LogBase
-    attr_accessor :comment, :raw_date, :encoded_date, :file_name, :file_rev
-    attr_accessor :author, :state, :action
-    attr_accessor :lines, :commitid, :revision, :branches
+class VCFileRevision < LogBase
+    # Common slot.
+    attr_accessor :file_name
+    # CVS slots.
+    attr_accessor :author, :encoded_date, :comment, :file_rev
+    attr_accessor :state, :lines, :commitid, :revision, :branches
+    # Subversion slot.
+    attr_accessor :action
 
     @@per_file_fields = %w(state action lines branches)
 
     def initialize(hash)
-        @raw_date = hash['raw_date']
-        @comment = hash['comment']
-        @encoded_date = hash['encoded_date']
         @file_name = hash['file_name']
-        @file_rev = hash['file_rev']
         @author = hash['author']
+        @encoded_date = hash['encoded_date']
+        @comment = hash['comment']
+        @file_rev = hash['file_rev']
         @state = hash['state']
-        @action = hash['action']
         @lines = hash['lines']
         @commitid = hash['commitid']
         @revision = hash['revision']
         @branches = hash['branches']
+        @action = hash['action']
     end
 
     def display
@@ -88,7 +91,7 @@ class CVSFileRevision < LogBase
 end
 
 # Describes a single commit.  Sometimes this is called a "changeset".
-class ChronoLogEntry < LogBase
+class VCLogEntry < LogBase
     attr_accessor :revision, :commitid, :author, :encoded_date, :message, :files
 
     @@per_entry_fields = %w(revision author commitid)
@@ -112,7 +115,7 @@ class ChronoLogEntry < LogBase
         if ! @author && @files.length then
             @author = @files[0].author
         end
-        raise "ChronoLogEntry init:  No @author in #{self}" if ! @author
+        raise "VCLogEntry init:  No @author in #{self}" if ! @author
     end
 
     def display
@@ -148,7 +151,7 @@ class ChronoLogEntry < LogBase
 end
 
 # Helper class for parsing log files.  After the "parse" method returns, the
-# @log_entries slot will contain an array of ChronoLogEntry instances.
+# @log_entries slot will contain an array of VCLogEntry instances.
 class VCLogParser
     attr_reader :log_entries
 
@@ -191,7 +194,7 @@ class VCLogParser
                         next if path.kind_of?(REXML::Text)
                         action = path.attributes['action'] || 'M'
                         text = path.collect_text
-                        files << CVSFileRevision.new('file_name' => text,
+                        files << VCFileRevision.new('file_name' => text,
                                                      'action' => action)
                     end
                 else
@@ -204,7 +207,7 @@ class VCLogParser
             # class Time: p642
             # library ParseDate: p713
             hash['encoded_date'] = Time.gm(*ParseDate.parsedate(date))
-            @log_entries << ChronoLogEntry.new(hash)
+            @log_entries << VCLogEntry.new(hash)
         end
     end
 
@@ -282,12 +285,11 @@ class VCLogParser
             alist = date_etc.split(/; +/).
                     map(&lambda { |pair| pair.split(/: */) })
             values = Hash[*alist.flatten]
-            values.merge!(Hash['raw_date' => date,
-                               'encoded_date' => encoded_date,
+            values.merge!(Hash['encoded_date' => encoded_date,
                                'comment' => comment,
                                'file_name' => file_name,
                                'file_rev' => file_rev])
-            rev = CVSFileRevision.new(values)
+            rev = VCFileRevision.new(values)
             commit_id = rev.commitid
             if commit_id then
                 @commit_mods[commit_id] ||= [ ]
@@ -300,11 +302,11 @@ class VCLogParser
         end
     end
 
-    # Add a new ChronoLogEntry to @log_entries.
+    # Add a new VCLogEntry to @log_entries.
     def add_entry(message, last_date, file_entries)
-        entry = ChronoLogEntry.new('encoded_date' => last_date,
-                                   'message' => message,
-                                   'files' => file_entries.flatten)
+        entry = VCLogEntry.new('encoded_date' => last_date,
+                               'message' => message,
+                               'files' => file_entries.flatten)
         @log_entries << entry
     end
 
