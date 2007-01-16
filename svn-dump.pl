@@ -36,6 +36,8 @@ pod2usage(-verbose => 2) if $help;
 $repository ||= shift(@ARGV)
     or die "$0:  No repository specified.\n";
 
+my $error_file_name = "svn-dump-errors-$$.text";
+
 ### Subroutine.
 
 sub svn_dump {
@@ -97,11 +99,6 @@ sub svn_dump {
 	if $deltas_p;
     open(STDOUT, ">$output_file_name")
 	or die "$0:  Couldn't redirect stdout to '$output_file_name':  $!";
-    my $error_file_name = "$output_file_name.err";
-    # We need to redirect stderr, because 'svnadmin dump' keeps a running tally
-    # of versions dumped there, and we don't want that to mess up cron use.
-    open(STDERR, ">$error_file_name")
-	or die "$0:  Couldn't redirect stderr to '$error_file_name':  $!";
     my $result
 	= system(@command_and_options,
 		 '--revision', "$from_revision:$to_revision",
@@ -113,17 +110,26 @@ sub svn_dump {
     }
 
     # Clean up.
-    close(STDOUT);
-    close(STDERR);
-    unlink($error_file_name);
+    # [no, this seems to mess up FD inheritance.  i don't understand it, though;
+    # the svnadmin subprocess doesn't write to the opened file the second time
+    # this is invoked.  -- rgr, 15-Jan-07.]
+    # close(STDOUT);
 }
 
 ### Main code.
 
+# We need to redirect stderr, because 'svnadmin dump' keeps a running tally
+# of versions dumped there, and we don't want that to mess up cron use.
+open(STDERR, ">$error_file_name")
+    or die "$0:  Couldn't redirect stderr to '$error_file_name':  $!";
 svn_dump($repository, $from_revision, $to_revision);
 for my $other_repository (@ARGV) {
     svn_dump($other_repository);
 }
+close(STDERR);
+# We die if anything goes wrong, so if we get here, $error_file_name must not
+# have anything of interest.
+unlink($error_file_name);
 
 __END__
 
