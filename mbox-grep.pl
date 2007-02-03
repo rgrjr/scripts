@@ -95,6 +95,7 @@ sub search_one_file {
     # $matching_line_count appropriately.
     my $file_name = shift;
     my $last_line_empty_p = 1;		# start of file is good enough.
+    # NB: $message and $line_number are one-based.
     my ($message, $line_number, $in_header_p) = (0, 0, 0);
     my ($message_match_count, $file_match_count) = (0, 0);
     my $saved_message = '';		# for $display_full_message_p use
@@ -112,9 +113,7 @@ sub search_one_file {
 	    print(join(':',
 		       ($show_file_p ? ($file_name) : ()),
 		       ($number_p
-			? ((defined($message_order[$message])
-			    ? $message_order[$message]
-			    : 1+$message),
+			? (($message_order[$message] || $message),
 			   $line_number)
 			: ()),
 		       $line));
@@ -166,14 +165,16 @@ sub search_one_file {
 	# Look for message-order kludge in VM buffers.  This will be in the
 	# header of the first message if present.  -- rgr, 12-May-00.
 	if (! $rmail_p && $in_header_p && $message == 1
-	    && $line =~ /^X-VM-Message-Order:/) {
-	    my $data = $';
+	    && $line =~ /^X-VM-Message-Order: *(.*)/) {
+	    my $data = $1;
 	    while (defined($line = <IN>)
 		   && $line =~ /^[ \t]/) {
 		$data .= $line;
 		$line_number++;
 	    }
 	    $line_number++;	# handle extra read.
+	    # The leading 0 is to make @message_order easily indexable by a
+	    # one-based $message number.
 	    @message_order = (0, split(' ', $1))
 		if $data =~ /\(([0-9 \t\n]+)\)/;
 	    warn("$warn: $file_name: Got order (", join(', ', @message_order),
