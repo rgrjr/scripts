@@ -27,6 +27,27 @@ GetOptions('verbose+' => \$verbose_p,
 
 my ($spam_exit, $legit_exit) = ($not_p ? (1, 0) : (0, 1));
 
+### Subroutines.
+
+my %match_domains;
+my @suffix_domains;
+sub ensure_nonlocal_host {
+    # Exits with $spam_exit code if it matches any local domain.
+    my ($host, $description) = @_;
+
+    $host =~ s/.*@//;
+    $host = lc($host);
+
+    if ($match_domains{$host}
+	|| grep { substr($_, -length($host)) eq $host; } @suffix_domains) {
+	warn "lose:  '$host' is forged in $description\n"
+	    if $verbose_p;
+	exit($spam_exit);
+    }
+    warn "$host is good\n"
+	if $verbose_p;
+}
+
 ### Main code.
 
 # Check headers for local vs. remote.
@@ -48,8 +69,6 @@ if ($local_p) {
 }
 
 # We have a remote message, so we need to find out what our local addresses are.
-my %match_domains;
-my @suffix_domains;
 if (-r $local_domain_file) {
     open(IN, $local_domain_file)
 	or die "$0:  Could not open '$local_domain_file':  $!";
@@ -70,14 +89,22 @@ if (-r $local_domain_file) {
 # match, we lose.
 my $host = $ENV{SENDER}
    or die "$0:  Bug:  No \$SENDER";
-$host =~ s/.*@//;
-$host = lc($host);
+ensure_nonlocal_host($host, 'envelope sender');
 
-if ($match_domains{$host}
-    || grep { substr($_, -length($host)) eq $host; } @suffix_domains) {
-    warn "lose:  forged\n"
-	if $verbose_p;
-    exit($spam_exit);
+# Look for forged local addresses in appropriate headers.
+for my $header_name (qw(sender from)) {
+    for my $header ($message->get($header_name)) {
+	for my $address (split(/\s*,\s*/, $header)) {
+	    $address =~ s/\"[^""]*\"//g;
+	    $address =~ s/\([^()]*\)//g;
+	    if ($address =~ /<([^<>]+)>/) {
+		ensure_nonlocal_host($1, $header_name);
+	    }
+	    else {
+		ensure_nonlocal_host($address, $header_name);
+	    }
+	}
+    }
 }
 
 # This means NOT spam.

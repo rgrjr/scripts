@@ -80,6 +80,7 @@ test-forged-address:
 	SENDER=jan@rgrjr.com email/forged-local-address.pl --not < email/from-jan.text
 	SENDER=debra@somewhere.com email/forged-local-address.pl --not < email/from-debra.text
 	SENDER=rogers@rgrjr.com email/forged-local-address.pl < email/spam-1.text
+	SENDER=wiieme@foo.com email/forged-local-address.pl < email/spam-2.text
 
 install:	install-base
 install-base:
