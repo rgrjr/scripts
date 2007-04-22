@@ -64,7 +64,7 @@ sub svn_dump {
 	opendir(FILES, '.')
 	    or die;
 	while (my $file_name = readdir(FILES)) {
-	    my ($file_rev) = $file_name =~ /$prefix(?:-\d+)?-(\d+)\.svndump$/;
+	    my ($file_rev) = $file_name =~ /^$prefix(?:-\d+)?-(\d+)\.svndump$/;
 	    $from_revision = $file_rev
 		if defined($file_rev) && $from_revision < $file_rev;
 	}
