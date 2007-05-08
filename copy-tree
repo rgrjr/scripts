@@ -1,0 +1,18 @@
+#!/bin/csh -f
+#
+# Use tar to copy a directory tree: $1 -> $2.  The directories had better be
+# in different places.
+#
+#    Modification history:
+#
+# Created.  -- rgr, 26-Oct-94.
+# added ("$1" == "$2") sanity check.  -- rgr, 21-Sep-95.
+# added "#!/bin/csh -f" to avoid stupid aliasing of "cd".  -- rgr, 25-Apr-97.
+#
+# $Id$
+
+if ("$1" == "$2") then
+  echo Can\'t copy a directory onto itself \($1 onto $2\).
+  exit -1
+endif
+(cd $1; tar cf - .) | (cd $2; tar xfBp -)

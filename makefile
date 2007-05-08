@@ -36,7 +36,7 @@ log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 		email/forged-local-address.pl
 # installation of various things, including these guys.
-install-scripts = install.pl install-rpms.pl
+install-scripts = install.pl install-rpms.pl copy-tree
 # utility scripts for version control systems.
 vc-scripts = cvs-chrono-log.pl svn-chrono-log.pl vc-chrono-log.rb
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
