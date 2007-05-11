@@ -2,6 +2,8 @@
 #
 # [I've forgotten where I got this . . .  -- rgr, 23-May-04.]
 #
+# See http://cr.yp.to/proto/maildir.html for Maildir folder format details.
+#
 # $Id$
 
 =pod
@@ -93,19 +95,29 @@ sub convert ($$;$) {
     my $host = hostname;
     my $i = 0;
     my $fn;
+    my $last_line_empty_p = 1;	# the start of the file counts.
     while (<MBOX>) {
-	if (m/^From /) {	# New message.
-	    # See http://cr.yp.to/proto/maildir.html for details
+	if ($_ eq "\n") {
+	    # If this comes before a "From " line, we will swallow it.
+	    $last_line_empty_p = 1;
+	}
+	elsif ($last_line_empty_p && m/^From /) {
+	    # Start of a new message.
 	    $fn = "${maildir}/${sub}/${now}.$$\_${i}.${host}${inf}";
 	    $i++;
 	    open(OUT, ">$fn")
 		or die "open($fn): $!\n";
 	    warn "creating $fn\n"
 		if $DEBUG;
-	} else {
+	    $last_line_empty_p = 0;
+	}
+	else {
+	    print OUT "\n"
+		if $last_line_empty_p;
 	    s/^>From /From /;
 	    print OUT $_
 		or die "print($fn): $!\n";
+	    $last_line_empty_p = 0;
 	}
     }
     close OUT;
