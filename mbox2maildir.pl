@@ -10,7 +10,7 @@
 
 =head1 NAME
 
-mbox2maildir - convert a BSD mbox file into a Maildir.
+mbox2maildir.pl - convert a BSD mbox file into a Maildir.
 
 =head1 SYNOPSIS
 
@@ -38,12 +38,15 @@ not, then the mail will be in the "read" state.
 =cut
 
 use strict;
+use warnings;
+
 use vars qw($DEBUG);
 
 $DEBUG = 0;
 
 use Getopt::Std;
 use Sys::Hostname;
+use Mail::Field;
 
 sub usage {
     my $me = $0;
@@ -76,52 +79,80 @@ sub maildirmake ($) {
 
 # Copy the contents of a mailbox into a maildir.
 sub convert ($$;$) {
-    my ($mbox, $maildir, $new) = @_;
+    my ($mbox_file_name, $maildir, $new) = @_;
 
     # Should the messages be flagged as newly arrived?
     my $sub = $new ? "new" : "cur";
     my $inf = $new ? "" : ":2,S";
 
     die "usage: convert(mbox,maildir)\n"
-	unless $mbox && $maildir;
-    die "not a file: $mbox\n"
-	unless -f $mbox;
+	unless $mbox_file_name && $maildir;
+    die "not a file: $mbox_file_name\n"
+	unless -f $mbox_file_name;
     die "not a maildir: $maildir\n"
 	unless ismaildir($maildir);
 
-    open(MBOX, $mbox)
-	or die "open($mbox): $!\n";
-    my $now = time;
     my $host = hostname;
     my $i = 0;
-    my $fn;
+
+    my $write_message = sub {
+	# Write the passed message content as a maildir message, extracting the
+	# delivery time from the "Date:" field.  This is not strictly necessary,
+	# but it works better for Outlook in combination with Courier IMAP;
+	# otherwise, Outlook uses the wrong date until you look at the message.
+	my $contents = shift;
+
+	# First, figure out the time from the message.
+	my $time;
+	if ($contents =~ /\nDate: *([^\n]*)/i) {
+	    # see /usr/lib/perl5/site_perl/5.8.0/Mail/Field/Date.pm
+	    my $date_string = $1;
+	    my $date = Mail::Field->new(Date => $date_string);
+	    $time = $date->time;
+	    # use Data::Dumper; die Dumper([$date_string => $time]);
+	}
+	else {
+	    # die "[fallback time for '$contents']\n";
+	    $time = time();
+	}
+
+	# Now write the file.
+	$i++;
+	my $msg_name = "${maildir}/${sub}/${time}.$$\_${i}.${host}${inf}";
+	open(my $out, ">$msg_name")
+	    or die "$0:  Could not open '$msg_name':  $!";
+	warn "creating $msg_name\n"
+	    if $DEBUG;
+	print $out $contents
+	    or die "$0:  Could not print to '$msg_name':  $!";
+    };
+
+    open(my $mbox, $mbox_file_name)
+	or die "open($mbox_file_name): $!\n";
+    my $current_message = '';
     my $last_line_empty_p = 1;	# the start of the file counts.
-    while (<MBOX>) {
+    while (<$mbox>) {
 	if ($_ eq "\n") {
 	    # If this comes before a "From " line, we will swallow it.
 	    $last_line_empty_p = 1;
 	}
 	elsif ($last_line_empty_p && m/^From /) {
 	    # Start of a new message.
-	    $fn = "${maildir}/${sub}/${now}.$$\_${i}.${host}${inf}";
-	    $i++;
-	    open(OUT, ">$fn")
-		or die "open($fn): $!\n";
-	    warn "creating $fn\n"
-		if $DEBUG;
+	    $write_message->($current_message)
+		if $current_message;
+	    $current_message = '';
 	    $last_line_empty_p = 0;
 	}
 	else {
-	    print OUT "\n"
+	    $current_message .= "\n"
 		if $last_line_empty_p;
 	    s/^>From /From /;
-	    print OUT $_
-		or die "print($fn): $!\n";
+	    $current_message .= $_;
 	    $last_line_empty_p = 0;
 	}
     }
-    close OUT;
-    close MBOX;
+    $write_message->($current_message)
+	if $current_message;
 }
 
 #-----------------------------------------------------------------------
