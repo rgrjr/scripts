@@ -105,16 +105,12 @@ sub convert ($$;$) {
 	# First, figure out the time from the message.
 	my $time;
 	if ($contents =~ /\nDate: *([^\n]*)/i) {
-	    # see /usr/lib/perl5/site_perl/5.8.0/Mail/Field/Date.pm
 	    my $date_string = $1;
 	    my $date = Mail::Field->new(Date => $date_string);
 	    $time = $date->time;
-	    # use Data::Dumper; die Dumper([$date_string => $time]);
 	}
-	else {
-	    # die "[fallback time for '$contents']\n";
-	    $time = time();
-	}
+	# Sometimes, messages have defective dates (particularly spam).
+	$time ||= time();
 
 	# Now write the file.
 	$i++;
@@ -125,6 +121,11 @@ sub convert ($$;$) {
 	    if $DEBUG;
 	print $out $contents
 	    or die "$0:  Could not print to '$msg_name':  $!";
+	undef $out;	# to close.
+	utime($time, $time, $msg_name)
+	    # Nonfatal problem.
+	    or warn("$0:  Could not change mod time ",
+		    "to $time for $msg_name:  $!");
     };
 
     open(my $mbox, $mbox_file_name)
