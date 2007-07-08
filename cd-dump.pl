@@ -1,9 +1,9 @@
 #!/usr/bin/perl -w
 #
 #    Dump the contents of the ./to-write/ directory to a new session on a
-# multisession CDROM.  All files that were successfully written (as judged by
-# doing a cmp of disk and CD versions) are moved to the ./written/ directory.
-# (This is usually run in the /scratch/backups/cd/ directory).
+# multisession CD- or DVD-ROM.  All files that were successfully written (as
+# judged by doing a cmp of the two versions) are moved to the ./written/
+# directory.  (This is usually run in the /scratch/backups/ directory).
 #
 #    Modification history:
 #
@@ -18,12 +18,17 @@
 #
 # $Id$
 
-BEGIN { unshift(@INC, '/root/bin/') if -r '/root/bin'; }
+BEGIN {
+    # Prefer root versions of modules, if available.
+    unshift(@INC, '/root/bin/')
+	if -r '/root/bin';
+}
 
 use strict;
+use warnings;
+
 use Getopt::Long;
 use Pod::Usage;
-use Data::Dumper;
 require 'rename-into-tree.pm';
 
 my $warn = 'cd-dump.pl';
@@ -114,7 +119,19 @@ sub ensure_mount {
     # it doesn't appear in the /etc/mtab table.
     my $mount_point = shift;
 
-    if (! `fgrep ' $mount_point ' /etc/mtab`) {
+    if ($dvd_p) {
+	# [***kludge***: problems with using the default mount.  -- rgr,
+	# 5-Dec-06.]
+	my $warn = "$warn [dvd kludge]";
+	my $device = '/dev/sr0';
+	warn "$warn: Mounting $mount_point ...\n";
+	system('eject', $device) == 0
+	    || die "$warn:  'eject $device' failed:  $?\nDied";
+	system($mount_command, qw(-t iso9660), $device, $mount_point) == 0
+	    || die "$warn:  '$mount_command $mount_point' failed:  $?\nDied";
+	# [end kludge.  -- rgr, 5-Dec-06.]
+    }
+    elsif (! `fgrep ' $mount_point ' /etc/mtab`) {
 	warn "$warn: Mounting $mount_point ...\n"
 	    if $verbose_p;
 	system($mount_command, $mount_point) == 0
@@ -125,17 +142,29 @@ sub ensure_mount {
 ### Look for data, and how to write it.
 
 # set up for DVD writing, if requested.
+my $growisofs_p = 0;
 if ($dvd_p) {
-    # cdrecord-wrapper.sh invokes cdrecord-ProDVD after setting up license info.
-    # both can be downloaded from the ftp://ftp.berlios.de/pub/cdrecord/ProDVD/
-    # directory.
-    $cdrecord_command = '/usr/local/bin/cdrecord-wrapper.sh';
+    if (-x '/usr/bin/growisofs') {
+	$cdrecord_command = '/usr/bin/growisofs';
+    }
+    elsif (-x '/usr/bin/cdrecord-dvd') {
+	$cdrecord_command = '/usr/bin/cdrecord-dvd';
+    }
+    elsif (-x '/usr/local/bin/cdrecord-wrapper.sh') {
+	# cdrecord-wrapper.sh invokes cdrecord-ProDVD after license setup.  both
+	# can be downloaded from ftp://ftp.berlios.de/pub/cdrecord/ProDVD/.
+	# [but both are obsolete.  -- rgr, 2-Feb-07.]
+	$cdrecord_command = '/usr/local/bin/cdrecord-wrapper.sh';
+    }
+    $growisofs_p = $cdrecord_command =~ /growisofs$/;
     # [single-sided DVDs are 4.7G; call it 4.5 for safety.  -- rgr, 28-Oct-05.]
     $cd_max_size = 45000000;
     # [this may be a peculiarity of my particular DVD burner, which cdrecord
     # identifies as a MAD DOG 'MD-16XDVD9A2' rev 1.F0.  in any case, it doesn't
     # handle track-at-once, which is why we need -tsize.  -- rgr, 28-Oct-05.]
-    unshift(@cdrecord_options, '-dao');
+    # [but this is not needed for growisofs.  -- rgr, 2-Feb-07.]
+    unshift(@cdrecord_options, '-dao')
+	unless $growisofs_p;
 }
 
 # take inventory, and exit silently if $to_write_subdir is empty.
@@ -149,7 +178,11 @@ if (@files_to_write == 0) {
 }
 
 # Find a usable -dev specification.
-if (! $dev_spec) {
+if (! $dev_spec && $growisofs_p) {
+    # [kludge.  -- rgr, 2-Feb-07.]
+    $dev_spec = '/dev/sr0';
+}
+elsif (! $dev_spec) {
     open(IN, "$cdrecord_command -scanbus 2>&1 |") || die;
     my $line;
     my @specs;
@@ -194,30 +227,33 @@ if (! $dev_spec) {
 # / Wrong disk!" (among other things).  But that falls neatly under the third
 # case, so all we care is that it *doesn't* say "Cannot read session offset."
 my $cd_used_estimate = 0;
-my $msinfo_command = "$cdrecord_command -dev=$dev_spec -msinfo 2>&1";
-chomp(my $msinfo = `$msinfo_command`);
-print("Doing `$msinfo_command` produced '$msinfo'\n")
-    if $verbose_p >= 2;
-if ($msinfo =~ /Cannot read session offset/) {
-    warn "$warn:  Writing first session on $dev_spec.\n"
-	if $verbose_p;
-}
-elsif ($msinfo =~ /^\d+,\d+$/) {
-    warn("$warn:  Writing subsequent session on $dev_spec, ",
-	 "using '-C $msinfo'.\n")
-	if $verbose_p;
-    push(@mkisofs_options, "-C", $msinfo, "-M", $dev_spec);
-    push(@cdrecord_options, '-waiti');
-    my @temp = split(",", $msinfo);
-    $cd_used_estimate = $temp[1]*1.8;
-}
-elsif ($test_p) {
-    # assume a blank disk.
-    warn "$warn:  Assuming first session on $dev_spec (no disk present).\n";
-}
-else {
-    $msinfo =~ s/\n/\n   /g;
-    die("$warn: Error in '$msinfo_command':\n   $msinfo\nDied");
+if (! $growisofs_p) {
+    my $msinfo_command = "$cdrecord_command -dev=$dev_spec -msinfo 2>&1";
+    chomp(my $msinfo = `$msinfo_command`);
+    print("Doing `$msinfo_command` produced '$msinfo'\n")
+	if $verbose_p >= 2;
+    if ($msinfo =~ /Cannot read session offset/) {
+	warn "$warn:  Writing first session on $dev_spec.\n"
+	    if $verbose_p;
+    }
+    elsif ($msinfo =~ /\d+,\d+\z/) {
+	my $msinfo_data = $&;
+	warn("$warn:  Writing subsequent session on $dev_spec, ",
+	     "using '-C $msinfo_data'.\n")
+	    if $verbose_p;
+	push(@mkisofs_options, '-C', $msinfo_data, '-M', $dev_spec);
+	push(@cdrecord_options, '-waiti');
+	my @temp = split(',', $msinfo_data);
+	$cd_used_estimate = $temp[1]*1.8;
+    }
+    elsif ($test_p) {
+	# assume a blank disk.
+	warn "$warn:  Assuming first session on $dev_spec (no disk present).\n";
+    }
+    else {
+	$msinfo =~ s/\n/\n   /g;
+	die("$warn: Error in '$msinfo_command':\n   $msinfo\nDied");
+    }
 }
 
 # check how much data we want to write in this session.
@@ -240,14 +276,18 @@ die("$warn:  Not enough disk left:  ${cd_used_estimate}K used ",
     if $cd_used_estimate+$space_needed_estimate > $cd_max_size;
 
 ### all clear, write the disk.
-my $cdrecord_cmd
-    = join(' ', $cdrecord_command, "-dev=$dev_spec",
-	   "-tsize=${disk_size}s", '-multi', @cdrecord_options, '-');
-print("$warn:  Executing '$mkisofs_cmd $to_write_subdir\n",
-      "\t\t\t| $cdrecord_cmd'\n")
+my $cmd
+    = ($growisofs_p
+       ? join(' ', $cdrecord_command,
+	      ($cd_used_estimate ? '-M' : '-Z'), $dev_spec,
+	      @mkisofs_options, $to_write_subdir)
+       : join(' ', $mkisofs_cmd, $to_write_subdir,
+	      '|', $cdrecord_command, "-dev=$dev_spec",
+	      "-tsize=${disk_size}s", '-multi', @cdrecord_options, '-'));
+print("$warn:  Executing '$cmd'\n")
     if $verbose_p || $test_p;
-system("$mkisofs_cmd $to_write_subdir | $cdrecord_cmd") == 0
-    || die "$warn:  '$mkisofs_cmd $to_write_subdir | $cdrecord_cmd' failed:  $?"
+system($cmd) == 0
+    || die "$warn:  '$cmd' failed:  $?"
         unless $test_p;
 
 # now get rid of what we've written successfully.  if the disk is mountable,
