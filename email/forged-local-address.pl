@@ -60,7 +60,7 @@ if ($hdr =~ /qmail \d+ invoked by /) {
 else {
     my $hdr = $message->get('Received', 1);
     $local_p = 'lan'
-	if $hdr =~ /by 192.168.57.\d+ with SMTP/;
+	if $hdr && $hdr =~ /by 192.168.57.\d+ with SMTP/;
 }
 if ($local_p) {
     warn "win:  $local_p\n"
