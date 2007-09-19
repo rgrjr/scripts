@@ -74,12 +74,20 @@ test-svn-chrono-log-1b:
 	rm -f $@.tmp
 
 test-email:	test-forged-address
-test-forged-address:
-	SENDER=rogers@rgrjr.dyndns.org email/forged-local-address.pl --not < email/from-bob.text
-	SENDER=jan@rgrjr.com email/forged-local-address.pl --not < email/from-jan.text
-	SENDER=debra@somewhere.com email/forged-local-address.pl --not < email/from-debra.text
-	SENDER=rogers@rgrjr.com email/forged-local-address.pl < email/spam-1.text
-	SENDER=wiieme@foo.com email/forged-local-address.pl < email/spam-2.text
+test-forged-address:	test-rgrjr-forged-address
+rgrjr-config-options = --locals email/rgrjr-locals.text \
+		--network-prefix 192.168.57
+test-rgrjr-forged-address:
+	SENDER=rogers@rgrjr.dyndns.org email/forged-local-address.pl \
+		${rgrjr-config-options} --not < email/from-bob.text
+	SENDER=jan@rgrjr.com email/forged-local-address.pl \
+		${rgrjr-config-options} --not < email/from-jan.text
+	SENDER=debra@somewhere.com email/forged-local-address.pl \
+		${rgrjr-config-options} --not < email/from-debra.text
+	SENDER=rogers@rgrjr.com email/forged-local-address.pl \
+		${rgrjr-config-options} < email/spam-1.text
+	SENDER=wiieme@foo.com email/forged-local-address.pl \
+		${rgrjr-config-options} < email/spam-2.text
 
 install:	install-base
 install-base:
