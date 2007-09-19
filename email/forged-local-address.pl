@@ -23,6 +23,7 @@ my $local_network_prefix;
 
 GetOptions('verbose+' => \$verbose_p,
 	   'not!' => \$not_p,
+	   'add-local=s' => \&add_local_domain,
 	   'network-prefix=s' => \$local_network_prefix,
 	   'locals=s' => \$local_domain_file)
     or pod2usage();
@@ -43,6 +44,18 @@ if (! $local_network_prefix) {
 
 my %match_domains;
 my @suffix_domains;
+sub add_local_domain {
+    my $domain = (@_ == 2 ? $_[1] : shift);
+
+    $domain = lc($domain);
+    if (substr($domain, 0, 1) eq '.') {
+	push(@suffix_domains, $domain);
+    }
+    else {
+	$match_domains{$domain}++;
+    }
+}
+
 sub ensure_nonlocal_host {
     # Exits with $spam_exit code if it matches any local domain.
     my ($host, $description) = @_;
@@ -60,20 +73,46 @@ sub ensure_nonlocal_host {
 	if $verbose_p;
 }
 
+sub local_header_p {
+    my $hdr = shift;
+
+    if (! $hdr) {
+	# Can't make a determination.
+	return;
+    }
+    elsif ($hdr =~ /qmail \d+ invoked by /) {
+	# qmail locally originated.
+	'local';
+    }
+    elsif ($hdr =~ /by $local_network_prefix\.\d+ with SMTP/) {
+	# qmail format for receipt from a LAN host.
+	'lan';
+    }
+    elsif ($hdr !~ /Postfix/) {
+	# Assume qmail, which adds two headers for SMTP mail; we need to check
+	# the second one.
+	return;
+    }
+    # Postfix only adds a single header, so we need to make a definite
+    # determination on this header to avoid spoofing.
+    elsif ($hdr =~ /from userid \d+/) {
+	'local';
+    }
+    elsif ($hdr =~ /\[([\d.]+)\.\d+\]/ && $1 eq $local_network_prefix) {
+	'lan';
+    }
+    else {
+	0;
+    }
+}
+
 ### Main code.
 
 # Check headers for local vs. remote.
 my $message = Mail::Header->new(\*STDIN);
-my $hdr = $message->get('Received', 0);
-my $local_p;
-if ($hdr =~ /qmail \d+ invoked by /) {
-    $local_p = 'local';
-}
-else {
-    my $hdr = $message->get('Received', 1);
-    $local_p = 'lan'
-	if $hdr && $hdr =~ /by $local_network_prefix.\d+ with SMTP/;
-}
+my $local_p = local_header_p($message->get('Received', 0));
+$local_p = local_header_p($message->get('Received', 1))
+    if ! defined($local_p);
 if ($local_p) {
     warn "win:  $local_p\n"
 	if $verbose_p;
@@ -86,13 +125,7 @@ if (-r $local_domain_file) {
 	or die "$0:  Could not open '$local_domain_file':  $!";
     while (<IN>) {
 	chomp;
-	$_ = lc($_);
-	if (substr($_, 0, 1) eq '.') {
-	    push(@suffix_domains, $_);
-	}
-	else {
-	    $match_domains{$_}++;
-	}
+	add_local_domain($_);
     }
     close(IN);
 }
@@ -136,15 +169,56 @@ Detect forged email addresses by examining 'Received:' headers.
 
 To use this, put the following in your C<.qmail> file:
 
+	| bouncesaying "Go away." bin/forged-local-address.pl
+
+Alternatively, you could redirect all address forgeries to a different
+folder:
+
 	| condredirect rogers-spam bin/forged-local-address.pl
 
-The C<rogers-spam> address must be defined.  [This is something of a
-bug; C<forged-local-address.pl> should just exit 99 directly to drop
-the message completely.  But I don't think I want to implement this
-until I have some kind of logging first.  -- rgr, 22-Jul-06.]
+In this case, the C<rogers-spam> address must be defined (e.g. via a
+C<.qmail-spam> file).
 
-Currently, only qmail-style delivery is supported.  Postfix will be
-added before long.
+Currently, the only supported MTAs are qmail and Postfix.
+
+=head2 Options
+
+These are parsed with C<Getopt::Long>, so any unique prefix is acceptable.
+
+=over 4
+
+=item B<--add-local>
+
+Specifies a single domain name to add to the "local" set.  If the name
+starts with a ".", it is a wildcard; otherwise, the whole domain name
+must match.
+
+=item B<--locals>
+
+Specifies a file of domain names.  Each line in this file is treated
+as if it had been added individually with C<--add-local>.  The file
+name defaults to '/var/qmail/control/locals', which only makes sense
+for qmail.  There is no error if the C<--locals> file does not exist.
+
+=item B<--network-prefix>
+
+Specifies a class C network prefix (i.e. "192.168.23") for qmail
+relaying.  If not specified, this defaults to the first "192.168.*.*"
+subnet in the output of C<ifconfig>.  This is mostly used for testing.
+
+=item B<--not>
+
+Inverts the sense of the return value.  Normally,
+C<forged-local-address.pl> exits true (0) if it detects a forgery, and
+false (1) otherwise.  If C<--not> is specified,
+C<forged-local-address.pl> exits 1 for a forgery, and 0 otherwise.
+
+=item B<--verbose>
+
+Turns on verbose debugging messages.  This can be useful to find out
+how a given message is getting classified.
+
+=back
 
 =head2 Internals
 
@@ -203,5 +277,13 @@ match is exact.
 
 Note that these are mutually exclusive; if you want to include both,
 you must mention both explicitly.
+
+=head2 Bugs
+
+C<--network-prefix> shouldn't be biased towards class C networks that
+start with "192.168...".
+
+There is no error if the C<--locals> file does not exist, even if it
+was specified explicitly.
 
 =cut
