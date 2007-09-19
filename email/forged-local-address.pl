@@ -106,9 +106,13 @@ ensure_nonlocal_host($host, 'envelope sender');
 # Look for forged local addresses in appropriate headers.
 for my $header_name (qw(sender from)) {
     for my $header ($message->get($header_name)) {
+	# Get rid of RFC822 comments first, so we are not confused by commas in
+	# comments.  Parentheses nest.
+	while ($header =~ s/\([^()]*\)//g) {
+	    # Keep matching.
+	}
+	$header =~ s/\"[^""]*\"//g;
 	for my $address (split(/\s*,\s*/, $header)) {
-	    $address =~ s/\"[^""]*\"//g;
-	    $address =~ s/\([^()]*\)//g;
 	    if ($address =~ /<([^<>]+)>/) {
 		ensure_nonlocal_host($1, $header_name);
 	    }
