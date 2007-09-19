@@ -19,13 +19,25 @@ use Pod::Usage;
 my $verbose_p = 0;
 my $not_p = 0;		# to reverse the sense of the test.
 my $local_domain_file = '/var/qmail/control/locals';
+my $local_network_prefix;
 
 GetOptions('verbose+' => \$verbose_p,
 	   'not!' => \$not_p,
+	   'network-prefix=s' => \$local_network_prefix,
 	   'locals=s' => \$local_domain_file)
     or pod2usage();
 
 my ($spam_exit, $legit_exit) = ($not_p ? (1, 0) : (0, 1));
+if (! $local_network_prefix) {
+    open(my $in, 'ifconfig |')
+	or die;
+    while (defined(my $line = <$in>)) {
+	$local_network_prefix = $1, last
+	    if $line =~ /inet addr:(192\.168\.\d+)./;
+    }
+    die "Couldn't find IP address"
+	unless $local_network_prefix;
+}
 
 ### Subroutines.
 
@@ -40,7 +52,7 @@ sub ensure_nonlocal_host {
 
     if ($match_domains{$host}
 	|| grep { substr($_, -length($host)) eq $host; } @suffix_domains) {
-	warn "lose:  '$host' is forged in $description\n"
+	warn "lose:  '$host' is forged in nonlocal $description\n"
 	    if $verbose_p;
 	exit($spam_exit);
     }
@@ -60,7 +72,7 @@ if ($hdr =~ /qmail \d+ invoked by /) {
 else {
     my $hdr = $message->get('Received', 1);
     $local_p = 'lan'
-	if $hdr && $hdr =~ /by 192.168.57.\d+ with SMTP/;
+	if $hdr && $hdr =~ /by $local_network_prefix.\d+ with SMTP/;
 }
 if ($local_p) {
     warn "win:  $local_p\n"
@@ -108,7 +120,7 @@ for my $header_name (qw(sender from)) {
 }
 
 # This means NOT spam.
-warn "win:  remote, sender '$host' not forged\n"
+warn "win:  remote, sender '$host' not local\n"
     if $verbose_p;
 exit($legit_exit);
 
