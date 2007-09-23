@@ -101,6 +101,7 @@ pod2usage("$0:  --level (or positional <level>) arg must be a single digit.")
     unless $level =~ /^\d$/;
 pod2usage("$0:  '".shift(@ARGV)."' is an extraneous positional arg.")
     if @ARGV;
+
 # Compute some defaults.
 # [this is broken; there's no way to shut off the $dump_volume_size defaulting, 
 # and leave it unlimited.  -- rgr, 20-Aug-03.]
@@ -141,9 +142,12 @@ my ($part, $mount_point)
     = split(' ', `$grep_program "^$dump_partition " /etc/mtab`);
 pod2usage("$0:  '$dump_partition' is not a mounted partition.")
     unless $mount_point && -d $mount_point;
+
 # Estimate how big the dump will be.
 my $estd_dump_size = `$dump_program -S -u$level $dump_partition`;
 chomp($estd_dump_size);
+die "$0:  Can't find estimated dump size.\n"
+    unless $estd_dump_size;
 my $n_vols = ($estd_dump_size/1024.0)/$dump_volume_size;
 if ($n_vols > 1.5) {
     # Add 10% slop and then round up, to be sure we have enough dump files.
@@ -159,6 +163,7 @@ else {
 }
 warn "[got estd_dump_size $estd_dump_size, n_vols $n_vols]\n"
     if $verbose_p;
+
 # Compute the dump file name(s).
 if (! $dump_name) {
     # Must make our own dump name.  To do that, we must find a partition
@@ -177,6 +182,7 @@ if (! $dump_name) {
 }
 my $orig_dump_name = $dump_name;
 my @dump_names = ($dump_name);
+
 # Handle extra dump files.
 if ($n_vols > 1) {
     my $stem = $dump_name;
