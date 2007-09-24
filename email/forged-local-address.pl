@@ -29,18 +29,27 @@ GetOptions('verbose+' => \$verbose_p,
     or pod2usage();
 
 my ($spam_exit, $legit_exit) = ($not_p ? (1, 0) : (0, 1));
+# Find the $local_network_prefix if not specified.
 if (! $local_network_prefix) {
-    open(my $in, 'ifconfig |')
-	or die;
+    open(my $in, '/sbin/ifconfig |')
+	or fail("Could not open pipe from ifconfig:  $!");
     while (defined(my $line = <$in>)) {
 	$local_network_prefix = $1, last
 	    if $line =~ /inet addr:(192\.168\.\d+)./;
     }
-    die "Couldn't find IP address"
+    fail("Couldn't find default IP address from ifconfig")
 	unless $local_network_prefix;
 }
 
 ### Subroutines.
+
+sub fail {
+    # Produce a message on stderr and exit with code 111 so that delivery is
+    # tried later.
+
+    warn("$0:  ", @_);
+    exit(111);
+}
 
 my %match_domains;
 my @suffix_domains;
@@ -122,7 +131,7 @@ if ($local_p) {
 # We have a remote message, so we need to find out what our local addresses are.
 if (-r $local_domain_file) {
     open(IN, $local_domain_file)
-	or die "$0:  Could not open '$local_domain_file':  $!";
+	or fail("Could not open '$local_domain_file':  $!");
     while (<IN>) {
 	chomp;
 	add_local_domain($_);
@@ -132,9 +141,9 @@ if (-r $local_domain_file) {
 
 # Check the envelope sender against all of the match domains.  If we find a
 # match, we lose.
-my $host = $ENV{SENDER}
-   or die "$0:  Bug:  No \$SENDER";
-ensure_nonlocal_host($host, 'envelope sender');
+my $host = $ENV{SENDER} || '';
+ensure_nonlocal_host($host, 'envelope sender')
+    if $host;
 
 # Look for forged local addresses in appropriate headers.
 for my $header_name (qw(sender from)) {
