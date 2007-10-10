@@ -41,7 +41,7 @@ end
 class LogBase
 
     # Return a string with the specified field "name: value" pairs, omitting
-    # any that are false or nil.
+    # any that are nil.
     def join_fields(field_names)
         field_names.reject do | name |
             # Omit fields that are nil.
@@ -303,9 +303,10 @@ class VCLogParser
     end
 
     # Add a new VCLogEntry to @log_entries.
-    def add_entry(message, last_date, file_entries)
+    def add_entry(message, last_date, commit_id, file_entries)
         entry = VCLogEntry.new('encoded_date' => last_date,
                                'message' => message,
+                               'commitid' => commit_id,
                                'files' => file_entries.flatten)
         @log_entries << entry
     end
@@ -317,7 +318,8 @@ class VCLogParser
             # All entries with the same commitid perforce belong to the same
             # commit, to which no entries without a commitid can belong.
             file_entry = entries[0]
-            add_entry(file_entry.comment, file_entry.encoded_date, entries)
+            add_entry(file_entry.comment, file_entry.encoded_date,
+                      commit_id, entries)
         end
 
         # examine remaining entries by comment, then by date, combining all
@@ -333,7 +335,7 @@ class VCLogParser
                 if last_date && date-last_date > $date_fuzz then
                     # the current entry probably represents a "cvs commit"
                     # event that is distinct from any previous entries.
-                    add_entry(comment, last_date, file_entries)
+                    add_entry(comment, last_date, nil, file_entries)
                     file_entries = [ ]
                     last_date = nil
                 end
@@ -343,7 +345,7 @@ class VCLogParser
                 file_entries << date_to_entries[date].flatten
             end
             if file_entries.length then
-                add_entry(comment, last_date, file_entries)
+                add_entry(comment, last_date, nil, file_entries)
             end
         end
     end
