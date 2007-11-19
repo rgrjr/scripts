@@ -251,13 +251,18 @@ sub find_files_to_copy {
     my @need_copying = ();
     my $total_space = 0;
     # map &print_items, @from;
-    foreach my $from (@from) {
+    for my $from (@from) {
 	my $name = $from->[0];
-	next
-	    if $since && substr($from->[3], 0, length($since)) le $since;
-	if (! defined($to{$name})) {
+	if ($since && substr($from->[3], 0, length($since)) le $since) {
+	    # not current.
+	}
+	elsif (defined($to{$name})) {
+	    # already there.
+	}
+	else {
+	    # needs copying.
 	    $total_space += $from->[1];
-	    warn "[$from needs copying.]\n"
+	    warn '[', $from->[0], " needs copying.]\n"
 		if $verbose_p > 1;
 	    push(@need_copying, $from);
 	}
