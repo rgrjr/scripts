@@ -80,10 +80,11 @@ for my $pfx (sort(keys(%prefix_and_date_to_dumps))) {
     my $last_pfx_date = '';
     for my $date (sort { $b <=> $a; } keys(%$date_to_dumps)) {
 	my $entries = $date_to_dumps->{$date};
-	# this sorts first by level (in case somebody is careless enough to
-	# perform backups at two different levels on the same day), and then by
-	# file name (for when a single backup is split across multiple files).
-	for my $entry (sort { $a->[1] <=> $b->[1]
+	# This sorts first by level backwards (if someone performs backups at
+	# two different levels on the same day, the second is usually an
+	# extracurricular L9 dump on top of the other), and then by file name
+	# (for when a single backup is split across multiple files).
+	for my $entry (sort { $b->[1] <=> $a->[1]
 				  || $a->[3] cmp $b->[3]; } @$entries) {
 	    my ($pfx_date, $level, $listing) = @$entry;
 	    $star_p = ($pfx_date eq $last_pfx_date
