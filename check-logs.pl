@@ -33,6 +33,8 @@
 # $Id$
 
 use strict;
+use warnings;
+
 use Socket;	# for inet_aton
 
 my $nominal_file_directory	# where to look for nominal-*.text files
@@ -333,132 +335,161 @@ sub parse_firewall_log_event {
     %hash;
 }
 
-### Initialize shutdown/startup ignored messages, local IP addresses.
-initialize_local_addresses();
 my %ignored_lines;
-foreach my $file ('nominal-shutdown.text', 'nominal-startup.text',
+sub initialize_ignored_lines {
+    # This is used by process_log_file.
+
+    for my $file ('nominal-shutdown.text', 'nominal-startup.text',
 		  'nominal-random.text') {
-    if (open(FILE, $nominal_file_directory.$file)) {
-	my $line;
-	while ($line = <FILE>) {
-	    chomp($line);
-	    $ignored_lines{$line}++;
+	if (open(FILE, $nominal_file_directory.$file)) {
+	    my $line;
+	    while ($line = <FILE>) {
+		chomp($line);
+		$ignored_lines{$line}++;
+	    }
+	    close(FILE);
 	}
-	close(FILE);
     }
 }
 
-### Main loop.
-my $previous_day = '';
-my $line;
-my $day;
-while (defined($line = <>)) {
-    chomp($line);
-    # $report_p = 0;
-    next
-	unless $line =~ /^(...............) (\S+) (.*)$/;
-    my ($date, $host, $description) = $line =~ //;
-    if ($from_date_string) {
-	# bogus date testing, should be good enough if all you want is "Apr 16".
-	# -- rgr, 16-Apr-00.
+sub process_log_file {
+    # Process one file's worth of log events.  Note that we look for
+    # $from_date_string in each file independently.
+    my $file_name = shift;
+
+    open(my $in, $file_name)
+	or die "$0:  Couldn't open '$file_name' for input:  $!";
+
+    my $from_date_string = $from_date_string;
+    my $previous_day = '';
+    my $line;
+    my $day;
+    while (defined($line = <$in>)) {
+	chomp($line);
+	# $report_p = 0;
 	next
-	    if $from_date_string ne substr($date, 0, length($from_date_string));
-	# OK, we've hit the start date.
-	$from_date_string = '';
-    }
-    # check for quick win.
-    next if $ignored_lines{$description};
-    $day = substr($date, 0, 6);
-    my $time = substr($date, 7);
-    if ($day ne $previous_day) {
-	day_report($previous_day)
-	    unless $previous_day eq '';
-	$previous_day = $day;
-    }
-    # try to figure out what's reporting.  some modules (e.g. syslogd) have a
-    # space and a version number after them, and others (e.g. pumpd, named) have
-    # the pid in square brackets.  -- rgr, 4-Mar-00.  [the "." is necessary to
-    # match (e.g.) rpc.statd.  -- rgr, 7-Oct-00.]
-    my $reporting_module = 'other';
-    if ($description =~ m@^([\w\d/.]+)(\[\d+\]| [-.\d]+)?: +@g) {
-	$reporting_module = $1;
-	$description = substr($description, pos($description));
-	$reporting_module =~ s@.*/@@;
-	# give the %ignored_lines hash one more try with the newly standardized
-	# reporting module name (minus possible pid/version number).
-	next if $ignored_lines{"$reporting_module: $description"};
-	$module_messages{$reporting_module}++;
-	if ($reporting_module eq 'kernel') {
-	    # Try to find a better 'module' for kernel messages.
-	    if ($description =~ /^Packet log: *(.*)$/) {
-		# there are lots of these and they are important, so we
-		# reclassify them as 'ipchains' messages, even though that is
-		# not strictly correct.
-		$reporting_module = 'ipchains';
-		$description = $1;
+	    unless $line =~ /^(...............) (\S+) (.*)$/;
+	my ($date, $host, $description) = $line =~ //;
+	if ($from_date_string) {
+	    # bogus date testing, should be good enough if all you want is
+	    # "Apr 16".  -- rgr, 16-Apr-00.
+	    next
+		if ($from_date_string
+		    ne substr($date, 0, length($from_date_string)));
+	    # OK, we've hit the start date.
+	    $from_date_string = '';
+	}
+	# check for quick win.
+	next if $ignored_lines{$description};
+	$day = substr($date, 0, 6);
+	my $time = substr($date, 7);
+	if ($day ne $previous_day) {
+	    day_report($previous_day)
+		unless $previous_day eq '';
+	    $previous_day = $day;
+	}
+	# Try to figure out what's reporting.  Some modules (e.g. syslogd) have
+	# a space and a version number after them, and others (e.g. pumpd,
+	# named) have the pid in square brackets.  -- rgr, 4-Mar-00.  [the "."
+	# is necessary to match (e.g.) rpc.statd.  -- rgr, 7-Oct-00.]
+	my $reporting_module = 'other';
+	if ($description =~ m@^([\w\d/.]+)(\[\d+\]| [-.\d]+)?: +@g) {
+	    $reporting_module = $1;
+	    $description = substr($description, pos($description));
+	    $reporting_module =~ s@.*/@@;
+	    # Give the %ignored_lines hash one more try with the newly
+	    # standardized module name (minus possible pid/version number).
+	    next if $ignored_lines{"$reporting_module: $description"};
+	    $module_messages{$reporting_module}++;
+	    if ($reporting_module eq 'kernel') {
+		# Try to find a better 'module' for kernel messages.
+		if ($description =~ /^Packet log: *(.*)$/) {
+		    # there are lots of these and they are important, so we
+		    # reclassify them as 'ipchains' messages, even though that is
+		    # not strictly correct.
+		    $reporting_module = 'ipchains';
+		    $description = $1;
+		}
+		elsif ($description =~ /^([\w\d_]+): *(.*)$/) {
+		    # reclassify.
+		    $reporting_module = $1;
+		    $description = $1;
+		}
 	    }
-	    elsif ($description =~ /^([\w\d_]+): *(.*)$/) {
-		# reclassify.
-		$reporting_module = $1;
-		$description = $1;
+	}
+	# find disposition.
+	my $disp = $standard_module_dispositions{$reporting_module};
+	$disp = $standard_module_dispositions{'default'} || 'unknown'
+	    unless defined($disp);
+	next if $disp eq 'ignore';
+	if ($description =~ /^IN=\S* OUT=\S* MAC=/) {
+	    # iptables; call it ipchains for simplicity.
+	    $reporting_module = 'ipchains';
+	}
+	# look for events of particular interest.
+	if ($reporting_module eq 'ipchains') {
+	    # use strict;
+	    my %hash = parse_firewall_log_event($description);
+	    # ($chain, $disposition, $interface, $protocol,
+	    #  $source_ip, $source_port, $dest_ip, $dest_port);
+	    if ($hash{FORMAT} ne 'unknown') {
+		my $protocol = $hash{PROTO};
+		my $source_ip = $hash{SRC};
+		my $dest_ip = $hash{DST};
+		my $dest_port = $hash{DPT};
+		my $dest_port_proto 
+		    = ($dest_port ? "$dest_port/$protocol" : "proto=$protocol");
+		my $disposition = $hash{DISP};
+		# Record.
+		$source_ip_totals{$source_ip}++;
+		$dest_port_totals{$dest_port_proto}++;
+		$attempts{$source_ip}{$dest_port_proto}{$disposition}++;
+		$broadcasts{$source_ip}{$dest_port_proto}{$disposition}++
+		    if ! $local_ip_address_p{$dest_ip};
+		# mark as done.
+		$disp = 'ignore';
+	    }
+	    else {
+		# couldn't parse.
+		$disp = 'unknown';
 	    }
 	}
-    }
-    # find disposition.
-    my $disp = $standard_module_dispositions{$reporting_module};
-    $disp = $standard_module_dispositions{'default'} || 'unknown'
-        unless defined($disp);
-    next if $disp eq 'ignore';
-    if ($description =~ /^IN=\S* OUT=\S* MAC=/) {
-	# iptables; call it ipchains for simplicity.
-	$reporting_module = 'ipchains';
-    }
-    # look for events of particular interest.
-    if ($reporting_module eq 'ipchains') {
-	# use strict;
-	my %hash = parse_firewall_log_event($description);
-	# ($chain, $disposition, $interface, $protocol,
-	#  $source_ip, $source_port, $dest_ip, $dest_port);
-	if ($hash{FORMAT} ne 'unknown') {
-	    my $protocol = $hash{PROTO};
-	    my $source_ip = $hash{SRC};
-	    my $dest_ip = $hash{DST};
-	    my $dest_port = $hash{DPT};
-	    my $dest_port_proto 
-		= ($dest_port ? "$dest_port/$protocol" : "proto=$protocol");
-	    my $disposition = $hash{DISP};
-	    # Record.
-	    $source_ip_totals{$source_ip}++;
-	    $dest_port_totals{$dest_port_proto}++;
-	    $attempts{$source_ip}{$dest_port_proto}{$disposition}++;
-	    $broadcasts{$source_ip}{$dest_port_proto}{$disposition}++
-		if ! $local_ip_address_p{$dest_ip};
-	    # mark as done.
-	    $disp = 'ignore';
+	elsif ($reporting_module eq 'sshd') {
+	    # Maybe reclassify if it's in the @sshd_probe_attempt_regexes list.
+	    for my $re (@sshd_probe_attempt_regexes) {
+		$disp = 'ignore', last
+		    if $description =~ /$re/;
+	    }
 	}
-	else {
-	    # couldn't parse.
-	    $disp = 'unknown';
+	# Handle leftovers.
+	if ($disp eq 'report') {
+	    day_print($day, "  $time: $reporting_module: $description\n");
+	}
+	elsif ($disp eq 'unknown') {
+	    day_print($day, "  Couldn't recognize:  $line\n");
 	}
     }
-    elsif ($reporting_module eq 'sshd') {
-	# Maybe reclassify if it's in the @sshd_probe_attempt_regexes list.
-	for my $re (@sshd_probe_attempt_regexes) {
-	    $disp = 'ignore', last
-		if $description =~ /$re/;
-	}
-    }
-    # Handle leftovers.
-    if ($disp eq 'report') {
-	day_print($day, "  $time: $reporting_module: $description\n");
-    }
-    elsif ($disp eq 'unknown') {
-	day_print($day, "  Couldn't recognize:  $line\n");
+    # flush any pending.
+    day_report($day);
+}
+
+### Main code.
+
+# Initialize shutdown/startup ignored messages, local IP addresses.
+initialize_local_addresses();
+initialize_ignored_lines();
+
+# Process input files.
+if (@ARGV) {
+    for my $file (@ARGV) {
+	process_log_file($file);
     }
 }
-# flush any pending.
-day_report($day);
-# report totals
+else {
+    process_log_file('-');
+}
+
+# Report totals
 print "\nMessage totals (unfiltered):\n";
 foreach my $reporting_module (sort(keys(%module_messages))) {
     print "  $module_messages{$reporting_module} from $reporting_module\n";
