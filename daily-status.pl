@@ -1,14 +1,13 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 #
-# Generate daily status message.
+# Generate daily status mail message.
 #
-#    Modification history:
+# [created.  -- rgr, 29-Apr-00.]
 #
-# created.  -- rgr, 29-Apr-00.
-# use status-since file to avoid "date -t yesterday" bug.  -- rgr, 1-May-00.
-#
+# $Id$
 
 use strict;
+use warnings;
 
 # File which keeps track of when we last ran.
 my $status_since = '/root/bin/status-since';
@@ -16,6 +15,9 @@ my $status_since = '/root/bin/status-since';
 chomp(my $yesterday = `date -r $status_since '+%b %d'`);
 # since date gives "Apr 05".
 $yesterday =~ s/ 0/  /;
-system("/usr/local/bin/check-logs.pl -from '$yesterday' /var/log/messages"
-       . " | mail rogers -s 'Daily log for $yesterday'");
+system(join(' ',
+	    '/usr/local/bin/check-logs.pl',
+	    ($yesterday ? "-from '$yesterday'" : ()),
+	    '/var/log/messages',
+	    "| mail rogers -s 'Daily log for $yesterday'");
 system("touch $status_since");
