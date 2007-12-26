@@ -80,9 +80,9 @@ while (@ARGV && $ARGV[0] =~ /^-./) {
     if ($arg eq '-nodns' || $arg eq '-n') {
 	$use_dns_names_p = 0;
     }
-    elsif ($arg =~ /^-(ignore|report)($|=)/) {
+    elsif ($arg =~ /^--?(ignore|report)(=(.*))?/) {
 	my $disposition = $1;
-	my $modules = ($2 ? $' : shift(@ARGV));
+	my $modules = ($2 ? $3 : shift(@ARGV));
 	foreach my $module (split(',', $modules)) {
 	    $standard_module_dispositions{$module} = $disposition;
 	}
@@ -356,9 +356,8 @@ while (defined($line = <>)) {
     chomp($line);
     # $report_p = 0;
     next
-	unless $line =~ / +($host_name|rgr|h0050da615e79) +/o;
-    my $date = $`;  
-    my $description = $';
+	unless $line =~ /^(...............) (\S+) (.*)$/;
+    my ($date, $host, $description) = $line =~ //;
     if ($from_date_string) {
 	# bogus date testing, should be good enough if all you want is "Apr 16".
 	# -- rgr, 16-Apr-00.
@@ -391,17 +390,17 @@ while (defined($line = <>)) {
 	$module_messages{$reporting_module}++;
 	if ($reporting_module eq 'kernel') {
 	    # Try to find a better 'module' for kernel messages.
-	    if ($description =~ /^Packet log: */) {
+	    if ($description =~ /^Packet log: *(.*)$/) {
 		# there are lots of these and they are important, so we
 		# reclassify them as 'ipchains' messages, even though that is
 		# not strictly correct.
 		$reporting_module = 'ipchains';
-		$description = $';
+		$description = $1;
 	    }
-	    elsif ($description =~ /^([\w\d_]+): */) {
+	    elsif ($description =~ /^([\w\d_]+): *(.*)$/) {
 		# reclassify.
 		$reporting_module = $1;
-		$description = $';
+		$description = $1;
 	    }
 	}
     }
