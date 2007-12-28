@@ -34,7 +34,7 @@
   => vacuum.pl 1.1:  state: Exp
      Total lines: +39 -15 (incomplete)
 
-2003-07-26 22:41:02:
+2003-07-26 22:40:58:
   author: rogers
   Added Weblog/Squid hacks to the collection.
   => README.text 1.6:  state: Exp;  lines: +13 -0

@@ -7,7 +7,7 @@
 # $Id$
 
 # [Kernel.require: p528]
-require 'parsedate'
+require 'time'
 
 $date_fuzz = 120		# in seconds.
 
@@ -204,9 +204,11 @@ class VCLogParser
 
             # Make sure we have all the right values.
             date = hash['date'] || raise("Bug:  No date")
+            # Get rid of the fractional second before the "Z" timezone
+            # specification, because it confuses Time.parse.
+	    date.sub!(/\.[0-9]*Z/, 'Z')
             # class Time: p642
-            # library ParseDate: p713
-            hash['encoded_date'] = Time.gm(*ParseDate.parsedate(date))
+            hash['encoded_date'] = Time.parse(date)
             @log_entries << VCLogEntry.new(hash)
         end
     end
@@ -273,9 +275,7 @@ class VCLogParser
             STDERR.puts "Oops; can't identify date in '#{date_etc}' -- skipping."
         else
             # class Time: 642
-            # library ParseDate: 713
-            decoded = ParseDate.parsedate(date)
-            encoded_date = Time.gm(*decoded)
+            encoded_date = Time.parse(date)
             date_etc.sub!(/; *$/, '')
 
             # Create the attributes as a hash in values.  This is done in two
