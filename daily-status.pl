@@ -23,5 +23,5 @@ system(join(' ',
 	    '/usr/local/bin/check-logs.pl',
 	    ($yesterday ? "-from '$yesterday'" : ()),
 	    @log_files,
-	    "| mail rogers -s 'Daily log for $yesterday'");
+	    "| mail rogers -s 'Daily log for $yesterday'"));
 system("touch $status_since");
