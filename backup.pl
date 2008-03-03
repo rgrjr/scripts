@@ -2,7 +2,7 @@
 #
 # backup.pl:  Create and verify a dump file.
 #
-# Copyright (C) 2000-2005 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+# Copyright (C) 2000-2008 by Bob Rogers <rogers@rgrjr.dyndns.org>.
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
@@ -12,7 +12,7 @@ use strict;
 use Getopt::Long;
 use Pod::Usage;
 
-my $VERSION = '2.1';
+my $VERSION = '2.2';
 
 my $test_p = 0;
 my $verbose_p = 0;
@@ -69,7 +69,20 @@ sub do_or_die {
     }
 }
 
-### Option parsing, defaulting, & validation.
+sub check_for_existing_dump_files {
+    my ($dump_name, $dump_dir, $destination_dir) = @_;
+
+    my $dump_file = "$dump_dir/$dump_name";
+    die "$0:  '$dump_file' already exists; remove it if you want to overwrite.\n"
+	if -e $dump_file;
+    my $cd_dump_file = "$destination_dir/$dump_name";
+    die("$0:  '$cd_dump_file' already exists; ",
+	"remove it if you want to overwrite.\n")
+	if $destination_dir && -e $cd_dump_file;
+}
+
+### Parse options.
+
 my $usage = 0;
 my $help = 0;
 GetOptions('date=s' => \$file_date,
@@ -82,12 +95,15 @@ GetOptions('date=s' => \$file_date,
 	   'test+' => \$test_p, 'verbose+' => \$verbose_p,
 	   'volsize=i' => \$dump_volume_size,
 	   'partition=s' => \$dump_partition,
+	   'dump-program=s' => \$dump_program,
+	   'restore-program=s' => \$restore_program,
 	   'level=i' => \$level,
 	   'usage|?' => \$usage, 'help' => \$help)
     or pod2usage(-verbose => 0);
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
 
+my $dar_p = $dump_program =~ /dar$/;
 $dump_partition = shift(@ARGV)
     if ! $dump_partition && @ARGV;
 pod2usage("$0:  --partition (or positional <partition>) arg must be a "
@@ -102,7 +118,8 @@ pod2usage("$0:  --level (or positional <level>) arg must be a single digit.")
 pod2usage("$0:  '".shift(@ARGV)."' is an extraneous positional arg.")
     if @ARGV;
 
-# Compute some defaults.
+### Compute some defaults.
+
 # [this is broken; there's no way to shut off the $dump_volume_size defaulting, 
 # and leave it unlimited.  -- rgr, 20-Aug-03.]
 if ($cd_p) {
@@ -130,41 +147,54 @@ if ($destination_dir) {
     }
 }
 $dump_dir ||= '.';
-pod2usage("$0:  --dump-dir value must be an existing writable directory.")
+pod2usage("$0:  --dump-dir value '$dump_dir' must be "
+	  ."an existing writable directory.")
     unless -d $dump_dir && -w $dump_dir;
 # [should make sure that $destination_dir and $dump_dir are on the same
 # partition if both are specified.  -- rgr, 17-Nov-02.]
 
-# Make sure the partition is mounted.  [hmm, strictly mounting shouldn't be
-# necessary.  but at least this verifies that it's really a partition.  -- rgr,
-# 21-Oct-02.]
+### Make sure the partition is mounted.
+
+# [hmm, strictly mounting shouldn't be necessary for dump.  but at least this
+# verifies that it's really a partition.  -- rgr, 21-Oct-02.]
 my ($part, $mount_point)
     = split(' ', `$grep_program "^$dump_partition " /etc/mtab`);
 pod2usage("$0:  '$dump_partition' is not a mounted partition.")
     unless $mount_point && -d $mount_point;
 
-# Estimate how big the dump will be.
-my $estd_dump_size = `$dump_program -S -u$level $dump_partition`;
-chomp($estd_dump_size);
-die "$0:  Can't find estimated dump size.\n"
-    unless $estd_dump_size;
-my $n_vols = ($estd_dump_size/1024.0)/$dump_volume_size;
-if ($n_vols > 1.5) {
-    # Add 10% slop and then round up, to be sure we have enough dump files.
-    $n_vols = int(1+1.1*$n_vols);
-}
-elsif ($n_vols >= 0.80) {
-    # Offer two volume names, just to be safe.  There is no penalty for this; if
-    # dump doesn't need the second, we'll just rename the first to the original.
-    $n_vols = 2;
-}
-else {
+### Estimate how big the dump will be.
+
+my $n_vols;
+if ($dar_p) {
+    # No way to estimate this.
     $n_vols = 1;
 }
-warn "[got estd_dump_size $estd_dump_size, n_vols $n_vols]\n"
-    if $verbose_p;
+else {
+    warn "running '$dump_program -S -u$level $dump_partition'\n";
+    my $estd_dump_size = `$dump_program -S -u$level $dump_partition`;
+    chomp($estd_dump_size);
+    die "$0:  Can't find estimated dump size.\n"
+	unless $estd_dump_size;
+    $n_vols = ($estd_dump_size/1024.0)/$dump_volume_size;
+    if ($n_vols > 1.5) {
+	# Add 10% slop and then round up, to be sure we have enough dump files.
+	$n_vols = int(1+1.1*$n_vols);
+    }
+    elsif ($n_vols >= 0.80) {
+	# Offer two volume names, just to be safe.  There is no penalty for
+	# this; if dump doesn't need the second, we'll just rename the first to
+	# the original.
+	$n_vols = 2;
+    }
+    else {
+	$n_vols = 1;
+    }
+    warn "[got estd_dump_size $estd_dump_size, n_vols $n_vols]\n"
+	if $verbose_p;
+}
 
-# Compute the dump file name(s).
+### Compute the dump file name(s).
+
 if (! $dump_name) {
     # Must make our own dump name.  To do that, we must find a partition
     # abbreviation (if it hasn't been given), and the dump date (if that hasn't
@@ -178,11 +208,13 @@ if (! $dump_name) {
     # Create the backup file name.
     chomp($file_date = `$date_program '+%Y%m%d'`)
 	unless $file_date;
-    $dump_name = "$partition_abbrev-$file_date-l$level.dump";
+    $dump_name = "$partition_abbrev-$file_date-l$level";
+    # DAR just wants to see a prefix.
+    $dump_name .= '.dump'
+	unless $dar_p;
 }
 my $orig_dump_name = $dump_name;
 my @dump_names = ($dump_name);
-
 # Handle extra dump files.
 if ($n_vols > 1) {
     my $stem = $dump_name;
@@ -194,68 +226,96 @@ if ($n_vols > 1) {
     }
     $dump_name = $dump_names[0];
 }
-# These are for testing whether the file exists.
-my $dump_file = "$dump_dir/$dump_name";
-my $cd_dump_file = "$destination_dir/$dump_name";
 
 ### Make the backup.
-die "$0:  '$dump_file' already exists; remove it if you want to overwrite.\n"
-    if -e $dump_file;
-die("$0:  '$cd_dump_file' already exists; ",
-    "remove it if you want to overwrite.\n")
-    if $destination_dir && -e $cd_dump_file;
+
+check_for_existing_dump_files(($dar_p ? "$dump_name.1.dar" : $dump_name),
+			      $dump_dir, $destination_dir);
+my $dump_file = "$dump_dir/$dump_name";
 print("Backing up $dump_partition \($mount_point\) to $dump_file",
       (@dump_names > 1 ? ' etc.' : ''), "\n");
 umask(066);
-do_or_die($dump_program, "-u$level",
-	  ($dump_volume_size ? ('-B', $dump_volume_size) : ()),
-	  '-f', join(',', map { "$dump_dir/$_"; } @dump_names),
-	  $dump_partition);
-if ($dump_names[1] && ! -r $dump_dir.'/'.$dump_names[1] && ! $test_p) {
-    # We offered a second dump file name, but it seems that dump didn't need it.
-    # Rename it to the original name (without the suffix letter), and treat that
-    # as our only dump file.
-    my $orig_dump_file = "$dump_dir/$orig_dump_name";
-    if (rename($dump_file, $orig_dump_file)) {
-	warn "[renamed $dump_file to $orig_dump_file]\n"
-	    if $verbose_p;
-	$dump_name = $orig_dump_name;
-	$dump_file = $orig_dump_file;
-	@dump_names = ($dump_name);
-    }
-    else {
-	warn("$0:  rename('$dump_file', '$orig_dump_file') failed:  $?");
+if (! $dar_p) {
+    # Use dump.
+    do_or_die($dump_program, "-u$level",
+	      ($dump_volume_size ? ('-B', $dump_volume_size) : ()),
+	      '-f', join(',', map { "$dump_dir/$_"; } @dump_names),
+	      $dump_partition);
+    if ($dump_names[1] && ! -r $dump_dir.'/'.$dump_names[1] && ! $test_p) {
+	# We offered a second dump file name, but it seems that dump didn't need
+	# it.  Rename it to the original name (without the suffix letter), and
+	# treat that as our only dump file.
+	my $orig_dump_file = "$dump_dir/$orig_dump_name";
+	if (rename($dump_file, $orig_dump_file)) {
+	    warn "[renamed $dump_file to $orig_dump_file]\n"
+		if $verbose_p;
+	    $dump_name = $orig_dump_name;
+	    $dump_file = $orig_dump_file;
+	    @dump_names = ($dump_name);
+	}
+	else {
+	    warn("$0:  rename('$dump_file', '$orig_dump_file') failed:  $?");
+	}
     }
 }
+else {
+    # Use dar.  Note that dar takes the mount point rather than the partition.
+    if ($level > 0) {
+	die "unsupported";
+    }
+    do_or_die($dump_program,
+	      '-c', $dump_file,
+	      ($dump_volume_size ? ('-s', $dump_volume_size.'K') : ()),
+	      '-R', $mount_point);
+    # Now figure out how many slices (dump files) it wrote.
+    opendir(my $dir, $dump_dir)
+	or die;
+    @dump_names = ();
+    my $name_len = length($dump_name);
+    for my $file (readdir($dir)) {
+	push(@dump_names, $file)
+	    if substr($file, 0, $name_len) eq $dump_name;
+    }
+    @dump_names = sort @dump_names;
+}
+
+### . . . and verify it.
 
 print "Done creating $dump_file; verifying . . .\n";
-# [getting restore to deal with multivolume dump files is more of a pain; it
-# doesn't understand comma-separated filenames.  -- rgr, 4-Jun-05.]
-open(RESTORE, "| $restore_program -C -y -f $dump_file")
-    unless $test_p;
-for my $i (1..@dump_names-1) {
-    my $name = $dump_names[$i];
-    my $dump_file = "$dump_dir/$name";
-    if ($test_p || -r $dump_file) {
-	print RESTORE "$dump_file\n"
-	    unless $test_p;
-	print "[also verifying $dump_file]\n"
-	    if $verbose_p;
-    }
-    else {
-	# Optimization.  The trouble with this is that we can't be sure how many
-	# volumes dump should have written, so we don't know if a missing file
-	# is due to (e.g.) a "disk full" problem, or is really past the end of
-	# the series.
-	@dump_names = @dump_names[0..$i-1];
-	last;
-    }
+if ($dar_p) {
+    do_or_die('-ignore-return',
+	      $dump_program, '-d', $dump_file, '-R', $mount_point);
 }
-# [can't usefully test the return code from restore.  -- rgr, 4-Jun-05.]
-close(RESTORE)
-    unless $test_p;
+else {
+    # [getting restore to deal with multivolume dump files is more of a pain; it
+    # doesn't understand comma-separated filenames.  -- rgr, 4-Jun-05.]
+    open(RESTORE, "| $restore_program -C -y -f $dump_file")
+	unless $test_p;
+    for my $i (1..@dump_names-1) {
+	my $name = $dump_names[$i];
+	my $dump_file = "$dump_dir/$name";
+	if ($test_p || -r $dump_file) {
+	    print RESTORE "$dump_file\n"
+		unless $test_p;
+	    print "[also verifying $dump_file]\n"
+		if $verbose_p;
+	}
+	else {
+	    # Optimization.  The trouble with this is that we can't be sure how
+	    # many volumes dump should have written, so we don't know if a
+	    # missing file is due to (e.g.) a "disk full" problem, or is really
+	    # past the end of the series.
+	    @dump_names = @dump_names[0..$i-1];
+	    last;
+	}
+    }
+    # [can't usefully test the return code from restore.  -- rgr, 4-Jun-05.]
+    close(RESTORE)
+	unless $test_p;
+}
 
-### Cleanup.
+### Rename dump files to their final destination.
+
 if ($destination_dir) {
     for my $name (@dump_names) {
 	my $dump_file = "$dump_dir/$name";
@@ -353,6 +413,19 @@ description of the C<--file-name> option.
 Overrides the partition abbreviation (the last file name component of
 the mount point) in the default dump file name; see the description of
 the C<--file-name> option.
+
+=item B<--dump-program>
+
+=item B<--restore-program>
+
+Specifies the names of the dump and restore programs to use.  The
+defaults are '/usr/local/sbin/dump' and '/usr/local/sbin/restore'
+respectively.
+
+If you specify a C<--dump-program> that ends in "dar", C<backup.pl>
+will assume this is the DAR (Disk Archiver) program instead.  In that
+case, the C<--restore-program> is ignored.  [This is new, and still
+very experimental.  -- rgr, 1-Mar-08.]
 
 =item B<--dump-dir>
 
