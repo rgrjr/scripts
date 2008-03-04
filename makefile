@@ -100,9 +100,20 @@ test-postfix-forged-address:
 	SENDER=spammer@modulargenetics.com email/forged-local-address.pl \
 		${modgen-config-options} < email/modgen-external.msg
 
+# This can't be put on the "test" target because it's too hard to make test
+# cases that last more than a day.
+test-show-backups:
+	./show-backups.pl > $@.tmp
+	cmp $@-1.text $@.tmp
+	./show-backups.pl --prefix sequencing > $@.tmp
+	cmp $@-2.text $@.tmp
+	rm $@.tmp
+
 install:	install-base
 install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
+	mkdir -p ${pm-directory}/Backup
+	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
 	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
 	${INSTALL} -m 555 ${root-scripts} /root/bin
 	${INSTALL} -m 444 ${log-files} /root/bin

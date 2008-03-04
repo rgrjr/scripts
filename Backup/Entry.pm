@@ -1,0 +1,84 @@
+### Base class for backup objects.
+#
+# [created.  -- rgr, 3-Mar-08.]
+#
+# $Id$
+
+package Backup::Entry;
+
+use strict;
+use warnings;
+
+use base qw(Backup::Thing);
+
+# define instance accessors.
+sub BEGIN {
+  no strict 'refs';
+  for my $method (qw(prefix date level file base_name index current_p)) {
+    my $field = '_' . $method;
+    *$method = sub {
+      my $self = shift;
+      @_ ? ($self->{$field} = shift) : $self->{$field};
+    }
+  }
+}
+
+sub new {
+    my $class = shift;
+
+    my $self = $class->SUPER::new(@_);
+    if (! $self->base_name && $self->file) {
+	my $base_name = $self->file;
+	$base_name =~ s@(.*/)@@;
+	# warn "file after:  base_name '$base_name' from file '$file'\n";
+	$self->base_name($base_name);
+    }
+    $self;
+}
+
+my $host_name;	# Cache.  [Really, this is an ugly kludge; how would we
+		# combine entries from multiple hosts?  -- rgr, 3-Mar-08.]
+
+sub listing {
+    my ($self) = @_;
+
+    my $file = $self->file;
+    my @stat = stat($file);
+    my $size = $stat[7];
+    my $base_name = $self->base_name;
+    my $dir_name = $file =~ m@^(.*/)@ ? $1 : '';
+    chomp($host_name = `hostname`)
+	unless $host_name;
+    # [sprintf can't handle huge numbers.  -- rgr, 28-Jun-04.]
+    # my $listing = sprintf('%14i %s', $size, $file);
+    return (' 'x(14-length($size)))."$size $base_name [$host_name:$dir_name]";
+}
+
+sub new_from_file {
+    # Returns nothing if the file name is not parseable as a valid dump file.
+    my ($class, $file) = @_;
+
+    if ($file =~ m@([^/]+)-(\d+)-l(\d)(\w*)\.dump$@) {
+	# dump/restore format.
+	my ($pfx, $date, $level, $alpha_index) = //;
+	my $index = $alpha_index ? ord($alpha_index)-ord('a')+1 : 0;
+	return
+	    Backup::Entry->new(prefix => $pfx,
+			       date => $date,
+			       level => $level,
+			       index => $index,
+			       file => $file);
+    }
+    elsif ($file =~ m@([^/]+)-(\d+)-l(\d)\.(\d+)\.dar$@) {
+	# DAR format.
+	my ($pfx, $date, $level, $index) = //;
+	return
+	    Backup::Entry->new(prefix => $pfx,
+			       date => $date,
+			       level => $level,
+			       index => $index,
+			       file => $file);
+    }
+}
+
+1;
