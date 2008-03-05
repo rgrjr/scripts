@@ -10,7 +10,7 @@ use strict;
 use warnings;
 
 BEGIN {
-    push(@INC, $1)
+    unshift(@INC, $1)
 	if $0 =~ m@(.+)/@;
 }
 
@@ -51,33 +51,16 @@ if (! @search_roots) {
 }
 
 # Find backup dumps on disk.
-my $find_glob_pattern = '*.d*';
-$find_glob_pattern = join('-', $prefix, $find_glob_pattern)
-    if $prefix ne '*';
-my $command = join(' ', 'find', @search_roots, '-name', "'$find_glob_pattern'");
-open(IN, "$command |")
-    or die "Oops; could not open pipe from '$command':  $!";
-my %dump_set_from_prefix;
-while (<IN>) {
-    chomp;
-    my $entry = Backup::Entry->new_from_file($_);
-    if ($entry) {
-	my $prefix = $entry->prefix;
-	my $set = $dump_set_from_prefix{$prefix};
-	if (! $set) {
-	    $set = Backup::DumpSet->new(prefix => $prefix);
-	    $dump_set_from_prefix{$prefix} = $set;
-	}
-	$set->add_dump_entry($entry);
-    }
-}
+my $dump_set_from_prefix
+    = Backup::DumpSet->find_dumps(prefix => $prefix,
+				  root => \@search_roots);
 
 # For each prefix, generate output sorted with the most recent at the top, and a
 # '*' marking each of the current backup files.  (Of course, we only know which
 # files are "current" in local terms.)
 my $n_prefixes = 0;
-for my $pfx (sort(keys(%dump_set_from_prefix))) {
-    my $set = $dump_set_from_prefix{$pfx};
+for my $pfx (sort(keys(%$dump_set_from_prefix))) {
+    my $set = $dump_set_from_prefix->{$pfx};
     print "\n"
 	if $n_prefixes;
     $set->mark_current_entries();
