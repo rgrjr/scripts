@@ -120,7 +120,7 @@ sub site_list_files {
 	next
 	    if $prefix && (substr($file, 0, length($prefix)) ne $prefix);
 	next
-	    unless $file =~ /^(.+)-(\d+)-l(\d)\w*\.(g?tar|tgz|dump)$/;
+	    unless $file =~ /^(.+)-(\d+)-l(\d)\w*\.(g?tar|tgz|dump|(\d+)\.dar)$/;
 	my ($tag, $date, $level) = $file =~ //;
 	my $entry = $levels{$tag};
 	my ($entry_tag, $entry_date, $entry_level)
