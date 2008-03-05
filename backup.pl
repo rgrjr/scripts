@@ -2,6 +2,8 @@
 #
 # backup.pl:  Create and verify a dump file.
 #
+# POD documentation at the bottom.
+#
 # Copyright (C) 2000-2008 by Bob Rogers <rogers@rgrjr.dyndns.org>.
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
@@ -9,6 +11,14 @@
 # $Id$
 
 use strict;
+use warnings;
+
+BEGIN {
+    # This is for testing, and only applies if you don't use $PATH.
+    unshift(@INC, $1)
+	if $0 =~ m@(.+)/@;
+}
+
 use Getopt::Long;
 use Pod::Usage;
 
@@ -195,18 +205,15 @@ else {
 
 ### Compute the dump file name(s).
 
+if (! $partition_abbrev) {
+    $partition_abbrev = $mount_point;
+    $partition_abbrev =~ s@.*/@@;
+    $partition_abbrev = 'sys' unless $partition_abbrev;
+}
 if (! $dump_name) {
-    # Must make our own dump name.  To do that, we must find a partition
-    # abbreviation (if it hasn't been given), and the dump date (if that hasn't
-    # been given).  Normally, everything is defaulted, and we have to do it all.
-    if (! $partition_abbrev) {
-	$partition_abbrev = $mount_point;
-	$partition_abbrev =~ s@.*/@@;
-	$partition_abbrev = 'sys' unless $partition_abbrev;
-	# print "$mount_point -> $partition_abbrev\n";
-    }
-    # Create the backup file name.
+    # Must make our own dump name.
     chomp($file_date = `$date_program '+%Y%m%d'`)
+	# [bug:  should use a perl module for this.  -- rgr, 5-Mar-08.]
 	unless $file_date;
     $dump_name = "$partition_abbrev-$file_date-l$level";
     # DAR just wants to see a prefix.
@@ -260,12 +267,33 @@ if (! $dar_p) {
 }
 else {
     # Use dar.  Note that dar takes the mount point rather than the partition.
+    my $reference_file_stem;
     if ($level > 0) {
-	die "unsupported";
+	# For an incremental dump, we need to give dar the file stem of the most
+	# recent prior dump at any level greater than the new dump level.
+	# Finding and sorting existing dump files is the job of Backup::DumpSet.
+	require Backup::DumpSet;
+
+	my $sets = Backup::DumpSet->find_dumps(prefix => $partition_abbrev,
+					       root => $destination_dir);
+	my @entries = ($sets->{$partition_abbrev} 
+		       ? $sets->{$partition_abbrev}->current_entries
+		       : ());
+	while (@entries && $entries[0]->level >= $level) {
+	    # $entries[0] is too incremental, and therefore irrelevant.
+	    shift(@entries);
+	}
+	die("$0:  Can't find the last dump for '$partition_abbrev', ",
+	    "for a DAR level $level dump.\n")
+	    unless @entries;
+	$reference_file_stem = $entries[0]->file;
+	# Turn this into a proper stem.
+	$reference_file_stem =~ s/\.\d+\.dar$//;
     }
     do_or_die($dump_program,
 	      '-c', $dump_file,
 	      ($dump_volume_size ? ('-s', $dump_volume_size.'K') : ()),
+	      ($reference_file_stem ? ('-A', $reference_file_stem) : ()),
 	      '-R', $mount_point);
     # Now figure out how many slices (dump files) it wrote.
     opendir(my $dir, $dump_dir)
@@ -496,6 +524,14 @@ greatly simplify backup C<crontab> entries; only one would be needed.
 C<backup.pl> should refuse to proceed if the size of the dumps it
 produces are expected to be larger than the free space remaining on
 the disk.  If you can't finish, there's no point getting started.
+
+For DAR to create an incremental dump, it needs to know what was
+dumped in the most recent dump at a higher level.  This means you have
+to keep the L0 dump around in order to make L1 dumps.  The right way
+to fix this is to make use of DAR catalogs, which take up much less
+disk space.  That requires being able to find catalogs and associate
+them with their dump files, which in turn requires extending
+C<Backup::DumpSet>.
 
 If you find any more, please let me know.
 
