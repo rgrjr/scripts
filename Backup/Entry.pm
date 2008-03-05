@@ -36,16 +36,34 @@ sub new {
     $self;
 }
 
+sub size {
+    # Pseudo-slot, self-initializing via stat, caches the result.
+    my $self = shift;
+
+    if (@_) {
+	$self->{_size} = shift;
+    }
+    else {
+	my $size = $self->{_size};
+	if (! defined($size)) {
+	    my $file = $self->file;
+	    my @stat = stat($file);
+	    $size = $stat[7];
+	    $self->{_size} = $size;
+	}
+	$size;
+    }
+}
+
 my $host_name;	# Cache.  [Really, this is an ugly kludge; how would we
 		# combine entries from multiple hosts?  -- rgr, 3-Mar-08.]
 
 sub listing {
     my ($self) = @_;
 
-    my $file = $self->file;
-    my @stat = stat($file);
-    my $size = $stat[7];
+    my $size = $self->size;
     my $base_name = $self->base_name;
+    my $file = $self->file;
     my $dir_name = $file =~ m@^(.*/)@ ? $1 : '';
     chomp($host_name = `hostname`)
 	unless $host_name;
