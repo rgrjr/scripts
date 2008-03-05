@@ -9,6 +9,8 @@ package Backup::DumpSet;
 use strict;
 use warnings;
 
+use Backup::Entry;
+
 use base qw(Backup::Thing);
 
 # define instance accessors.
