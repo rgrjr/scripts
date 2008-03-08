@@ -2,7 +2,9 @@
 #
 # Set up a firewall -- paranoid version.
 #
-# Copyright (C) 1999-2003 Robert G. Rogers Jr. <rogers@rgrjr.dyndns.org>
+# [created.  -- rgr, 4-Mar-00.]
+#
+# Copyright (C) 2000-2008 Robert G. Rogers Jr. <rogers@rgrjr.dyndns.org>
 #
 # This script is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -24,22 +26,13 @@
 # It is OK to re-run this script manually after editing; it flushes each chain
 # before adding to it.
 #
-#    [old] Modification history:
-#
-# created [firewall version].  -- rgr, 18-Dec-99.
-# recreated as "paranoid" -- don't let anybody in.  -- rgr, 4-Mar-00.
-# allow X11 on the loopback interface, update DNS_IPS, reject forwarding
-#	requests.  -- rgr, 5-Oct-01.
-# update DNS_IPS again.  -- rgr, 26-Apr-03.
-# started updating for iptables.  -- rgr, 26-Apr-03.
-#
 # $Id$
 
 PATH=/sbin:$PATH
 
-# no DNS yet, so these must be hardwired.
-# [updated.  -- rgr, 26-Apr-03.]
-DNS_IPS='204.127.202.19 216.148.227.79'
+# Symbolic names for interfaces.
+ext_iface=eth2
+int_iface=eth0
 
 # Allow arbitrary packets to leave, but not for X11 connections that are not via
 # the loopback interface.
@@ -54,28 +47,24 @@ iptables -A OUTPUT -p TCP -d 0.0.0.0/0 --source-port 6000:6063 -j REJECT
 iptables -P INPUT DROP
 iptables -F INPUT
 iptables -A INPUT -i lo -j ACCEPT
-iptables -A INPUT -i eth1 -j ACCEPT
+iptables -A INPUT -i $int_iface -j ACCEPT
 iptables -A INPUT -p ICMP -j ACCEPT
 
-# External cable modem interface (eth0).
+# External cable modem interface.
 iptables -N ext-in
 iptables -F ext-in
-# Accept DNS results (on either TCP or UDP) from any of the ne.mediaone.net DNS
-# servers.
-for ip in $DNS_IPS; do
-    iptables -A ext-in -p UDP -s $ip --source-port domain -j ACCEPT
-    iptables -A ext-in -p TCP -s $ip --source-port domain -j ACCEPT
-done
+# Accept DNS results on either TCP or UDP.
+iptables -A ext-in -p UDP --source-port domain -j ACCEPT
+iptables -A ext-in -p TCP --source-port domain -j ACCEPT
 # [temporary:  ignore mail connections, so we don't lose mail before the mailer
 # is configured.  -- rgr, 26-Apr-03.]
 iptables -A ext-in -p TCP --destination-port smtp -j DROP
-# Deny all other attempts at opening connections to this machine.  [And log
-# them, because I want to know who has the gall.  -- rgr, 21-Dec-99.]
+# Deny (and log) all other attempts at opening connections to this machine.
 iptables -A ext-in -p TCP -j LOG
 iptables -A ext-in -p TCP -j REJECT
 
 # Add the external input filtering chain.
-iptables -A INPUT -i eth0 -j ext-in
+iptables -A INPUT -i $ext_iface -j ext-in
 
 # Don't forward packets yet.
 iptables -P FORWARD DROP
