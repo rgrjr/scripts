@@ -152,13 +152,6 @@ diff:
 
 install-firewall:
 	${INSTALL} -m 555 ${firewall-scripts} /etc/init.d
-diff-firewall:
-	for file in ${firewall-scripts}; do \
-	    if [ -r $$file ]; then \
-		diff -u /etc/init.d/$$file $$file; \
-	    fi; \
-	done
-
 
 ${html-pages}:   %.pl.html:	%.pl
 	pod2html $^ > $@
