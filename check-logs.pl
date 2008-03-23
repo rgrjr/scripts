@@ -211,15 +211,16 @@ sub pretty_port_proto {
 
 my $todays_heading_printed_p = '';
 sub day_print {
-    # generate the day's heading, if not already done.
+    # Generate the day's heading, if not already done.
     my ($day, $line) = @_;
 
-    unless ($day eq $todays_heading_printed_p) {
+    if ($day ne $todays_heading_printed_p) {
 	print "\n$day:\n";
 	$todays_heading_printed_p = $day;
     }
-    print $line
-	if $line;
+    # Escape binary gibberish.
+    $line =~ s/ [^\n\t !-~] / sprintf('\%03o', ord($&)) /xeg;
+    print $line;
 }
 
 my %attempts;
