@@ -14,7 +14,8 @@ use base qw(Backup::Thing);
 # define instance accessors.
 sub BEGIN {
   no strict 'refs';
-  for my $method (qw(prefix date level file base_name index current_p)) {
+  for my $method (qw(prefix date level file base_name
+                     catalog_p index current_p)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift;
@@ -87,16 +88,30 @@ sub new_from_file {
 			       index => $index,
 			       file => $file);
     }
-    elsif ($file =~ m@([^/]+)-(\d+)-l(\d)\.(\d+)\.dar$@) {
+    elsif ($file =~ m@([^/]+)-(\d+)-l(\d)(-cat)?\.(\d+)\.dar$@) {
 	# DAR format.
-	my ($pfx, $date, $level, $index) = //;
+	my ($pfx, $date, $level, $cat_p, $index) = //;
 	return
 	    Backup::Entry->new(prefix => $pfx,
 			       date => $date,
 			       level => $level,
+			       catalog_p => ($cat_p ? 1 : 0),
 			       index => $index,
 			       file => $file);
     }
+}
+
+sub entry_cmp {
+    # This sorts first by level backwards (if someone performs backups at two
+    # different levels on the same day, the second is usually an extracurricular
+    # L9 dump on top of the other), then by catalog_p (to put the catalogs
+    # first), and finally by index (for when a single backup is split across
+    # multiple files).
+    my ($self, $other) = @_;
+
+    $other->level <=> $self->level
+	|| ($other->catalog_p || 0) <=> ($self->catalog_p || 0)
+	|| $self->index <=> $other->index;
 }
 
 1;

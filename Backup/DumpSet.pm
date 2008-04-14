@@ -60,6 +60,8 @@ sub find_dumps {
     while (<$in>) {
 	chomp;
 	my $entry = Backup::Entry->new_from_file($_);
+	next
+	    unless $entry;
 	my $set = $dump_set_from_prefix->{$prefix};
 	if (! $set) {
 	    $set = $class->new(prefix => $prefix);
@@ -83,13 +85,7 @@ sub mark_current_entries {
     # current.
     for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
 	my $entries = $dumps_from_date->{$date};
-	# This sorts first by level backwards (if someone performs backups at
-	# two different levels on the same day, the second is usually an
-	# extracurricular L9 dump on top of the other), and then by index
-	# (for when a single backup is split across multiple files).
-	for my $entry (sort { $b->level <=> $a->level
-				  || $a->index <=> $b->index;
-		       } @$entries) {
+	for my $entry (sort { $a->entry_cmp($b); } @$entries) {
 	    my $pfx_date = join('-', $entry->prefix, $entry->date);
 	    my $current_level = $entry->level;
 	    my $listing = $entry->listing;
@@ -116,13 +112,7 @@ sub current_entries {
     # current.
     for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
 	my $entries = $dumps_from_date->{$date};
-	# This sorts first by level backwards (if someone performs backups at
-	# two different levels on the same day, the second is usually an
-	# extracurricular L9 dump on top of the other), and then by index
-	# (for when a single backup is split across multiple files).
-	for my $entry (sort { $b->level <=> $a->level
-				  || $a->index <=> $b->index;
-		       } @$entries) {
+	for my $entry (sort { $a->entry_cmp($b); } @$entries) {
 	    push(@current_entries, $entry)
 		if $entry->current_p;
 	}

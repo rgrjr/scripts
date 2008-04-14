@@ -67,13 +67,7 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     my $dumps_from_date = $set->dumps_from_date;
     for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
 	my $entries = $dumps_from_date->{$date};
-	# This sorts first by level backwards (if someone performs backups at
-	# two different levels on the same day, the second is usually an
-	# extracurricular L9 dump on top of the other), and then by index
-	# (for when a single backup is split across multiple files).
-	for my $entry (sort { $b->level <=> $a->level
-				  || $a->index <=> $b->index;
-		       } @$entries) {
+	for my $entry (sort { $a->entry_cmp($b); } @$entries) {
 	    my $listing = $entry->listing;
 	    substr($listing, 1, 1) = '*'
 		if $entry->current_p;
