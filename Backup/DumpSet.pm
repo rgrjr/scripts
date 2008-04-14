@@ -120,4 +120,79 @@ sub current_entries {
     return @current_entries;
 }
 
+### vacuum.pl support.
+
+sub site_list_files {
+    # Parse directory listings, dealing with remote file syntax.  This is used
+    # by vacuum.pl, and isn't very well integrated with the rest of the module.
+    my ($self, $dir, $prefix) = @_;
+    my @result = ();
+
+    if ($dir =~ /:/) {
+	my ($host, $spec) = split(':', $dir, 2);
+	open(IN, "ssh '$host' \"ls -l '$spec'\" |")
+	    or die;
+    }
+    else {
+	open(IN, "ls -l '$dir' |")
+	    or die;
+    }
+
+    # Now go backward through the files, taking only those that aren't
+    # superceded by a more recent file of the same or higher backup level.
+    my %levels = ();
+    for my $line (reverse(<IN>)) {
+	chomp($line);
+
+	# Look for the file date as a way of recognizing the size and name.
+	my ($size, $file);
+	if ($line =~ /(\d+) ([A-Z][a-z][a-z] +\d+|\d\d-\d\d) +[\d:]+ (.+)$/) {
+	    ($size, $file) = ($1, $3);
+	}
+	elsif ($line =~ /(\d+) \d+-\d\d-\d\d +\d\d:\d\d (.+)$/) {
+	    # numeric ISO date.
+	    ($size, $file) = $line =~ //;
+	}
+	else {
+	    # not a file line.
+	    next;
+	}
+
+	# Turn that into a Backup::Entry object.
+	my $new_entry = Backup::Entry->new_from_file($file);
+	next
+	    unless $new_entry;
+	next
+	    if $prefix && $new_entry->prefix ne $prefix;
+	$new_entry->size($size);
+
+	# Decide if this file is current.  [Should merge this someday with the
+	# current_entries logic above, but currently each Backup::DumpSet can
+	# only handle one prefix.  -- rgr, 14-Apr-08.]
+	my ($tag, $date, $new_level)
+	    = ($new_entry->prefix, $new_entry->date, $new_entry->level);
+	my $entry = $levels{$tag};
+	my ($entry_tag, $entry_date, $entry_level)
+	    = ($entry ? @$entry : ('', '', undef));
+	if (! defined($entry_level) || $new_level < $entry_level) {
+	    # it's a keeper.
+	    # warn "[file $file, tag $tag, date $date, level $new_level]\n";
+	    $levels{$tag} = [$tag, $date, $new_level];
+	    push(@result, $new_entry);
+	}
+	elsif ($new_level == $entry_level
+	       && $tag eq $entry_tag && $date eq $entry_date) {
+	    # another file of the current set.
+	    # warn "[another $file, tag $tag, date $date, level $new_level]\n";
+	    push(@result, $new_entry);
+	}
+	else {
+	    # must have been superceded by something we've seen already.
+	}
+    }
+    close(IN)
+	or die "oops; pipe error:  $!";
+    reverse(@result);
+}
+
 1;

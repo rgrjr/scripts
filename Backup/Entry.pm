@@ -56,6 +56,22 @@ sub size {
     }
 }
 
+# Figurative constants for converting bytes to megabytes.
+my $mega = 1024.0*1024.0;
+my $mega_per_million = $mega/1000000;
+
+sub size_in_mb {
+    # Convert the size into MB.  Do this in two chunks, because Perl 5.6 thinks
+    # it's always 4095 for values above 2^32.  -- rgr, 9-Sep-03.
+    my ($self, $size) = @_;
+    $size ||= $self->size;
+
+    my $mb = (length($size) <= 6 ? $size : substr($size, -6))/$mega;
+    $mb += substr($size, 0, -6)/$mega_per_million
+	if length($size) > 6;
+    return $mb;
+}
+
 my $host_name;	# Cache.  [Really, this is an ugly kludge; how would we
 		# combine entries from multiple hosts?  -- rgr, 3-Mar-08.]
 
@@ -79,7 +95,7 @@ sub new_from_file {
 
     if ($file =~ m@([^/]+)-(\d+)-l(\d)(\w*)\.dump$@) {
 	# dump/restore format.
-	my ($pfx, $date, $level, $alpha_index) = //;
+	my ($pfx, $date, $level, $alpha_index) = $file =~ //;
 	my $index = $alpha_index ? ord($alpha_index)-ord('a')+1 : 0;
 	return
 	    Backup::Entry->new(prefix => $pfx,
@@ -90,7 +106,7 @@ sub new_from_file {
     }
     elsif ($file =~ m@([^/]+)-(\d+)-l(\d)(-cat)?\.(\d+)\.dar$@) {
 	# DAR format.
-	my ($pfx, $date, $level, $cat_p, $index) = //;
+	my ($pfx, $date, $level, $cat_p, $index) = $file =~ //;
 	return
 	    Backup::Entry->new(prefix => $pfx,
 			       date => $date,

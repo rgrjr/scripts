@@ -9,8 +9,17 @@
 use strict;
 use warnings;
 
+BEGIN {
+    # This makes it easier for testing.
+    unshift(@INC, $1)
+	if $0 =~ m@(.+)/@;
+}
+
 use Getopt::Long;
 use Pod::Usage;
+
+use Backup::DumpSet;
+use Backup::Entry;
 
 my $warn = $0;
 $warn =~ s@.*/@@;
@@ -75,79 +84,10 @@ sub display_mb {
 sub print_items {
     # generate a detail line from a file entry created by find_files_to_copy,
     # passed in $_ as by 'map'.  also used for debugging.
-    my ($name, $size, $level) = @$_;
+    my $entry = $_;
 
     printf("      %-25s  %s  level %d\n",
-	   $name, display_mb($size, 8), $level);
-}
-
-# Figurative constants for converting bytes to megabytes.
-my $mega = 1024.0*1024.0;
-my $mega_per_million = $mega/1000000;
-
-sub site_list_files {
-    # Parse directory listings, dealing with remote file syntax.
-    my ($dir, $prefix) = @_;
-    my @result = ();
-
-    if ($dir =~ /:/) {
-	my ($host, $spec) = split(':', $dir, 2);
-	open(IN, "ssh '$host' \"ls -l '$spec'\" |")
-	    or die;
-    }
-    else {
-	open(IN, "ls -l '$dir' |")
-	    or die;
-    }
-    # now go backward through the files, taking only those that aren't
-    # superceded by a more recent file of the same or higher backup level.
-    my %levels = ();
-    for my $line (reverse(<IN>)) {
-	chomp($line);
-	my ($size, $file);
-	# look for the file date as a way of recognizing the size and name.
-	if ($line =~ /(\d+) ([A-Z][a-z][a-z] +\d+|\d\d-\d\d) +[\d:]+ (.+)$/) {
-	    ($size, $file) = ($1, $3);
-	}
-	elsif ($line =~ /(\d+) \d+-\d\d-\d\d +\d\d:\d\d (.+)$/) {
-	    # numeric ISO date.
-	    ($size, $file) = $line =~ //;
-	}
-	else {
-	    # not a file line.
-	    next;
-	}
-	next
-	    if $prefix && (substr($file, 0, length($prefix)) ne $prefix);
-	next
-	    unless $file =~ /^(.+)-(\d+)-l(\d)\w*\.(g?tar|tgz|dump|(\d+)\.dar)$/;
-	my ($tag, $date, $level) = $file =~ //;
-	my $entry = $levels{$tag};
-	my ($entry_tag, $entry_date, $entry_level)
-	    = ($entry ? @$entry : ('', '', undef));
-	# convert the size into MB.  do this in two chunks, because perl 5.6
-	# thinks it's always 4095 for values above 2^32.  -- rgr, 9-Sep-03.
-	my $mb = (length($size) <= 6 ? $size : substr($size, -6))/$mega;
-	$mb += substr($size, 0, -6)/$mega_per_million
-	    if length($size) > 6;
-	if (! defined($entry_level) || $level < $entry_level) {
-	    # it's a keeper.
-	    # warn "[file $file, tag $tag, date $date, level $level]\n";
-	    $levels{$tag} = [$tag, $date, $level];
-	    push(@result, [$file, $mb, $level, $date]);
-	}
-	elsif ($level == $entry_level
-	       && $tag eq $entry_tag && $date eq $entry_date) {
-	    # another file of the current set.
-	    # warn "[another file $file, tag $tag, date $date, level $level]\n";
-	    push(@result, [$file, $mb, $level, $date]);
-	}
-	else {
-	    # must have been superceded by something we've seen already.
-	}
-    }
-    close(IN);
-    reverse(@result);
+	   $entry->file, display_mb($entry->size_in_mb, 8), $entry->level);
 }
 
 sub free_disk_space {
@@ -241,19 +181,16 @@ sub find_files_to_copy {
     # by the total space required.
     my ($from, $to, $prefix) = @_;
 
-    my %to = ();
-    my @to = site_list_files($to, $prefix);
-    # map &print_items, @to;
-    foreach my $to (@to) {
-	$to{$to->[0]} = $to;
-    }
-    my @from = site_list_files($from, $prefix);
+    my @to = Backup::DumpSet->site_list_files($to, $prefix);
+    my %to = map { $_->file => $_; } @to;
+    my @from = Backup::DumpSet->site_list_files($from, $prefix);
+
     my @need_copying = ();
     my $total_space = 0;
     # map &print_items, @from;
     for my $from (@from) {
-	my $name = $from->[0];
-	if ($since && substr($from->[3], 0, length($since)) le $since) {
+	my $name = $from->file;
+	if ($since && substr($from->date, 0, length($since)) le $since) {
 	    # not current.
 	}
 	elsif (defined($to{$name})) {
@@ -261,8 +198,8 @@ sub find_files_to_copy {
 	}
 	else {
 	    # needs copying.
-	    $total_space += $from->[1];
-	    warn '[', $from->[0], " needs copying.]\n"
+	    $total_space += $from->size_in_mb;
+	    warn '[', $from->file, " needs copying.]\n"
 		if $verbose_p > 1;
 	    push(@need_copying, $from);
 	}
@@ -342,7 +279,7 @@ sub copy_backup_files {
     die
 	if ! $enough_space_p;
     # OK, green to go.
-    map { my $name = $_->[0];
+    map { my $name = $_->file;
 	  copy_one_file("$from/$name", "$to/$name");
       } @need_copying;
 }
