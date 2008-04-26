@@ -355,6 +355,13 @@ if ($destination_dir) {
 	    if $test_p || $verbose_p;
     }
 }
+if ($dar_p && $level == 0) {
+    print "Creating DAR catalog . . .\n";
+    my $dump_file = "$destination_dir/$dump_name";
+    my $catalog_file = "$dump_file-cat";
+    do_or_die($dump_program, '-C', $catalog_file, '-A', $dump_file);
+}
+
 # Phew.
 print "Done.\n";
 exit(0);
