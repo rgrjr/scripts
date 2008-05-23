@@ -294,9 +294,14 @@ system($cmd) == 0
 # then none of the possible error cases should die, as they are certainly not
 # fatal at this point: the data is there, or it isn't.
 ensure_mount($cd_mount_point);
-foreach my $file (@files_to_write) {
+for my $file (@files_to_write) {
     my $to_write_file = "$to_write_subdir/$file";
     my $cd_file = "$cd_mount_point/$file";
+    if (! -r $cd_file) {
+	# [kludge for DAR, which creates files with two dots in the name;
+	# mkisofs changes the first to an underscore.  -- rgr, 27-Mar-08.]
+	$cd_file =~ s{ \. ( \d+ \.dar ) $ } {_$1}x;
+    }
     my $written_file = "$written_subdir/$file";
     if ((-f $to_write_file
 	 ? system($cmp_command, $to_write_file, $cd_file)
