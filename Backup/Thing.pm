@@ -28,7 +28,8 @@ sub make_class_slots {
     no strict 'refs';
     for my $method (@slot_names) {
 	my $field = '_' . $method;
-	*$method = sub {
+	my $full_method_name = $class.'::'.$method;
+	*$full_method_name = sub {
 	    my $self = shift;
 	    @_ ? ($self->{$field} = shift) : $self->{$field};
 	}
