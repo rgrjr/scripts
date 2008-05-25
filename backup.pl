@@ -38,12 +38,10 @@ my $dump_volume_size = '';
 my ($dump_partition, $level);
 # We want to use full pathnames for these programs (which are not yet covered by
 # options) so that we don't have to rely on $ENV{'PATH'} being set up correctly,
-# e.g. by cron.  [new pathnames for SuSE 8.1; now using the SuSE RPM version.
-# -- rgr, 6-May-03.]
+# e.g. by cron.  See also the maybe_find_prog sub, below.
 my $grep_program = '/bin/grep';
 my $date_program = '/bin/date';
-my $dump_program = '/sbin/dump';
-my $restore_program = '/sbin/restore';
+my ($dar_p, $dump_program, $restore_program);
 
 ### Subroutines.
 
@@ -91,7 +89,34 @@ sub check_for_existing_dump_files {
 	if $destination_dir && -e $cd_dump_file;
 }
 
+sub maybe_find_prog {
+    # Use the named program if it exists, else use "which" to look it up.
+    my ($program_name, $fatal_if_not_found) = @_;
+
+    if (-x $program_name) {
+	return $program_name;
+    }
+    else {
+	my $stem = $program_name;
+	$stem =~ s@.*/@@;
+	chomp(my $program = `which $stem`);
+	undef($program)
+	    if ! -x $program;
+	pod2usage("$0:  Can't find the '$stem' program.\n")
+	    if ! $program && $fatal_if_not_found;
+	return $program;
+    }
+}
+
 ### Parse options.
+
+my @dar_options;
+sub push_dar_compression_opt {
+    my ($option, $value) = @_;
+    $value ||= 9;	# zero does not make sense.
+
+    push(@dar_options, "--$option=$value");
+}
 
 my $usage = 0;
 my $help = 0;
@@ -107,13 +132,39 @@ GetOptions('date=s' => \$file_date,
 	   'partition=s' => \$dump_partition,
 	   'dump-program=s' => \$dump_program,
 	   'restore-program=s' => \$restore_program,
+	   'dar!' => \$dar_p,
+	   'gzip|z:i' => \&push_dar_compression_opt,
+	   'bzip2|y:i' => \&push_dar_compression_opt,
 	   'level=i' => \$level,
 	   'usage|?' => \$usage, 'help' => \$help)
     or pod2usage(-verbose => 0);
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
 
-my $dar_p = $dump_program =~ /dar$/;
+# Figure out which dumper we're using, and what binaries.
+if (! defined($dar_p)) {
+    if ($dump_program) {
+	$dar_p = $dump_program =~ /dar$/;
+    }
+    elsif ($dump_program = maybe_find_prog('/sbin/dump')) {
+	$dar_p = 0;
+    }
+    elsif ($dump_program = maybe_find_prog('/usr/bin/dar')) {
+	$dar_p = 1;
+    } 
+    else {
+	pod2usage("$0:  Can't find either 'dar' or 'dump'.\n");
+    }
+}
+pod2usage("$0:  Options '".join(' ', @dar_options)."' require DAR.\n")
+    if @dar_options && ! $dar_p;
+# We assume that $dar_p and $dump_program are consistent if both are defined.
+$dump_program = maybe_find_prog($dar_p ? '/usr/bin/dar' : '/sbin/dump', 1)
+    unless $dump_program;
+$restore_program = maybe_find_prog('/sbin/restore', 1)
+    unless $dar_p || $restore_program;
+
+# Now figure out the options about the dump itself.
 $dump_partition = shift(@ARGV)
     if ! $dump_partition && @ARGV;
 pod2usage("$0:  --partition (or positional <partition>) arg must be a "
@@ -240,7 +291,7 @@ check_for_existing_dump_files(($dar_p ? "$dump_name.1.dar" : $dump_name),
 			      $dump_dir, $destination_dir);
 my $dump_file = "$dump_dir/$dump_name";
 print("Backing up $dump_partition \($mount_point\) to $dump_file",
-      (@dump_names > 1 ? ' etc.' : ''), "\n");
+      (@dump_names > 1 ? ' etc.' : ''), " using $dump_program.\n");
 umask(066);
 if (! $dar_p) {
     # Use dump.
@@ -291,7 +342,7 @@ else {
 	$reference_file_stem =~ s/\.\d+\.dar$//;
     }
     do_or_die($dump_program,
-	      '-c', $dump_file,
+	      '-c', $dump_file, @dar_options,
 	      ($dump_volume_size ? ('-s', $dump_volume_size.'K') : ()),
 	      ($reference_file_stem ? ('-A', $reference_file_stem) : ()),
 	      '-R', $mount_point);
@@ -454,13 +505,39 @@ the C<--file-name> option.
 =item B<--restore-program>
 
 Specifies the names of the dump and restore programs to use.  The
-defaults are '/usr/local/sbin/dump' and '/usr/local/sbin/restore'
-respectively.
+defaults are '/sbin/dump' and '/sbin/restore', respectively, followed
+by whatever it can find on C<$PATH>.
 
 If you specify a C<--dump-program> that ends in "dar", C<backup.pl>
-will assume this is the DAR (Disk Archiver) program instead.  In that
-case, the C<--restore-program> is ignored.  [This is new, and still
-very experimental.  -- rgr, 1-Mar-08.]
+will assume the use of C<--dar>, and use '/usr/bin/dar' as the default
+C<--dump-program>.  If C<--dar> is specified or implied, then
+C<--restore-program> is ignored.
+
+=item B<--dar>
+
+Use the DAR (Disk Archiver) program to create the dump.  If you
+specify a C<--dump-program> that ends in "dar", C<backup.pl> will
+assume the use of C<--dar>.  In order for incrementals to work, you
+must have a previous catalog or dump set in the same destination
+directory.  See L<dar> for details.
+
+If you specify a full (level 0) DAR dump, C<backup.pl> will
+automatically create a catalog of it using the base name of the dump
+plus "-cat", e.g. C<home-20080521-l0-cat.1.dar> for a
+C<home-20080521-l0.*.dar> full dump set.  This is so that we can
+create L1 dumps of everything since the full dump without having to
+keep all of the full dump around, which DAR would otherwise require.
+
+[DAR support is new, and still experimental.  -- rgr, 1-Mar-08.]
+
+=item B<--bzip2=#>
+
+=item B<--gzip=#>
+
+Specifies the bzip2 or gzip compression level; the default is no
+compression.  The optional integer values are for the compression
+level, from 1 to 9; if omitted, a value of 9 (maximum compresssion) is
+used.  Note that these options are only available for DAR.
 
 =item B<--dump-dir>
 
@@ -532,13 +609,8 @@ C<backup.pl> should refuse to proceed if the size of the dumps it
 produces are expected to be larger than the free space remaining on
 the disk.  If you can't finish, there's no point getting started.
 
-For DAR to create an incremental dump, it needs to know what was
-dumped in the most recent dump at a higher level.  This means you have
-to keep the L0 dump around in order to make L1 dumps.  The right way
-to fix this is to make use of DAR catalogs, which take up much less
-disk space.  That requires being able to find catalogs and associate
-them with their dump files, which in turn requires extending
-C<Backup::DumpSet>.
+The C<--bzip2> and C<--gzip> options should be supported for
+dump/restore as well.
 
 If you find any more, please let me know.
 
