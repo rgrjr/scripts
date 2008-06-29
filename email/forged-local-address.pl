@@ -89,9 +89,13 @@ sub local_header_p {
 	# Can't make a determination.
 	return;
     }
-    elsif ($hdr =~ /qmail \d+ invoked by /) {
-	# qmail locally originated.
-	'local';
+    elsif ($hdr =~ /qmail \d+ invoked by uid (\d+)/) {
+	# qmail locally originated.  [Except that user 89 is vpopmail, at least
+	# on my home system, which doesn't count.  This indicates an internal
+	# redirection, but I'm not sure why it happens.  -- rgr, 29-Jun-08.]
+	return
+	    if $1 == 89;
+	return 'local';
     }
     elsif ($hdr =~ /by $local_network_prefix\.\d+ with SMTP/) {
 	# qmail format for delivery to our LAN address.
