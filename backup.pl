@@ -421,33 +421,92 @@ __END__
 
 =head1 NAME
 
-backup.pl -- Interface to `dump' and `restore' for automating backups.
+backup.pl -- Automated interface to create `dump/restore' or `dar' backups.
 
 =head1 SYNOPSIS
 
-    backup.pl [--[no]cd] [--file-name=<name>] [--dump-dir=<dest-dir>]
-	      [--test] [--verbose] [--usage|-?] [--help] [--cd-dir=<mv-dir>]
-	      [--partition=<block-special-device>] [--level=<digit>]
-	      [--volsize=<max-vol-size>] [<partition>] [<level>]
+    backup.pl [--test] [--verbose] [--usage|-?] [--help]
+              [--date=<string>] [--name-prefix=<string>]
+              [--file-name=<name>]
+	      [--dump-program=<dump-prog>] [--[no]dar]
+	      [--restore-program=<restore-prog>]
+	      [--gzip | -z] [--bzip2 | -y]
+              [--cd-dir=<mv-dir>] [--dump-dir=<dest-dir>]
+	      [--dest-dir=<destination-dir>]
+              [--[no]cd] [--volsize=<max-vol-size>]
+	      [--partition=<block-special-device> | <partition> ]
+              [--level=<digit> | <level>]
 
 =head1 DESCRIPTION
 
-This script creates a backup dump using the `dump' program, and
-verifies it with the `restore' program, both of which are published as
-the Dump/Restore ext2/ext3 filesystem backup (see
-L<http://sourceforge.net/projects/dump/>).
+This script creates and verifies a backup dump using the `dump' and
+`restore' programs, or the `dar' program, both of which are linked
+below.
 
-The product of this procedure is a dump file on disk somewhere that has
-been verified against the backed-up partition.  If not supplied, a
-suitable name is chosen based on the partition mount point, current
-date, and backup level.  Optionally, the file can be moved to somewhere
-else in the destination file system after it has been verified; this
-makes it easy to use the C<cd-dump.pl> script to write the resulting dump
-file(s) to a CD.  The whole process is readily automatable via cron
-jobs.
+The product of this procedure is a set of dump files on disk somewhere
+that has been verified against the backed-up partition.  More than one
+file may be required if the dump is to be written to offline media; in
+that case, use the C<--volsize> option to limit the maximum file size.
+If not supplied, a suitable series of file names is chosen based on
+the partition mount point, current date, and backup level.
+Optionally, the file can be moved to somewhere else in the destination
+file system after it has been verified; this makes it easy to use the
+C<cd-dump.pl> script to write the resulting dump file(s) to a CD.  The
+whole process is readily automatable via C<cron> jobs.
 
-[Writing to tape may work, but I haven't tried it, having no tape on my 
-system.  -- rgr, 21-Oct-02.]
+[Writing to tape probably doesn't work; I have no tape on my system,
+so I don't know how to rewind it.  -- rgr, 21-Oct-02.]
+
+Each dump file name looks something like C<home-20021021-l9.dump> or
+C<home-20051102-l0a.dump>, or C<home-20051102-l0.17.dar> for DAR, and
+consists of the following five components:
+
+=over 4
+
+=item 1.
+
+A prefix tag (e.g. C<home>).  This is normally the last component of
+the directory where the partition is mounted, but can be specified via
+the C<--name-prefix> option.  The tag is arbitrary and may consist of
+multiple words, as in C<usr-local>; its purpose is solely to group all
+of the backups make for a given partition.
+
+=item 2.
+
+The date the backup was made.  This is normally the current date in
+"YYYYMMDD" format, e.g. '20021021', but can be overridden via the
+C<--date> option.
+
+=item 3.
+
+The dump level as specified by C<--level>, a digit from 0 to 9, with a
+lowercase "L" prefix, as in C<l9>.
+
+=item 4.
+
+An optional volume suffix.  DAR creates them by appending C<.#.dar> to
+the stem, where "#" is a number starting from one; all DAR backups
+always have an explicit volume suffix.  If a C<dump> backup requires
+two or more volumes, then alphabetic volume designators are assigned
+from 'a', as in C<home-20051102-l0a.dump>, C<home-20051102-l0b.dump>,
+C<home-20051102-l0c.dump>, etc.  This is only necessary for large
+backups that are later copied to physical media.  [Note that
+C<mkisofs> imposes a limit of 2147483646 bytes (= 2^31-2) on files
+burned to DVD-ROM; see the "DVDs created with too large files" thread
+at
+L<http://groups.google.com/group/mailing.comp.cdwrite/browse_thread/thread/423a083cc7ad8ee8/fecd18c0f8507901%23fecd18c0f8507901>
+for details.  -- rgr, 4-Nov-05.]
+
+=item 5.
+
+A file suffix (extension), which is ".dump" for C<dump> backups, and
+(not surprisingly) ".dar" for C<DAR> backups.
+
+=back
+
+If the C<--file-name> option is specified, then it overrides the first
+three components.  There is no way to override the volume suffix or
+file suffix.
 
 =head1 OPTIONS
 
@@ -527,8 +586,6 @@ plus "-cat", e.g. C<home-20080521-l0-cat.1.dar> for a
 C<home-20080521-l0.*.dar> full dump set.  This is so that we can
 create L1 dumps of everything since the full dump without having to
 keep all of the full dump around, which DAR would otherwise require.
-
-[DAR support is new, and still experimental.  -- rgr, 1-Mar-08.]
 
 =item B<--bzip2=#>
 
@@ -624,6 +681,10 @@ If you find any more, please let me know.
 
 =item L<restore(8)>
 
+=item DAR home page L<http://dar.linux.free.fr/>
+
+=item L<dar(1)>
+
 =item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
 
 =item C<cd-dump.pl> (L<http://rgrjr.dyndns.org/linux/cd-dump.pl.html>)
@@ -632,7 +693,7 @@ If you find any more, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2005 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2000-2008 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
