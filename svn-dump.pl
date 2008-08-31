@@ -12,10 +12,6 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 
-# this is where the Subversion binaries live on my system, and it's not part of
-# $PATH as supplied by cron.
-$ENV{PATH} = '/usr/local/bin:'.$ENV{PATH};
-
 my ($from_revision, $to_revision, $incremental_p, $repository);
 my $deltas_p = 1;
 my $verbose_p = 0;
@@ -152,11 +148,26 @@ repository is being dumped, its latest revision is 317, and the most
 recent previous dump file is C<foo-308-311.svndump>, then the
 dump will be written to a file named C<foo-312-317.svndump>; if this file
 already exists, then C<svn-dump.pl> exits immediately.  This is useful
-for using from a C<cron> job; the resulting series of dump files play
-nicely with incremental filesystem dumps.
+for running from a C<cron> job:
+
+    # Back up Subversion repositories daily at 00:50.  This is ten minutes before
+    # the normal /home partition backup time. 
+    50 0 * * *	cd /home/rogers/projects/svn-dump && svn-dump.pl /shared/svn/*
+
+The resulting series of dump files play nicely with incremental
+filesystem dumps.
 
 If more than one repository path is specified on the command line, then the
 C<--from-revision> and C<--to-revision> options apply only to the first.
+
+While C<svn-dump.pl> is running, standard error is redirected to a
+file in the local directory that matches "svn-dump-errors-*.text".  If
+C<svn-dump.pl> exits normally, then the file is deleted.  Otherwise,
+it will contain messages from "svn dump" and C<svn-dump.pl>, and may
+be of use in figuring out what went wrong.  (If the expected dump
+files are not there, and the error output is also missing, be sure to
+check that the current directory is writable by the C<svn-dump.pl>
+process.)
 
 =head1 OPTIONS
 
@@ -226,6 +237,8 @@ considered to be the first.
 =item Subversion (L<http://www.collab.net/products/subversion.html>)
 
 =item C<svnadmin dump> (L<http://svnbook.red-bean.com/nightly/en/svn.ref.svnadmin.c.dump.html>)
+
+=item Bob's Subversion page (L<http://rgrjr.dyndns.org/linux/subversion.html>)
 
 =back
 
