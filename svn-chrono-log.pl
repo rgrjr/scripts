@@ -8,35 +8,21 @@
 # $Id$
 
 use strict;
+use warnings;
 
 ### Main program.
 
-my $entries = ChronoLog::Entry->parse_svn_log_xml(shift(@ARGV));
+my $parser = ChronoLog::Parser->new();
+my $entries = $parser->parse_svn_log_xml(shift(@ARGV));
 warn "$0:  No entries selected.\n"
     unless %$entries;
 for my $revision (sort { $b <=> $a; } keys(%$entries)) {
     $entries->{$revision}->report;
 }
-	
-### The ChronoLog::Entry class.
 
-package ChronoLog::Entry;
+### Class definitions.
 
-use Date::Parse;
-use XML::Parser;
-use Date::Format;
-
-# define instance accessors.
-sub BEGIN {
-  no strict 'refs';
-  for my $method (qw(revision commitid author encoded_date msg files)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift;
-      @_ ? $self->{$field} = shift : $self->{$field};
-    }
-  }
-}
+package ChronoLog::Base;
 
 sub new {
     my $class = shift;
@@ -49,73 +35,32 @@ sub new {
     $self;
 }
 
-sub extract_subfield_string {
-    my $thing = shift;
+# define instance accessors.
+sub define_instance_accessors {
+    my $class = shift;
 
-    (ref($thing) eq 'ARRAY' && @$thing == 3 && $thing->[1] eq '0'
-     ? $thing->[2]
-     # [it's not worth dying for this.  -- rgr, 26-Nov-05.]
-     : '');
-}
-
-sub parse_svn_log_xml {
-    my ($class, $source) = @_;
-    $source ||= '-';
-
-    my $parser = new XML::Parser(Style => 'Tree');
-    my $tokens = $parser->parsefile($source);
-    my %entries;
-    while (my ($token, $content) = splice(@$tokens, 0, 2)) {
-	die "Unexpected <$token> element [2].\n"
-	    unless $token eq 'log';
-	my @items = @$content;
-	# no useful attributes.
-	shift(@items);
-	while (my ($token, $content) = splice(@items, 0, 2)) {
-	    next
-		if $token eq 0 || ! ref($content);
-	    die "Unexpected <$token> element [2].\n"
-		unless $token eq 'logentry';
-	    my @items = @$content;
-	    my $attrs = shift(@items);
-	    my %keyed_content = @items;
-	    my $revision = $attrs->{revision};
-	    # warn "revision $revision";
-	    my $author = extract_subfield_string($keyed_content{author}) || "";
-	    my $date = extract_subfield_string($keyed_content{date});
-	    my $encoded_date = str2time($date, 'UTC');
-	    my $entry = $class->new
-		(revision => $revision,
-		 msg => extract_subfield_string($keyed_content{msg}),
-		 author => $author,
-		 encoded_date => $encoded_date);
-	    my $files = $keyed_content{paths};
-	    if ($files && ref($files) eq 'ARRAY') {
-		my $parsed_files = [ ];
-		my @files_content = @$files;
-		# no useful attributes.
-		shift(@files_content);
-		while (my ($token, $content) = splice(@files_content, 0, 2)) {
-		    next
-			if $token eq 0 || ! ref($content);
-		    die "Unexpected <$token> element [2].\n"
-			unless $token eq 'path';
-		    my ($attrs, $tag, $file_name, $extra) = @$content;
-		    die "Oops; expected only a single path"
-			if $tag ne '0' || $extra || ref($file_name);
-		    my $rev = RGR::CVS::FileRevision->new
-			(file_name => $file_name,
-			 file_rev => $revision,
-			 author => $author,
-			 %$attrs);
-		    push(@$parsed_files, $rev);
-		}
-		$entry->files($parsed_files);
-	    }
-	    $entries{$revision} = $entry;
+    for my $method (@_) {
+	my $field = '_' . $method;
+	no strict 'refs';
+	*{$class.'::'.$method} = sub {
+	    my $self = shift;
+	    @_ ? $self->{$field} = shift : $self->{$field};
 	}
     }
-    \%entries;
+}
+	
+### The ChronoLog::Entry class.
+
+package ChronoLog::Entry;
+
+use Date::Format;
+
+use base (qw(ChronoLog::Base));
+
+# define instance accessors.
+sub BEGIN {
+    ChronoLog::Entry->define_instance_accessors
+	(qw(revision commitid author encoded_date msg files));
 }
 
 sub report {
@@ -150,7 +95,85 @@ sub report {
     print "\n";
 }
 
+package ChronoLog::Parser;
+
+use Date::Parse;
+use XML::Parser;
+
+use base (qw(ChronoLog::Base));
+
+sub extract_subfield_string {
+    my $thing = shift;
+
+    (ref($thing) eq 'ARRAY' && @$thing == 3 && $thing->[1] eq '0'
+     ? $thing->[2]
+     # [it's not worth dying for this.  -- rgr, 26-Nov-05.]
+     : '');
+}
+
+sub parse_svn_log_xml {
+    my ($self, $source) = @_;
+    $source ||= '-';
+
+    my $parser = XML::Parser->new(Style => 'Tree');
+    my $tokens = $parser->parsefile($source);
+    my %entries;
+    while (my ($token, $content) = splice(@$tokens, 0, 2)) {
+	die "Unexpected <$token> element [2].\n"
+	    unless $token eq 'log';
+	my @items = @$content;
+	# no useful attributes.
+	shift(@items);
+	while (my ($token, $content) = splice(@items, 0, 2)) {
+	    next
+		if $token eq 0 || ! ref($content);
+	    die "Unexpected <$token> element [2].\n"
+		unless $token eq 'logentry';
+	    my @items = @$content;
+	    my $attrs = shift(@items);
+	    my %keyed_content = @items;
+	    my $revision = $attrs->{revision};
+	    # warn "revision $revision";
+	    my $author = extract_subfield_string($keyed_content{author}) || "";
+	    my $date = extract_subfield_string($keyed_content{date});
+	    my $encoded_date = str2time($date, 'UTC');
+	    my $entry = ChronoLog::Entry->new
+		(revision => $revision,
+		 msg => extract_subfield_string($keyed_content{msg}),
+		 author => $author,
+		 encoded_date => $encoded_date);
+	    my $files = $keyed_content{paths};
+	    if ($files && ref($files) eq 'ARRAY') {
+		my $parsed_files = [ ];
+		my @files_content = @$files;
+		# no useful attributes.
+		shift(@files_content);
+		while (my ($token, $content) = splice(@files_content, 0, 2)) {
+		    next
+			if $token eq 0 || ! ref($content);
+		    die "Unexpected <$token> element [2].\n"
+			unless $token eq 'path';
+		    my ($attrs, $tag, $file_name, $extra) = @$content;
+		    die "Oops; expected only a single path"
+			if $tag ne '0' || $extra || ref($file_name);
+		    my $rev = RGR::CVS::FileRevision->new
+			(file_name => $file_name,
+			 file_rev => $revision,
+			 author => $author,
+			 %$attrs);
+		    push(@$parsed_files, $rev);
+		}
+		$entry->files($parsed_files);
+	    }
+	    $entries{$revision} = $entry;
+	}
+    }
+    \%entries;
+}
+
 package RGR::CVS::FileRevision;
+
+use base (qw(ChronoLog::Base));
 
 # [this is CVS-oriented; gotta fix that.  we're looking for an eventual
 # unification of the svn-chrono-log.pl and cvs-chrono-log.pl scripts, but first
@@ -161,28 +184,9 @@ package RGR::CVS::FileRevision;
 
 # define instance accessors.
 sub BEGIN {
-  no strict 'refs';
-  for my $method (qw(comment raw_date encoded_date file_name file_rev
-		     action author state lines commitid branches)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift;
-      @_ ? ($self->{$field} = shift, $self) : $self->{$field};
-    }
-  }
-}
-
-sub new {
-  my $class = shift;
-
-  my $self = bless({}, $class);
-  while (@_) {
-      my $method = shift;
-      my $argument = shift;
-      $self->$method($argument)
-	  if $self->can($method);
-  }
-  $self;
+    RGR::CVS::FileRevision->define_instance_accessors
+	(qw(comment raw_date encoded_date file_name file_rev
+	    action author state lines commitid branches));
 }
 
 sub join_fields {
