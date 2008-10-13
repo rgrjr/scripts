@@ -22,6 +22,14 @@ for my $entry (@{$parser->log_entries}) {
 
 package ChronoLog::Base;
 
+=head2 B<ChronoLog::Base>
+
+Base class for the other three guys.  Provides a
+C<define_instance_accessors> method for building slot accessor
+methods, and a C<new> class method that uses them to initialize slots.
+
+=cut
+
 sub new {
     my $class = shift;
 
@@ -50,6 +58,28 @@ sub define_instance_accessors {
 ### The ChronoLog::Entry class.
 
 package ChronoLog::Entry;
+
+=head2 B<ChronoLog::Entry>
+
+Class used to describe a single commit.  Sometimes this is called a
+"changeset".  The C<files> slot is an arrayref of
+C<RGR::CVS::FileRevision> objects, one for each file that was changed
+as part of this commit.  Depending on what sort of information the VCS
+"log" command provides, some of these slots may not be defined.
+
+The C<report> method spits out a description of the commit in the
+approved style, dealing with partial information as necessary.
+
+Defined slots:
+
+    author
+    commitid
+    encoded_date
+    files
+    msg
+    revision
+
+=cut
 
 use Date::Format;
 
@@ -105,7 +135,72 @@ sub report {
     print "\n";
 }
 
+package RGR::CVS::FileRevision;
+
+=head2 B<RGR::CVS::FileRevision>
+
+Record the modification of a single file.  In the CVS case, this is
+parsed out of textual information that looks like this:
+
+    date: 2006-02-20 23:37:32 +0000; author: rogers; state: Exp;
+    lines: +1 -3; commitid: 4b443fa52b84567;
+
+and stored in the following slots:
+
+    action
+    author
+    branches
+    comment
+    commitid
+    encoded_date
+    file_name
+    file_rev
+    lines
+    raw_date
+    state
+
+=cut
+
+use base (qw(ChronoLog::Base));
+
+# define instance accessors.
+sub BEGIN {
+    RGR::CVS::FileRevision->define_instance_accessors
+	(qw(comment raw_date encoded_date file_name file_rev
+	    action author state lines commitid branches));
+}
+
+sub join_fields {
+    my ($self, $fields) = @_;
+
+    join(';  ',
+	 map {
+	     my $name = $_;
+	     my $value = $self->$name;
+	     (defined($value)
+	      ? "$name: $value"
+	      : ());
+	 } @$fields);
+}
+
 package ChronoLog::Parser;
+
+=head2 B<ChronoLog::Parser>
+
+Parse VCS log output, storing the result as an arrayref of
+C<ChronoLog::Entry> instances in the C<log_entries> slot, sorted with
+the most recent ones first.  The main entrypoint is the C<parse>
+method, which takes a file handle and decides whether to parse
+Subversion XML log format or CVS text format, based solely on whether
+the input looks like XML.
+
+Instance slots are:
+
+    entry_from_revision [used only for SVN]
+    log_entries
+    vcs_name
+
+=cut
 
 use Date::Parse;
 use XML::Parser;
@@ -193,102 +288,102 @@ sub parse_svn_xml {
     $entries;
 }
 
-sub _record_file_rev_comment {
-    my ($self, $file_name, $file_rev, $date_etc, $comment) = @_;
-
-    die $file_name
-	if $file_name =~ / /;
-
-    my $date = $date_etc =~ s/date: *([^;]+); *// && $1 || '???';
-    # warn "[got ($file_name, $file_rev, $date_etc):]\n";
-    if ($date eq '???') {
-	warn "Oops; can't identify date in '$date_etc' -- skipping.\n";
-    }
-    else {
-	my $encoded_date = str2time($date, 'UTC');
-	$date_etc =~ s/; *$//;
-	my $rev = RGR::CVS::FileRevision->new
-	    (raw_date => $date,
-	     encoded_date => $encoded_date,
-	     comment => $comment,
-	     file_name => $file_name,
-	     file_rev => $file_rev,
-	     map { split(/: */, $_, 2); } split(/; +/, $date_etc));
-	my $commit_id = $rev->commitid;
-	if ($commit_id) {
-	    push(@{$self->{_commit_mods}{$commit_id}}, $rev);
-	}
-	else {
-	    push(@{$self->{_comment_mods}{$comment}{$encoded_date}}, $rev);
-	}
-    }
-}
-
-# my $date_format_string = '%Y-%m-%d %H:%M:%S';
 my $date_fuzz = 120;		# in seconds.
-
-sub _sort_file_rev_comments {
-    # Sort all revision comments by date and grouped by comment.
-    my ($self) = @_;
-
-    # Combine file entries that correspond to a single commit.
-    my $commit_mods = $self->{_commit_mods} || { };
-    my $comment_mods = $self->{_comment_mods} || { };
-    my @combined_entries;
-    for my $commit_id (sort(keys(%$commit_mods))) {
-	# All entries with the same commitid perforce belong to the same commit,
-	# to which no entries without a commitid can belong.
-	my $entries = $commit_mods->{$commit_id};
-	my $entry = $entries->[0];
-	push(@combined_entries,
-	     ChronoLog::Entry->new(encoded_date => $entry->encoded_date,
-				   commit_id => $commit_id,
-				   author $entry->author,
-				   msg => $entry->comment,
-				   files => $entries));
-    }
-
-    # Examine remaining entries by comment, then by date, combining all that
-    # have the identical comment and nearly the same date.  [we should
-    # also refuse to merge them if their modified files are not disjoint.  --
-    # rgr, 29-Aug-05.]
-    for my $comment (sort(keys(%$comment_mods))) {
-	# this is the latest date for a set of commits that we consider related.
-	my $last_date;
-	my @entries;
-	for my $date (sort(keys(%{$comment_mods->{$comment}}))) {
-	    if ($last_date && $date-$last_date > $date_fuzz) {
-		# the current entry probably represents a "cvs commit" event
-		# that is distinct from the previous entry(ies).
-		push(@combined_entries,
-		     ChronoLog::Entry->new(encoded_date => $date,
-					   author => $entries[0]->author,
-					   msg => $comment,
-					   files => [ @entries ]));
-		@entries = ();
-		undef($last_date);
-	    }
-	    $last_date = $date
-		if ! $last_date || $date > $last_date;
-	    push(@entries, @{$comment_mods->{$comment}{$date}});
-	}
-        push(@combined_entries,
-	     ChronoLog::Entry->new(encoded_date => $last_date,
-				   author => $entries[0]->author,
-				   msg => $comment,
-				   files => [ @entries ]))
-	    if @entries;
-    }
-
-    # Now resort by date.
-    $self->log_entries([ sort { $b->encoded_date <=> $a->encoded_date;
-			     } @combined_entries ]);
-}
 
 sub parse_cvs {
     my ($self, $stream) = @_;
 
     $self->vcs_name('CVS');
+
+    my $commit_mods = { };
+    my $comment_mods = { };
+
+    my $record_file_rev_comment = sub {
+	my ($file_name, $file_rev, $date_etc, $comment) = @_;
+
+	my $date = $date_etc =~ s/date: *([^;]+); *// && $1 || '???';
+	# warn "[got ($file_name, $file_rev, $date_etc):]\n";
+	if ($date eq '???') {
+	    warn "Oops; can't identify date in '$date_etc' -- skipping.\n";
+	}
+	else {
+	    my $encoded_date = str2time($date, 'UTC');
+	    $date_etc =~ s/; *$//;
+	    my $rev = RGR::CVS::FileRevision->new
+		(raw_date => $date,
+		 encoded_date => $encoded_date,
+		 comment => $comment,
+		 file_name => $file_name,
+		 file_rev => $file_rev,
+		 map { split(/: */, $_, 2); } split(/; +/, $date_etc));
+	    my $commit_id = $rev->commitid;
+	    if ($commit_id) {
+		push(@{$commit_mods->{$commit_id}}, $rev);
+	    }
+	    else {
+		push(@{$comment_mods->{$comment}{$encoded_date}}, $rev);
+	    }
+	}
+    };
+
+    my $sort_file_rev_comments = sub {
+	# Sort all revision comments by date and grouped by comment.
+
+	# Combine file entries that correspond to a single commit.
+	my @combined_entries;
+	for my $commit_id (sort(keys(%$commit_mods))) {
+	    # All entries with the same commitid perforce belong to the same
+	    # commit, to which no entries without a commitid can belong.
+	    my $entries = $commit_mods->{$commit_id};
+	    my $entry = $entries->[0];
+	    push(@combined_entries,
+		 ChronoLog::Entry->new(encoded_date => $entry->encoded_date,
+				       commit_id => $commit_id,
+				       author $entry->author,
+				       msg => $entry->comment,
+				       files => $entries));
+	}
+
+	# Examine remaining entries by comment, then by date, combining all that
+	# have the identical comment and nearly the same date.  [we should also
+	# refuse to merge them if their modified files are not disjoint.  --
+	# rgr, 29-Aug-05.]
+	for my $comment (sort(keys(%$comment_mods))) {
+	    # this is the latest date for a set of commits that we consider
+	    # related.
+	    my $last_date;
+	    my @entries;
+	    for my $date (sort(keys(%{$comment_mods->{$comment}}))) {
+		if ($last_date && $date-$last_date > $date_fuzz) {
+		    # the current entry probably represents a "cvs commit" event
+		    # that is distinct from the previous entry(ies).
+		    push(@combined_entries,
+			 ChronoLog::Entry->new(encoded_date => $date,
+					       author => $entries[0]->author,
+					       msg => $comment,
+					       files => [ @entries ]));
+		    @entries = ();
+		    undef($last_date);
+		}
+		$last_date = $date
+		    if ! $last_date || $date > $last_date;
+		push(@entries, @{$comment_mods->{$comment}{$date}});
+	    }
+	    push(@combined_entries,
+		 ChronoLog::Entry->new(encoded_date => $last_date,
+				       author => $entries[0]->author,
+				       msg => $comment,
+				       files => [ @entries ]))
+		if @entries;
+	}
+
+	# Now resort by date.
+	$self->log_entries([ sort { $b->encoded_date <=> $a->encoded_date;
+				 } @combined_entries ]);
+    };
+
+    ## Main code.
+
     # state is one of qw(none headings descriptions).
     my $state = 'none';
     my $file_name;
@@ -314,8 +409,8 @@ sub parse_cvs {
 		$comment .= $line;
 		$line = <>;
 	    }
-	    _record_file_rev_comment($self, $file_name, $file_rev,
-				     $date_etc, $comment);
+	    $record_file_rev_comment->($file_name, $file_rev,
+				       $date_etc, $comment);
 	    $state = (! $line || $line =~ /^========/ ? 'none' : 'descriptions');
 	}
 	# $state eq 'headings'
@@ -339,10 +434,11 @@ sub parse_cvs {
     }
     warn "[oops; final state is $state.]\n"
 	unless $state eq 'none';
-    _sort_file_rev_comments($self);
+    $sort_file_rev_comments->();
 }
 
 sub parse {
+    # Main entrypoint.
     my ($self, $stream) = @_;
 
     my $first_line = <$stream>;
@@ -352,38 +448,6 @@ sub parse {
 	$self->parse_svn_xml($stream);
     }
     else {
-	# die "wooga";
 	$self->parse_cvs($stream);
     }
-}
-
-package RGR::CVS::FileRevision;
-
-use base (qw(ChronoLog::Base));
-
-# [this is CVS-oriented; gotta fix that.  we're looking for an eventual
-# unification of the svn-chrono-log.pl and cvs-chrono-log.pl scripts, but first
-# we need a way to install modules.  -- rgr, 11-Mar-06.]
-
-# E.g.: date: 2006-02-20 23:37:32 +0000; author: rogers; state: Exp; lines: +1
-# -3; commitid: 4b443fa52b84567;
-
-# define instance accessors.
-sub BEGIN {
-    RGR::CVS::FileRevision->define_instance_accessors
-	(qw(comment raw_date encoded_date file_name file_rev
-	    action author state lines commitid branches));
-}
-
-sub join_fields {
-    my ($self, $fields) = @_;
-
-    join(';  ',
-	 map {
-	     my $name = $_;
-	     my $value = $self->$name;
-	     (defined($value)
-	      ? "$name: $value"
-	      : ());
-	 } @$fields);
 }
