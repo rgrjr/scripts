@@ -13,11 +13,9 @@ use warnings;
 ### Main program.
 
 my $parser = ChronoLog::Parser->new();
-my $entries = $parser->parse_svn_log_xml(shift(@ARGV));
-warn "$0:  No entries selected.\n"
-    unless %$entries;
-for my $revision (sort { $b <=> $a; } keys(%$entries)) {
-    $entries->{$revision}->report;
+$parser->parse_svn_log_xml(shift(@ARGV));
+for my $entry (@{$parser->log_entries}) {
+    $entry->report;
 }
 
 ### Class definitions.
@@ -102,6 +100,12 @@ use XML::Parser;
 
 use base (qw(ChronoLog::Base));
 
+# define instance accessors.
+sub BEGIN {
+    ChronoLog::Parser->define_instance_accessors
+	(qw(entry_from_revision log_entries));
+}
+
 sub extract_subfield_string {
     my $thing = shift;
 
@@ -117,7 +121,9 @@ sub parse_svn_log_xml {
 
     my $parser = XML::Parser->new(Style => 'Tree');
     my $tokens = $parser->parsefile($source);
-    my %entries;
+    my $entries = $self->entry_from_revision;
+    $entries = { }, $self->entry_from_revision($entries)
+	unless $entries;
     while (my ($token, $content) = splice(@$tokens, 0, 2)) {
 	die "Unexpected <$token> element [2].\n"
 	    unless $token eq 'log';
@@ -165,10 +171,14 @@ sub parse_svn_log_xml {
 		}
 		$entry->files($parsed_files);
 	    }
-	    $entries{$revision} = $entry;
+	    $entries->{$revision} = $entry;
 	}
     }
-    \%entries;
+
+    # Produce the sorted set of entries.
+    $self->log_entries([ map { $entries->{$_};
+			 } sort { $b <=> $a; } keys(%$entries) ]);
+    $entries;
 }
 
 package RGR::CVS::FileRevision;
