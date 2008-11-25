@@ -20,6 +20,7 @@ my $verbose_p = 0;
 my $not_p = 0;		# to reverse the sense of the test.
 my $local_domain_file = '/var/qmail/control/locals';
 my $local_network_prefix;
+my $vps = '216.146.47.5';	# fixed IP for rgrjr.com.
 
 GetOptions('verbose+' => \$verbose_p,
 	   'not!' => \$not_p,
@@ -101,8 +102,8 @@ sub local_header_p {
 	# qmail format for delivery to our LAN address.
 	'lan';
     }
-    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \($local_network_prefix\.\d+\)/) {
-	# qmail format for receipt from a LAN host.
+    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \(($vps|$local_network_prefix\.\d+)\)/) {
+	# qmail format for receipt from a LAN host, or from the rgrjr.com VPS.
 	'lan';
     }
     elsif ($hdr !~ /Postfix/) {
