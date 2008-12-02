@@ -111,11 +111,24 @@ sub maybe_find_prog {
 ### Parse options.
 
 my @dar_options;
+my %dar_option_p;
 sub push_dar_compression_opt {
+    # Add an option string to @dar_options, checking for duplicates.
     my ($option, $value) = @_;
     $value ||= 9;	# zero does not make sense.
 
-    push(@dar_options, "--$option=$value");
+    my $option_string = "--$option=$value";
+    if (! $dar_option_p{$option}) {
+	push(@dar_options, $option_string);
+	$dar_option_p{$option} = $option_string;
+    }
+    elsif ($dar_option_p{$option} eq $option_string) {
+	# Duplication is OK, as long as they are consistent.
+    }
+    else {
+	die("$0:  Conflict between '$dar_option_p{$option}' ",
+	    "and '$option_string'.\n");
+    }
 }
 
 my $usage = 0;
