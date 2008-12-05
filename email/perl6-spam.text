@@ -1,0 +1,63 @@
+Received: (qmail 14698 invoked by uid 89); 27 Nov 2008 18:32:46 -0000
+Received: from unknown (HELO rgrjr.com) (216.146.47.5)
+  by home with SMTP; 27 Nov 2008 18:32:46 -0000
+Received-SPF: none (home: domain at rgrjr.dyndns.org does not designate permitted sender hosts)
+Received: from rgrjr.com (localhost [127.0.0.1])
+	by rgrjr.com (Postfix on CentOS) with ESMTP id 72A801605E8
+	for <rogers-perl6@rgrjr.dyndns.org>; Thu, 27 Nov 2008 18:32:46 +0000 (UTC)
+X-Spam-Flag: YES
+X-Spam-Checker-Version: SpamAssassin 3.2.4 (2008-01-01) on rgrjr.com
+X-Spam-Level: *********************************
+X-Spam-Status: Yes, score=33.4 required=5.0 tests=FH_HELO_EQ_D_D_D_D,
+	HELO_DYNAMIC_HCC,HELO_DYNAMIC_IPADDR2,HTML_IMAGE_ONLY_04,HTML_MESSAGE,
+	HTML_SHORT_LINK_IMG_1,MIME_HTML_ONLY,RCVD_IN_BL_SPAMCOP_NET,RCVD_IN_PBL,
+	RCVD_IN_SORBS_DUL,RCVD_IN_XBL,RDNS_DYNAMIC,TVD_RCVD_IP,URIBL_AB_SURBL,
+	URIBL_BLACK,URIBL_JP_SURBL,URIBL_OB_SURBL,URIBL_SBL autolearn=failed
+	version=3.2.4
+X-Spam-Report: 
+	*  2.2 RCVD_IN_BL_SPAMCOP_NET RBL: Received via a relay in bl.spamcop.net
+	*      [Blocked - see <http://www.spamcop.net/bl.shtml?201.246.176.106>]
+	*  0.5 RCVD_IN_PBL RBL: Received via a relay in Spamhaus PBL
+	*      [201.246.176.106 listed in zen.spamhaus.org]
+	*  2.9 RCVD_IN_XBL RBL: Received via a relay in Spamhaus XBL
+	*  1.6 RCVD_IN_SORBS_DUL RBL: SORBS: sent directly from dynamic IP address
+	*      [201.246.176.106 listed in dnsbl.sorbs.net]
+	*  4.3 HELO_DYNAMIC_HCC Relay HELO'd using suspicious hostname (HCC)
+	*  4.4 HELO_DYNAMIC_IPADDR2 Relay HELO'd using suspicious hostname (IP addr
+	*       2)
+	*  0.5 FH_HELO_EQ_D_D_D_D Helo is d-d-d-d
+	*  1.6 TVD_RCVD_IP TVD_RCVD_IP
+	*  0.0 HTML_MESSAGE BODY: HTML included in message
+	*  1.7 MIME_HTML_ONLY BODY: Message only has text/html MIME parts
+	*  1.5 HTML_IMAGE_ONLY_04 BODY: HTML: images with 0-400 bytes of words
+	*  2.0 URIBL_BLACK Contains an URL listed in the URIBL blacklist
+	*      [URIs: posixat.com]
+	*  2.5 URIBL_SBL Contains an URL listed in the SBL blocklist
+	*      [URIs: posixat.com]
+	*  1.6 URIBL_AB_SURBL Contains an URL listed in the AB SURBL blocklist
+	*      [URIs: posixat.com]
+	*  2.9 URIBL_JP_SURBL Contains an URL listed in the JP SURBL blocklist
+	*      [URIs: posixat.com]
+	*  2.1 URIBL_OB_SURBL Contains an URL listed in the OB SURBL blocklist
+	*      [URIs: posixat.com]
+	*  0.1 RDNS_DYNAMIC Delivered to trusted network by host with
+	*      dynamic-looking rDNS
+	*  1.1 HTML_SHORT_LINK_IMG_1 HTML is very short with a linked image
+Received: from 106-176-246-201.adsl.terra.cl (106-176-246-201.adsl.terra.cl [201.246.176.106])
+	by rgrjr.com (Postfix on CentOS) with SMTP id 2EC031605E9
+	for <rogers-perl6@rgrjr.dyndns.org>; Thu, 27 Nov 2008 18:32:44 +0000 (UTC)
+MIME-Version: 1.0
+Importance: High
+Content-Type: text/html
+Message-Id: <20081127183245.2EC031605E9@rgrjr.com>
+From: <rogers-perl6@rgrjr.dyndns.org>
+To: <rogers-perl6@rgrjr.dyndns.org>
+Subject: RE: Message 77464
+Date: Thu, 27 Nov 2008 18:32:44 +0000 (UTC)
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML><HEAD>
+<META http-equiv=Content-Type content="text/html; charset=us-ascii">
+</HEAD>
+<BODY><a href="http://posixat.com/" target="_blank">
+<img src="http://images.posixat.com/ghksdf3.gif" border=0 alt="Click here"></a></BODY></HTML>

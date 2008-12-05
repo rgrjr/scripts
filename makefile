@@ -103,6 +103,12 @@ test-new-forged-address:
 		${rgrjr-config-options} < email/viagra-inc.text
 	SENDER=rogers@somewhere.com email/forged-local-address.pl \
 		${rgrjr-config-options} < email/spam-3.text
+	SENDER=rogers@somewhere.com email/forged-local-address.pl \
+		--sender-re='@perl.org$$' \
+		${rgrjr-config-options} < email/perl6-spam.text
+	SENDER=perl6-internals-return-48162-etc@perl.org \
+	    email/forged-local-address.pl --sender-re='@perl.org$$' --not \
+		${rgrjr-config-options} < email/perl6-non-spam.text
 modgen-config-options = --add-local modulargenetics.com \
 		--network-prefix 192.168.23
 test-postfix-forged-address:

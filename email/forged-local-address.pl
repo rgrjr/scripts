@@ -21,9 +21,11 @@ my $not_p = 0;		# to reverse the sense of the test.
 my $local_domain_file = '/var/qmail/control/locals';
 my $local_network_prefix;
 my $vps = '216.146.47.5';	# fixed IP for rgrjr.com.
+my @sender_regexps;
 
 GetOptions('verbose+' => \$verbose_p,
 	   'not!' => \$not_p,
+	   'sender-re=s' => \@sender_regexps,
 	   'add-local=s' => \&add_local_domain,
 	   'network-prefix=s' => \$local_network_prefix,
 	   'locals=s' => \$local_domain_file)
@@ -167,6 +169,18 @@ if ($local_p) {
     exit($legit_exit);
 }
 
+# Check the envelope sender for whitelisted hosts that are allowed to send email
+# that appears to be from us.  This is useful for getting copies from mailing
+# lists.
+my $envelope_sender = $ENV{SENDER} || '';
+for my $regexp (@sender_regexps) {
+    if ($envelope_sender =~ /$regexp/) {
+	warn "win:  sender '$envelope_sender' matches '$regexp'.\n"
+	    if $verbose_p;
+	exit($legit_exit);
+    }
+}
+
 # We have a remote message, so we need to find out what our local addresses are.
 if (-r $local_domain_file) {
     open(IN, $local_domain_file)
@@ -180,9 +194,8 @@ if (-r $local_domain_file) {
 
 # Check the envelope sender against all of the match domains.  If we find a
 # match, we lose.
-my $host = $ENV{SENDER} || '';
-ensure_nonlocal_host($host, 'envelope sender')
-    if $host;
+ensure_nonlocal_host($envelope_sender, 'envelope sender')
+    if $envelope_sender;
 
 # Look for forged local addresses in appropriate headers.
 for my $header_name (qw(sender from)) {
@@ -205,7 +218,7 @@ for my $header_name (qw(sender from)) {
 }
 
 # This means NOT spam.
-warn "win:  remote, sender '$host' not local\n"
+warn "win:  remote, sender '$envelope_sender' not local\n"
     if $verbose_p;
 exit($legit_exit);
 
@@ -261,10 +274,44 @@ C<forged-local-address.pl> exits true (0) if it detects a forgery, and
 false (1) otherwise.  If C<--not> is specified,
 C<forged-local-address.pl> exits 1 for a forgery, and 0 otherwise.
 
+=item B<--sender-re>
+
+Adds a regular expression that is intended to match the envelope
+sender; may be specified multiple times.  If the envelope sender
+matches any regular expression, the mail is passed on, regardless of
+headings.  This is useful for getting copies of your posts to mailing
+lists, which have "From: You" headers and so look like forgeries, but
+usually have distinctive envelope sender addresses.
+
+For example, the C<perl6-language> mailing list is hosted at
+C<perl.org>, with return addresses that look like this:
+
+	perl6-language-return-30050-rogers-perl6=rgrjr.dyndns.org@perl.org
+
+The return address is usually found in the "Return-Path:" header.  The
+part before the "@" encodes the mailing list, the index number of the
+posted message, and the recipient, all of which is useful to the
+mailing list software if the message bounces for some reason, and
+which will differ from one mailing list package to another.  So the
+following would be sufficient to accept such messages:
+
+	--sender-re='@perl.org$'
+
+But note that the sender address is not trustworthy, and in fact is
+usually forged in the case of spam.  To protect against the slim
+chance that the spammer decides to forge a "perl.org" return address,
+we can use the following more conservative variation:
+
+	--sender-re='rogers-perl6=rgrjr.dyndns.org@perl.org$'
+
+would be very unlikely for a spammer to stumble upon.  The essential
+thing is to omit the variable part of the return address (the digits
+encoding the posting index), and not to anchor the RE at the start.
+
 =item B<--verbose>
 
-Turns on verbose debugging messages.  This can be useful to find out
-how a given message is getting classified.
+Turns on verbose debugging output, which is printed to stderr.  This
+can be useful to find out how a given message is getting classified.
 
 =back
 
