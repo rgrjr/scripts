@@ -7,6 +7,8 @@
 # $Id$
 
 use strict;
+use warnings;
+
 use Getopt::Long;
 
 my $squid_format_p = 0;
@@ -23,6 +25,7 @@ my %excluded_pages = ('/site.css' => 1,
 		      '/bob/resume.html' => 'last',
 		      '/robots.txt' => 1);
 my $n_top_hits = 10;
+my $public_address = '66.30.196.77';
 
 GetOptions(# 'help' => \$help, 'man' => \$man, 
 	   'verbose+' => \$verbose_p,
@@ -45,8 +48,11 @@ for my $log_name (@ARGV) {
     $log_index++;
     my $log_pipe
 	= join(' | ', 
-	       "fgrep -v 192.168.57. $log_name ",
-	       "fgrep -v 24.34.108.24",
+	       ($log_name =~ /\.bz2$/
+		? "bunzip2 < $log_name"
+		: "cat $log_name"),
+	       "fgrep -v 192.168.57.",
+	       "fgrep -v $public_address",
 	       ($squid_format_p ? "fgrep -v 66.31.124.111 | squid2std.pl" : ()),
 	       "page-hits.pl -page-totals -no-summary");
     warn "[got log pipe '$log_pipe']\n"
