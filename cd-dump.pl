@@ -476,13 +476,13 @@ If you find any more, please let me know.
 
 =over 4
 
-=item The C<backup.pl> script (L<http://rgrjr.dyndns.org/linux/backup.pl.html>).
+=item The C<backup.pl> script (L<http://www.rgrjr.com/linux/backup.pl.html>).
 
 =item L<dump(8)>
 
 =item L<restore(8)>
 
-=item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
+=item System backups (L<http://www.rgrjr.com/linux/backup.html>)
 
 =back
 

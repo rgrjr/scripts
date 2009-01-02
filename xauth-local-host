@@ -22,7 +22,7 @@
 # In this case, we can't simply inherit $XAUTHORITY, because root can't read it.
 # This shell fragment sets up environment variables, so it has to be sourced,
 # rather than being run as a script.  See
-# http://rgrjr.dyndns.org/linux/security/xauth.html#root-cannot-read for
+# http://www.rgrjr.com/linux/security/xauth.html#root-cannot-read for
 # details, and for other options.
 #
 # [created.  -- rgr, 19-Aug-03.]

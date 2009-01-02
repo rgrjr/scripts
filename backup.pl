@@ -637,7 +637,7 @@ also supported for backward compatibility.
 A digit for the backup level.  Level 0 is a full backup, level 9 is
 the least inclusive incremental backup.  For more details, see
 L<dump(8)>, or my "System backups" page
-(L<http://rgrjr.dyndns.org/linux/backup.html>).  The level defaults to
+(L<http://www.rgrjr.com/linux/backup.html>).  The level defaults to
 9.  A positional level argument is also supported for backward
 compatibility.
 
@@ -698,9 +698,9 @@ If you find any more, please let me know.
 
 =item L<dar(1)>
 
-=item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
+=item System backups (L<http://www.rgrjr.com/linux/backup.html>)
 
-=item C<cd-dump.pl> (L<http://rgrjr.dyndns.org/linux/cd-dump.pl.html>)
+=item C<cd-dump.pl> (L<http://www.rgrjr.com/linux/cd-dump.pl.html>)
 
 =back
 

@@ -165,11 +165,11 @@ If you find any, please let me know.
 
 =item L<restore(8)>
 
-=item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
+=item System backups (L<http://www.rgrjr.com/linux/backup.html>)
 
-=item C<cd-dump.pl> (L<http://rgrjr.dyndns.org/linux/cd-dump.pl.html>)
+=item C<cd-dump.pl> (L<http://www.rgrjr.com/linux/cd-dump.pl.html>)
 
-=item C<backup.pl> (L<http://rgrjr.dyndns.org/linux/backup.pl.html>)
+=item C<backup.pl> (L<http://www.rgrjr.com/linux/backup.pl.html>)
 
 =back
 

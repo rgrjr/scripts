@@ -488,13 +488,13 @@ more than this, then no files will be copied.
 
 =item L<tar(1)>
 
-=item C<backup.pl> (L<http://rgrjr.dyndns.org/linux/backup.pl.html>)
+=item C<backup.pl> (L<http://www.rgrjr.com/linux/backup.pl.html>)
 
-=item C<vacuum.pl> (L<http://rgrjr.dyndns.org/linux/vacuum.pl.html>)
+=item C<vacuum.pl> (L<http://www.rgrjr.com/linux/vacuum.pl.html>)
 
 =item C<ssh(1)>
 
-=item System backups (L<http://rgrjr.dyndns.org/linux/backup.html>)
+=item System backups (L<http://www.rgrjr.com/linux/backup.html>)
 
 =back
 

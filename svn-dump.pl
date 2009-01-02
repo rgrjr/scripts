@@ -238,7 +238,7 @@ considered to be the first.
 
 =item C<svnadmin dump> (L<http://svnbook.red-bean.com/nightly/en/svn.ref.svnadmin.c.dump.html>)
 
-=item Bob's Subversion page (L<http://rgrjr.dyndns.org/linux/subversion.html>)
+=item Bob's Subversion page (L<http://www.rgrjr.com/linux/subversion.html>)
 
 =back
 
