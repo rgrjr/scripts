@@ -14,7 +14,10 @@ INSTALL = perl ./install.pl ${INSTALL_OPTS}
 
 PREFIX = /usr/local
 bin-directory = ${PREFIX}/bin
-pm-directory = /usr/lib/perl5/site_perl
+# Ask Perl where to put site-specific *.pm files.
+pm-directory  = ${shell eval "`perl -V:installsitelib`"; \
+			cd $$installsitelib; \
+			pwd}
 public-html-directory = /srv/www/htdocs/linux
 published-scripts = backup.pl cd-dump.pl vacuum.pl
 published-modules = rename-into-tree.pm
