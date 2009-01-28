@@ -92,7 +92,15 @@ pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # Check directories.
-if (! $cd_mount_point) {
+if ($cd_mount_point) {
+    # already specified
+}
+elsif ($dev_spec =~ m@^/dev/(\S+)$@
+       && -d "/media/$1") {
+    # use the mount point that matches the device name.
+    $cd_mount_point = "/media/$1";
+}
+else {
     # look for a likely candidate.
     for my $mp (qw(/mnt/cdrom /media/cdrecorder /media/sr0)) {
 	if (-d $mp) {
@@ -123,11 +131,10 @@ sub ensure_mount {
 	# [***kludge***: problems with using the default mount.  -- rgr,
 	# 5-Dec-06.]
 	my $warn = "$warn [dvd kludge]";
-	my $device = '/dev/sr0';
 	warn "$warn: Mounting $mount_point ...\n";
-	system('eject', $device) == 0
-	    || die "$warn:  'eject $device' failed:  $?\nDied";
-	system($mount_command, qw(-t iso9660), $device, $mount_point) == 0
+	system('eject', $dev_spec) == 0
+	    || die "$warn:  'eject $dev_spec' failed:  $?\nDied";
+	system($mount_command, qw(-t iso9660), $dev_spec, $mount_point) == 0
 	    || die "$warn:  '$mount_command $mount_point' failed:  $?\nDied";
 	# [end kludge.  -- rgr, 5-Dec-06.]
     }
