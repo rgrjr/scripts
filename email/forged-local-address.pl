@@ -72,6 +72,8 @@ sub ensure_nonlocal_host {
     # Exits with $spam_exit code if it matches any local domain.
     my ($host, $description) = @_;
 
+    # Clean up and canonicalize the host first.
+    chomp($host);
     $host =~ s/.*@//;
     $host = lc($host);
 
