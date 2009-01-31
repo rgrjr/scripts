@@ -58,7 +58,8 @@ all:
 test:	test-chrono-log test-email
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
-		test-svn-chrono-log-1a test-svn-chrono-log-1b
+		test-svn-chrono-log-1a test-svn-chrono-log-1b \
+		test-perl-vs-ruby
 test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
 	cmp $@.tmp test/test-cvs-chrono-log.out
@@ -83,6 +84,14 @@ test-svn-chrono-log-1b:
 	./vc-chrono-log.pl < test/test-svn-chrono-log-1.xml > $@.tmp
 	cmp $@.tmp test/test-svn-chrono-log-1a-out.text
 	rm -f $@.tmp
+# This assumes we are in a Subversion working copy, and checks that the Perl and
+# Ruby versions get the same thing for the same *current* log.
+test-perl-vs-ruby:
+	svn log --xml --verbose --revision '{1999-01-30}:HEAD' > $@.tmp.text
+	./vc-chrono-log.pl < $@.tmp.text > $@.tmp.pl.text
+	./vc-chrono-log.rb < $@.tmp.text > $@.tmp.rb.text
+	cmp $@.tmp.pl.text $@.tmp.rb.text
+	rm -f $@.tmp.*
 
 test-email:	test-forged-address
 test-forged-address:	test-rgrjr-forged-address \

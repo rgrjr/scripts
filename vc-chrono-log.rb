@@ -115,7 +115,11 @@ class VCLogEntry < LogBase
         if ! @author && @files.length then
             @author = @files[0].author
         end
-        raise "VCLogEntry init:  No @author in #{self}" if ! @author
+        # [cvs2svn seems to create rev 1 without an author.  -- rgr, 30-Jan-09.]
+        if ! @author then
+            @author = ''
+        end
+        # raise "VCLogEntry init:  No @author in #{self}" if ! @author
     end
 
     def display
