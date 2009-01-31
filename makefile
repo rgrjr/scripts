@@ -87,7 +87,7 @@ test-svn-chrono-log-1b:
 # This assumes we are in a Subversion working copy, and checks that the Perl and
 # Ruby versions get the same thing for the same *current* log.
 test-perl-vs-ruby:
-	svn log --xml --verbose --revision '{1999-01-30}:HEAD' > $@.tmp.text
+	svn log --xml --verbose > $@.tmp.text
 	./vc-chrono-log.pl < $@.tmp.text > $@.tmp.pl.text
 	./vc-chrono-log.rb < $@.tmp.text > $@.tmp.rb.text
 	cmp $@.tmp.pl.text $@.tmp.rb.text
