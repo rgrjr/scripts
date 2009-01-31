@@ -75,6 +75,7 @@ sub ensure_nonlocal_host {
     # Clean up and canonicalize the host first.
     chomp($host);
     $host =~ s/.*@//;
+    $host =~ s/\s+//g;
     $host = lc($host);
 
     if ($match_domains{$host}

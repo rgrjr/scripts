@@ -118,6 +118,8 @@ test-new-forged-address:
 	SENDER=rogers@somewhere.com email/forged-local-address.pl \
 		${rgrjr-config-options} < email/spam-4.text
 	SENDER=rogers@somewhere.com email/forged-local-address.pl \
+		${rgrjr-config-options} < email/spam-5.text
+	SENDER=rogers@somewhere.com email/forged-local-address.pl \
 		--sender-re='@perl.org$$' \
 		${rgrjr-config-options} < email/perl6-spam.text
 	SENDER=perl6-internals-return-48162-etc@perl.org \

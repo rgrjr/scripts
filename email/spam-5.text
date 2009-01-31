@@ -1,0 +1,25 @@
+Return-Path: <rogerspl@gnac.com>
+Delivered-To: rogers-pm5@rgrjr.dyndns.org
+Received: (qmail 30317 invoked by uid 89); 27 Dec 2008 10:51:26 -0000
+Received: from unknown (HELO rgrjr.com) (216.146.47.5)
+  by home with SMTP; 27 Dec 2008 10:51:26 -0000
+Received-SPF: none (home: domain at gnac.com does not designate permitted sender hosts)
+Received: from rgrjr.com (localhost [127.0.0.1])
+	by rgrjr.com (Postfix on CentOS) with ESMTP id 351881600E2
+	for <rogers-pm5@rgrjr.dyndns.org>; Sat, 27 Dec 2008 10:51:26 +0000 (UTC)
+X-Spam-Flag: YES
+Received: from HOME-0C4F112208 (pool154-175.cable.tolna.net [91.146.154.175])
+	by rgrjr.com (Postfix on CentOS) with SMTP id B71D51600E0
+	for <rogers-pm5@rgrjr.dyndns.org>; Sat, 27 Dec 2008 10:51:25 +0000 (UTC)
+Received: from hlvtk.com (91.146.154.175) by zbefea.com with Microsoft SMTPSVC(6.0.3790.2668); Sat, 27 Dec 2008 11:51:25 +0100
+From: rogers-pm5@rgrjr.dyndns.org 
+Subject: =?iso-8859-1?B?Q2xlYXJhbmNlOiBTYXZlIHVwIHRvIDc1JS4=?=
+To: rogers-pm5@rgrjr.dyndns.org <rogers-pm5@rgrjr.dyndns.org>
+Mime-Version: 1.0
+Content-type: text/html; charset="utf-8"
+Content-Transfer-Encoding: base64
+Message-Id: <20081227105125.B71D51600E0@rgrjr.com>
+Date: Sat, 27 Dec 2008 10:51:25 +0000 (UTC)
+Comment:  Test a forged address with extra whitespace.
+
+[payload omitted.]
