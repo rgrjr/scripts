@@ -35,7 +35,7 @@ GetOptions('mode|m=i' => sub {
 	   'quiet!' => sub {
 	       $show_p = $verbose_p = $_[1];
 	   },
-	   'create-dir!' => \$create_directories_p,
+	   'create-dir|D!' => \$create_directories_p,
 	   'noinstall|n' => sub { 
 	       $install_p = 0;
 	       $show_p = '-noinstall';
