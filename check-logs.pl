@@ -69,6 +69,8 @@ my @sshd_probe_attempt_regexes
        'Failed password for ',
        'fatal: Read from socket failed: Connection reset by peer',
        '^Illegal user',
+       '^Invalid user',
+       '^Failed \w+ for invalid user ',
        'input_userauth_request: illegal user',
        'Connection closed by',
        'maps to [^ ,]*, but this does not map back to the address',
