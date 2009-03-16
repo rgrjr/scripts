@@ -107,14 +107,13 @@ class FileRevision:
         self.branches = branches
 
 class Parser:
-    date_fuzz = 120	# in seconds.
+    date_fuzz = timedelta(0, 120)	# in seconds.
 
     def __init__(self, vcs_name=None):
         self.vcs_name = vcs_name
         self.log_entries = [ ]
 
     cvs_date_format = "%Y-%m-%d %H:%M:%S"
-    date_fuzz = timedelta(0, 120)
     match_date_etc = re.compile("date: *([^;]+); *(.*)$", re.DOTALL)
 
     def parse_cvs(self, stream):
