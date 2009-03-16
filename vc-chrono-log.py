@@ -3,32 +3,20 @@
 import sys
 import re
 from datetime import timedelta, datetime
+from string import join
 
 def parsedate_tz(date, format):
     # Parse a date string that may have a timezone offset, returning a datetime
     # object in local time.
-    tzoffset = None
     m = re.search("(\s+([-+])(\d\d\d\d))$", date)
     if m:
-        # date has a numeric timezone.
-        tzsign = 1
-        if m.group(2) == '-':
-            tzsign = -1
+        # date has a numeric timezone.  We used to parse this properly,
+        # returning a datetime object in UTC.  But we want to report the date in
+        # local time anyway, so it's easier to just strip it off.
         date = date[:-len(m.group(1))]
 
-        # Convert a timezone offset into seconds ; -0500 -> -18000
-        tz = int(m.group(3))
-        tzoffset = tzsign * ( (tz//100)*60 + (tz % 100)) * 60
-        tzoffset -= -18000 # time.timezone
-    else:
-        tzoffset = 0
-
     # Now deal with the rest of the date.
-    encoded_date = datetime.strptime(date, format)
-    if tzoffset:
-        return encoded_date + timedelta(0, tzoffset)
-    else:
-        return encoded_date
+    return datetime.strptime(date, format)
 
 class Entry:
     def __init__(self, author=None, commitid=None, encoded_date=None,
@@ -43,8 +31,20 @@ class Entry:
     date_format_string = '%Y-%m-%d %H:%M:%S'
 
     def report(self):
-        # [need date formatting.  -- rgr, 14-Mar-09.]
         print "%s:" % (self.encoded_date.strftime(self.date_format_string))
+        # [in perl, this is a simple print/join/map over qw(revision author
+        # commitid), but i haven't figured out how to do random access of object
+        # slots in python yet.  -- rgr, 15-Mar-09.]
+        items = [ ]
+        if self.revision:
+            items.append("revision: %s" % (self.revision))
+        if self.author:
+            items.append("author: %s" % (self.author))
+        if self.commitid:
+            items.append("commitid: %s" % (self.commitid))
+        if items:
+            print '  ' + join(items, ';  ')
+
         for line in self.msg.split("\n"):
             # indent by two, skipping empty lines.
             m = re.match('^\s*$', line)
@@ -54,7 +54,7 @@ class Entry:
         if self.files:
             n_matches = 0
             n_files = 0
-            (n_lines_removed, n_lines_added) = (0, 0)
+            (lines_removed, lines_added) = (0, 0)
             self.files.sort(None, lambda x: x.file_name)
             for entry in self.files:
                 file_name = entry.file_name
@@ -71,6 +71,23 @@ class Entry:
                 if entry.branches:
                     result = result + ("  branches: %s;" % (entry.branches))
                 print result[:-1]
+
+                # Accumulate totals.
+                lines = entry.lines or ''
+                m = re.match("\+(\d+) -(\d+)", lines)
+                if m:
+                    lines_added += int(m.group(1))
+                    lines_removed += int(m.group(2))
+                    n_matches += 1
+                n_files += 1
+
+            # Summarize the file set.
+            if n_matches > 1 and (lines_removed or lines_added):
+                incomplete_spew = ''
+                if n_matches != n_files:
+                    incomplete_spew = ' (incomplete)'
+                print("     Total lines: +%s -%s%s"
+                      % (lines_added, lines_removed, incomplete_spew))
         print
         
 class FileRevision:
@@ -98,6 +115,7 @@ class Parser:
 
     cvs_date_format = "%Y-%m-%d %H:%M:%S"
     date_fuzz = timedelta(0, 120)
+    match_date_etc = re.compile("date: *([^;]+); *(.*)$", re.DOTALL)
 
     def parse_cvs(self, stream):
 
@@ -109,19 +127,29 @@ class Parser:
         def record_file_rev_comment(file_name, file_rev, date_etc, comment):
             # Do the final parsing, create a FileRevision, and stuff it into the
             # appropriate place.
-            m = re.match("date: *([^;]+); *", date_etc)
+            date_etc = re.sub(";\n*$", "", date_etc)
+            m = self.match_date_etc.match(date_etc)
             if not m:
                 print >> sys.stderr, \
                     "Oops; can't identify date in '%s' -- skipping." % (date_etc)
             else:
                 tz_date = m.group(1)
+                date_etc = m.group(2)
                 encoded_date = parsedate_tz(tz_date, self.cvs_date_format)
-                # print >> sys.stderr, "[date %s => %s]" % (date, encoded_date)
+
+                # Unpack the keyword options.
+                kwds = { }
+                for pair in re.split("; +", date_etc):
+                    (key, value) = re.split(": *", pair, 1)
+                    kwds[key] = value
+
+                # Define the revision.
                 rev = FileRevision(raw_date = tz_date,
                                    encoded_date = encoded_date,
                                    comment = comment,
                                    file_name = file_name,
-                                   file_rev = file_rev)
+                                   file_rev = file_rev,
+                                   **kwds)
                 # [put into comment_mods for now.  -- rgr, 14-Mar-09.]
                 if comment in comment_mods:
                     comment_mods[comment].append(rev)
@@ -170,8 +198,11 @@ class Parser:
                               files = entries))
                 # End of comment loop
 
-            # Now resort by date.
-            combined_entries.sort(None, lambda x: x.encoded_date, True)
+            # Now resort by date.  We can't just ask for the reversed sort
+            # because that puts the first two entries (which happened at the
+            # same time when the repository was created) in the opposite order.
+            combined_entries.sort(None, lambda x: x.encoded_date)
+            combined_entries.reverse()
             self.log_entries = combined_entries
 
         ## Main code.
@@ -188,10 +219,11 @@ class Parser:
                     print >> sys.stderr, "No file rev"
                 else:
                     file_rev = m.group(1)
-                date_etc = stream.readline()
+                date_etc = stream.readline().rstrip("\n")
                 comment = ''
                 line = stream.readline()
                 if re.match('branches: ', line):
+                    line = line.rstrip("\n")
                     date_etc = date_etc + '  ' + line
                     line = stream.readline()
                 while line and not re.match('^---+$|^===+$', line):
@@ -220,7 +252,7 @@ class Parser:
                     else:
                         state = 'descriptions'
                 elif tag == 'Working file':
-                    file_name = m.group(2)
+                    file_name = m.group(2).rstrip("\n")
             line = stream.readline()
         if state <> 'none':
             print >> sys.stderr, "Oops; bad final state '%s'" % (state)
