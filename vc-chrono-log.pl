@@ -288,10 +288,11 @@ sub parse_svn_xml {
     $entries;
 }
 
-my $date_fuzz = 120;		# in seconds.
-
 sub parse_cvs {
-    my ($self, $stream) = @_;
+    my ($self, $stream, %options) = @_;
+    my $date_fuzz = $options{date_fuzz};
+    $date_fuzz = 120		# in seconds.
+	unless defined($date_fuzz);
 
     $self->vcs_name('CVS');
 
@@ -339,7 +340,7 @@ sub parse_cvs {
 	    push(@combined_entries,
 		 ChronoLog::Entry->new(encoded_date => $entry->encoded_date,
 				       commit_id => $commit_id,
-				       author $entry->author,
+				       author => $entry->author,
 				       msg => $entry->comment,
 				       files => $entries));
 	}
