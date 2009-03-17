@@ -64,19 +64,21 @@ test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 			test-perl-vs-ruby
 test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
-	cmp $@.tmp test/test-cvs-chrono-log.out
+	cmp test/test-cvs-chrono-log.out $@.tmp
 	./vc-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
-	cmp $@.tmp test/test-cvs-chrono-log.out
+	cmp test/test-cvs-chrono-log.out $@.tmp
 	rm -f $@.tmp
 test-cvs-chrono-log-2:
 	./vc-chrono-log.rb < test/test-cvs-chrono-log.text > $@.tmp
-	cmp $@.tmp test/test-cvs-chrono-log.out
-	./vc-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
-	cmp $@.tmp test/test-cvs-chrono-log.out
+	cmp test/test-cvs-chrono-log.out $@.tmp
 	rm -f $@.tmp
 test-cvs-chrono-log-3:
 	./vc-chrono-log.py < test/test-cvs-chrono-log.text > $@.tmp
-	cmp $@.tmp test/test-cvs-chrono-log.out
+	cmp test/test-cvs-chrono-log.out $@.tmp
+	rm -f $@.tmp
+test-cvs-chrono-log-4:
+	./vc-chrono-log.pl < test/$@.text > $@.tmp
+	cmp test/$@.out $@.tmp
 	rm -f $@.tmp
 test-svn-chrono-log-1a:
 	./svn-chrono-log.pl < test/test-svn-chrono-log-1.xml > $@.tmp

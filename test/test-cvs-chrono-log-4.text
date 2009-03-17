@@ -1,0 +1,1803 @@
+
+RCS file: /shared/cvsroot/rogers/web-site/change-history-template.html,v
+Working file: change-history-template.html
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 7;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/cvs-chrono-log.pl,v
+Working file: cvs-chrono-log.pl
+head: 1.11
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 11;	selected revisions: 1
+description:
+----------------------------
+revision 1.11
+date: 2007-06-04 22:32:09 -0400;  author: rogers;  state: Exp;  lines: +19 -108;
+   + (cvs_log_to_html_log):  Rewritten to parse the output of
+     vc-chrono-log.rb, which greatly reduces code duplication.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/hits.html,v
+Working file: hits.html
+head: 1.22
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 23;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/index.html,v
+Working file: index.html
+head: 1.15
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 16;	selected revisions: 1
+description:
+----------------------------
+revision 1.15
+date: 2008-02-05 10:59:06 -0500;  author: rogers;  state: Exp;  lines: +1 -8;  commitid: 5b6547a887ca4567;
+* index.html:
+   + Remove the ancient "Accessing Unix files from the Mac" link; who
+     uses AppleTalk these days?
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/makefile,v
+Working file: makefile
+head: 1.39
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 39;	selected revisions: 1
+description:
+----------------------------
+revision 1.39
+date: 2008-03-15 18:43:29 -0400;  author: rogers;  state: Exp;  lines: +5 -5;  commitid: 40247dc51104567;
+   + (check-install-dir):  Look for /climbing/.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/Attic/old-index.html,v
+Working file: old-index.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/ra.cgi,v
+Working file: ra.cgi
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/robots.txt,v
+Working file: robots.txt
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/site-map.html,v
+Working file: site-map.html
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 5;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/site.css,v
+Working file: site.css
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/visitors.html,v
+Working file: visitors.html
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/web-site.html,v
+Working file: web-site.html
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/contact.html,v
+Working file: bob/contact.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/damon-mahler.html,v
+Working file: bob/damon-mahler.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/gimp-toc.html,v
+Working file: bob/gimp-toc.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/index.html,v
+Working file: bob/index.html
+head: 1.9
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 10;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/resume-extra.html,v
+Working file: bob/resume-extra.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/resume.html,v
+Working file: bob/resume.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/tmda.html,v
+Working file: bob/tmda.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-2-small.jpg,v
+Working file: bob/anna/anna-2-small.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-2.jpg,v
+Working file: bob/anna/anna-2.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-3-small.jpg,v
+Working file: bob/anna/anna-3-small.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-3.jpg,v
+Working file: bob/anna/anna-3.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-and-kitten-1.jpg,v
+Working file: bob/anna/anna-and-kitten-1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-and-kitten-2.jpg,v
+Working file: bob/anna/anna-and-kitten-2.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-portrait-1.jpg,v
+Working file: bob/anna/anna-portrait-1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/anna-thumbnail-1.jpg,v
+Working file: bob/anna/anna-thumbnail-1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/Attic/annas-shows.html,v
+Working file: bob/anna/annas-shows.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/anna/index.html,v
+Working file: bob/anna/index.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/3sillies.jpg,v
+Working file: bob/liz/3sillies.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Anna-Bob1.jpg,v
+Working file: bob/liz/Anna-Bob1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Anna-Bob2.jpg,v
+Working file: bob/liz/Anna-Bob2.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Anna1.jpg,v
+Working file: bob/liz/Anna1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Anna2.jpg,v
+Working file: bob/liz/Anna2.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Anna3.jpg,v
+Working file: bob/liz/Anna3.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Shelda-Bob1.jpg,v
+Working file: bob/liz/Shelda-Bob1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Shelda-Bob2.jpg,v
+Working file: bob/liz/Shelda-Bob2.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Shelda-Bob3.jpg,v
+Working file: bob/liz/Shelda-Bob3.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/Shelda-cartwheel.jpg,v
+Working file: bob/liz/Shelda-cartwheel.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/index.html,v
+Working file: bob/liz/index.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/liz-portrait-1.jpg,v
+Working file: bob/liz/liz-portrait-1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/liz-thumbnail-1.jpg,v
+Working file: bob/liz/liz-thumbnail-1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/liz1.jpg,v
+Working file: bob/liz/liz1.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/liz2.jpg,v
+Working file: bob/liz/liz2.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/liz4.jpg,v
+Working file: bob/liz/liz4.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/lizzie-at-2-tn.jpg,v
+Working file: bob/liz/lizzie-at-2-tn.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/pic-preview.html,v
+Working file: bob/liz/pic-preview.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/bob/liz/scowlingAnna.jpg,v
+Working file: bob/liz/scowlingAnna.jpg
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/Weather.pm,v
+Working file: climbing/Weather.pm
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/br-web-review.html,v
+Working file: climbing/br-web-review.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/br-work-flow.html,v
+Working file: climbing/br-work-flow.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/crow-hill.html,v
+Working file: climbing/crow-hill.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/dates.tbl,v
+Working file: climbing/dates.tbl
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/directions.html,v
+Working file: climbing/directions.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/ephemeris.html,v
+Working file: climbing/ephemeris.html
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 5;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/index.html,v
+Working file: climbing/index.html
+head: 1.14
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 15;	selected revisions: 1
+description:
+----------------------------
+revision 1.14
+date: 2008-03-15 18:41:51 -0400;  author: rogers;  state: Exp;  lines: +2 -2;  commitid: 3ac47dc50ae4567;
+* tuesday-night.html:
+   + Update the schedule for 2008 (draft).
+* index.html:
+   + Refer to this as the 2008 schedule.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/lists.html,v
+Working file: climbing/lists.html
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/locations.tbl,v
+Working file: climbing/locations.tbl
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 1
+description:
+----------------------------
+revision 1.3
+date: 2008-03-15 18:32:00 -0400;  author: rogers;  state: Exp;  lines: +1 -1;  commitid: 39747dc4e604567;
+* locations.tbl:
+   + Remove redundant "of" in College Rock location.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/makefile,v
+Working file: climbing/makefile
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 5;	selected revisions: 1
+description:
+----------------------------
+revision 1.5
+date: 2008-03-15 18:38:38 -0400;  author: rogers;  state: Exp;  lines: +18 -0;  commitid: 3a747dc4fed4567;
+* tns.pl:
+   + Use Getopt::Long so we can parse more options (still no doc).
+   + Support --locations, --start, --end, and --holidays options.
+   + Add explicit validation of location abbrevs.
+   + Replace dates file with enumeration between --start and --end, with
+     suitable adjustment for holidays on Monday or Tuesday.
+   + Don't require the dates for --summary output.
+   + Die properly if # of dates & # of locations don't agree.
+* makefile:
+   + (sched-2008.html):  New.
+   + (test-tns-1):  Use the 2008 sites to test the new tns.pl options.
+* test-tns-1.html (added):
+   + Test data for the test-tns-1 case.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/test-tns-1.html,v
+Working file: climbing/test-tns-1.html
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2008-03-15 18:38:39 -0400;  author: rogers;  state: Exp;  commitid: 3a747dc4fed4567;
+* tns.pl:
+   + Use Getopt::Long so we can parse more options (still no doc).
+   + Support --locations, --start, --end, and --holidays options.
+   + Add explicit validation of location abbrevs.
+   + Replace dates file with enumeration between --start and --end, with
+     suitable adjustment for holidays on Monday or Tuesday.
+   + Don't require the dates for --summary output.
+   + Die properly if # of dates & # of locations don't agree.
+* makefile:
+   + (sched-2008.html):  New.
+   + (test-tns-1):  Use the 2008 sites to test the new tns.pl options.
+* test-tns-1.html (added):
+   + Test data for the test-tns-1 case.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tns.pl,v
+Working file: climbing/tns.pl
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 1
+description:
+----------------------------
+revision 1.2
+date: 2008-03-15 18:38:38 -0400;  author: rogers;  state: Exp;  lines: +90 -37;  commitid: 3a747dc4fed4567;
+* tns.pl:
+   + Use Getopt::Long so we can parse more options (still no doc).
+   + Support --locations, --start, --end, and --holidays options.
+   + Add explicit validation of location abbrevs.
+   + Replace dates file with enumeration between --start and --end, with
+     suitable adjustment for holidays on Monday or Tuesday.
+   + Don't require the dates for --summary output.
+   + Die properly if # of dates & # of locations don't agree.
+* makefile:
+   + (sched-2008.html):  New.
+   + (test-tns-1):  Use the 2008 sites to test the new tns.pl options.
+* test-tns-1.html (added):
+   + Test data for the test-tns-1 case.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/to-room-6.html,v
+Working file: climbing/to-room-6.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-faq.html,v
+Working file: climbing/tuesday-faq.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night-2000.html,v
+Working file: climbing/tuesday-night-2000.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night-2001.html,v
+Working file: climbing/tuesday-night-2001.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night-2002.html,v
+Working file: climbing/tuesday-night-2002.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night-2003.html,v
+Working file: climbing/tuesday-night-2003.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night-2004.html,v
+Working file: climbing/tuesday-night-2004.html
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night-2005.html,v
+Working file: climbing/tuesday-night-2005.html
+head: 1.18
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 19;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/tuesday-night.html,v
+Working file: climbing/tuesday-night.html
+head: 1.23
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 24;	selected revisions: 1
+description:
+----------------------------
+revision 1.23
+date: 2008-03-15 18:41:50 -0400;  author: rogers;  state: Exp;  lines: +39 -32;  commitid: 3ac47dc50ae4567;
+* tuesday-night.html:
+   + Update the schedule for 2008 (draft).
+* index.html:
+   + Refer to this as the 2008 schedule.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/votes.text,v
+Working file: climbing/votes.text
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/weather.cgi,v
+Working file: climbing/weather.cgi
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/climbing/weather.pl,v
+Working file: climbing/weather.pl
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/advanced.html,v
+Working file: emacs/advanced.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/custom.html,v
+Working file: emacs/custom.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/emacs_cheat.html,v
+Working file: emacs/emacs_cheat.html
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/Attic/foo.html,v
+Working file: emacs/foo.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/i586.xmodmaprc,v
+Working file: emacs/i586.xmodmaprc
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/index.html,v
+Working file: emacs/index.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/keyboard.html,v
+Working file: emacs/keyboard.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/makefile.text,v
+Working file: emacs/makefile.text
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/overlap.html,v
+Working file: emacs/overlap.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/rgr-hacks.html,v
+Working file: emacs/rgr-hacks.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/self-doc.html,v
+Working file: emacs/self-doc.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/study.html,v
+Working file: emacs/study.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/sun4u.xmodmaprc,v
+Working file: emacs/sun4u.xmodmaprc
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/tutorial.html,v
+Working file: emacs/tutorial.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/vm+qmail.html,v
+Working file: emacs/vm+qmail.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/vm-7.17-rgr.patch,v
+Working file: emacs/vm-7.17-rgr.patch
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/ilisp/index.html,v
+Working file: emacs/ilisp/index.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/emacs/ilisp/new-meta-point.html,v
+Working file: emacs/ilisp/new-meta-point.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/free-clim/ex-0306-4.html,v
+Working file: free-clim/ex-0306-4.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/free-clim/index.html,v
+Working file: free-clim/index.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/free-clim/Attic/martin.html,v
+Working file: free-clim/martin.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/antispam.html,v
+Working file: linux/antispam.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/aolserver.html,v
+Working file: linux/aolserver.html
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/backup.html,v
+Working file: linux/backup.html
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/Attic/backup.pl.html,v
+Working file: linux/backup.pl.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/cd-burning.html,v
+Working file: linux/cd-burning.html
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/cl-xml-notes.html,v
+Working file: linux/cl-xml-notes.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/disk-upgrade.html,v
+Working file: linux/disk-upgrade.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/ether.html,v
+Working file: linux/ether.html
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/gconf.html,v
+Working file: linux/gconf.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/Attic/howto.css,v
+Working file: linux/howto.css
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/howto.html,v
+Working file: linux/howto.html
+head: 1.14
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 15;	selected revisions: 1
+description:
+----------------------------
+revision 1.14
+date: 2007-09-03 11:59:17 -0400;  author: rogers;  state: Exp;  lines: +20 -12;
+   + Update the RPM section, add "RPM Guide" link.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/index.html,v
+Working file: linux/index.html
+head: 1.15
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 16;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/nis.html,v
+Working file: linux/nis.html
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/ntp.html,v
+Working file: linux/ntp.html
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/ntpd.sh,v
+Working file: linux/ntpd.sh
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/qmail.html,v
+Working file: linux/qmail.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/squid.html,v
+Working file: linux/squid.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/striped-blue.png,v
+Working file: linux/striped-blue.png
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/striped-brown.png,v
+Working file: linux/striped-brown.png
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/striped-green.png,v
+Working file: linux/striped-green.png
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/striped-orange.png,v
+Working file: linux/striped-orange.png
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/subversion.html,v
+Working file: linux/subversion.html
+head: 1.8
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 8;	selected revisions: 2
+description:
+----------------------------
+revision 1.8
+date: 2007-12-15 21:52:59 -0500;  author: rogers;  state: Exp;  lines: +139 -22;  commitid: 10124764930b4567;
+   + Update to cover openSUSE 10.2 and per-directory authentication.
+   + Add a TOC.
+----------------------------
+revision 1.7
+date: 2007-06-10 23:09:40 -0400;  author: rogers;  state: Exp;  lines: +90 -1;
+   + Add the "Create a new Subversion repository" section.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/tmda.html,v
+Working file: linux/tmda.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/tux-small.png,v
+Working file: linux/tux-small.png
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/xml.html,v
+Working file: linux/xml.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/check-logs.html,v
+Working file: linux/security/check-logs.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/firewall.html,v
+Working file: linux/security/firewall.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/index.html,v
+Working file: linux/security/index.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/old-xauth.html,v
+Working file: linux/security/old-xauth.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/ssh.html,v
+Working file: linux/security/ssh.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/xauth.html,v
+Working file: linux/security/xauth.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/linux/security/alerts/index.html,v
+Working file: linux/security/alerts/index.html
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/lisp/index.html,v
+Working file: lisp/index.html
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 1
+description:
+----------------------------
+revision 1.3
+date: 2007-09-06 22:24:47 -0400;  author: rogers;  state: Exp;  lines: +10 -5;
+   + Add a few more Lispy xkcd links.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/perl/index.html,v
+Working file: perl/index.html
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 1
+description:
+----------------------------
+revision 1.7
+date: 2008-03-15 19:01:17 -0400;  author: rogers;  state: Exp;  lines: +21 -1;  commitid: 45a47dc553d4567;
+* perl/index.html:
+   + Add a YAPC section.
+   + Add an RT link to the Parrot section.
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/perl/perl6-objects.html,v
+Working file: perl/perl6-objects.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/perl/sub-memory-leak.html,v
+Working file: perl/sub-memory-leak.html
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	rogers: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 0
+description:
+=============================================================================
+
+RCS file: /shared/cvsroot/rogers/web-site/random/doubleclick.png,v
+Working file: random/doubleclick.png
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: b
+total revisions: 1;	selected revisions: 0
+description:
+=============================================================================

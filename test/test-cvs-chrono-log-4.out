@@ -1,0 +1,82 @@
+2008-03-15 19:01:17:
+  author: rogers;  commitid: 45a47dc553d4567
+  * perl/index.html:
+     + Add a YAPC section.
+     + Add an RT link to the Parrot section.
+  => perl/index.html 1.7:  state: Exp;  lines: +21 -1
+
+2008-03-15 18:43:29:
+  author: rogers;  commitid: 40247dc51104567
+     + (check-install-dir):  Look for /climbing/.
+  => makefile 1.39:  state: Exp;  lines: +5 -5
+
+2008-03-15 18:41:51:
+  author: rogers;  commitid: 3ac47dc50ae4567
+  * tuesday-night.html:
+     + Update the schedule for 2008 (draft).
+  * index.html:
+     + Refer to this as the 2008 schedule.
+  => climbing/index.html 1.14:  state: Exp;  lines: +2 -2
+  => climbing/tuesday-night.html 1.23:  state: Exp;  lines: +39 -32
+     Total lines: +41 -34
+
+2008-03-15 18:38:38:
+  author: rogers;  commitid: 3a747dc4fed4567
+  * tns.pl:
+     + Use Getopt::Long so we can parse more options (still no doc).
+     + Support --locations, --start, --end, and --holidays options.
+     + Add explicit validation of location abbrevs.
+     + Replace dates file with enumeration between --start and --end, with
+       suitable adjustment for holidays on Monday or Tuesday.
+     + Don't require the dates for --summary output.
+     + Die properly if # of dates & # of locations don't agree.
+  * makefile:
+     + (sched-2008.html):  New.
+     + (test-tns-1):  Use the 2008 sites to test the new tns.pl options.
+  * test-tns-1.html (added):
+     + Test data for the test-tns-1 case.
+  => climbing/makefile 1.5:  state: Exp;  lines: +18 -0
+  => climbing/test-tns-1.html 1.1:  state: Exp
+  => climbing/tns.pl 1.2:  state: Exp;  lines: +90 -37
+     Total lines: +108 -37 (incomplete)
+
+2008-03-15 18:32:00:
+  author: rogers;  commitid: 39747dc4e604567
+  * locations.tbl:
+     + Remove redundant "of" in College Rock location.
+  => climbing/locations.tbl 1.3:  state: Exp;  lines: +1 -1
+
+2008-02-05 10:59:06:
+  author: rogers;  commitid: 5b6547a887ca4567
+  * index.html:
+     + Remove the ancient "Accessing Unix files from the Mac" link; who
+       uses AppleTalk these days?
+  => index.html 1.15:  state: Exp;  lines: +1 -8
+
+2007-12-15 21:52:59:
+  author: rogers;  commitid: 10124764930b4567
+     + Update to cover openSUSE 10.2 and per-directory authentication.
+     + Add a TOC.
+  => linux/subversion.html 1.8:  state: Exp;  lines: +139 -22
+
+2007-09-06 22:24:47:
+  author: rogers
+     + Add a few more Lispy xkcd links.
+  => lisp/index.html 1.3:  state: Exp;  lines: +10 -5
+
+2007-09-03 11:59:17:
+  author: rogers
+     + Update the RPM section, add "RPM Guide" link.
+  => linux/howto.html 1.14:  state: Exp;  lines: +20 -12
+
+2007-06-10 23:09:40:
+  author: rogers
+     + Add the "Create a new Subversion repository" section.
+  => linux/subversion.html 1.7:  state: Exp;  lines: +90 -1
+
+2007-06-04 22:32:09:
+  author: rogers
+     + (cvs_log_to_html_log):  Rewritten to parse the output of
+       vc-chrono-log.rb, which greatly reduces code duplication.
+  => cvs-chrono-log.pl 1.11:  state: Exp;  lines: +19 -108
+

@@ -339,7 +339,7 @@ sub parse_cvs {
 	    my $entry = $entries->[0];
 	    push(@combined_entries,
 		 ChronoLog::Entry->new(encoded_date => $entry->encoded_date,
-				       commit_id => $commit_id,
+				       commitid => $commit_id,
 				       author => $entry->author,
 				       msg => $entry->comment,
 				       files => $entries));
