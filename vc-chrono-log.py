@@ -2,25 +2,16 @@
 
 import sys
 import re
-from datetime import timedelta, datetime
+import xml.dom.minidom
+import unicodedata
+import dateutil.parser
+import dateutil.tz
+from datetime import timedelta
 from string import join
-
-def parsedate_tz(date, format):
-    # Parse a date string that may have a timezone offset, returning a datetime
-    # object in local time.
-    m = re.search("(\s+([-+])(\d\d\d\d))$", date)
-    if m:
-        # date has a numeric timezone.  We used to parse this properly,
-        # returning a datetime object in UTC.  But we want to report the date in
-        # local time anyway, so it's easier to just strip it off.
-        date = date[:-len(m.group(1))]
-
-    # Now deal with the rest of the date.
-    return datetime.strptime(date, format)
 
 class Entry:
     def __init__(self, author=None, commitid=None, encoded_date=None,
-                 files=None, msg=None, revision=None):
+                 files=None, msg=None, revision=None, date=None):
         self.author = author
         self.commitid = commitid
         self.encoded_date = encoded_date
@@ -28,10 +19,11 @@ class Entry:
         self.msg = msg
         self.revision = revision
 
-    date_format_string = '%Y-%m-%d %H:%M:%S'
+    date_format_string = '%Y-%m-%d %H:%M:%S:'
 
     def report(self):
-        print "%s:" % (self.encoded_date.strftime(self.date_format_string))
+        local_date = self.encoded_date.astimezone(dateutil.tz.tzlocal())
+        print local_date.strftime(self.date_format_string)
         # [in perl, this is a simple print/join/map over qw(revision author
         # commitid), but i haven't figured out how to do random access of object
         # slots in python yet.  -- rgr, 15-Mar-09.]
@@ -113,6 +105,74 @@ class Parser:
         self.vcs_name = vcs_name
         self.log_entries = [ ]
 
+    def parse(self, stream):
+        # Generic parser, assuming we can dispatch on the first character.
+        pos = stream.tell()
+        char = stream.read(1)
+        stream.seek(pos)
+        if char == '<':
+            self.parse_svn_xml(stream)
+        else:
+            self.parse_cvs(stream)
+
+    svn_date_format = "%Y-%m-%dT%H:%M:%S"
+
+    def parse_svn_xml(self, stream):
+        # Use xml.dom.minidom to parse stream, and traverse the resulting
+        # document, turning all "logentry" elements into Entry objects on
+        # log_entries.  Finally, sort log_entries by date.
+
+        def collect_text(node):
+            if node.nodeType == xml.dom.Node.TEXT_NODE:
+                return node.data
+            elif node.nodeType == xml.dom.Node.ELEMENT_NODE:
+                result = ''
+                for subnode in node.childNodes:
+                    result = result + collect_text(subnode)
+                return result
+            else:
+                return ''
+
+        def do_logentry(logentry):
+            rev_number = logentry.getAttribute('revision')
+            files = [ ]
+            hash = { 'revision': rev_number, 'files': files }
+            for subnode in logentry.childNodes:
+                if subnode.nodeType == xml.dom.Node.ELEMENT_NODE:
+                    u_elt_name = subnode.tagName
+                    # We have to do this explicit conversion from Unicode to
+                    # ASCII because Python barfs on Unicode strings when given
+                    # as keyword argument names.
+                    elt_name = unicodedata.normalize('NFKD', u_elt_name) \
+                        .encode('ascii','ignore')
+                    if elt_name == 'paths':
+                        for path in subnode.childNodes:
+                            if path.nodeType == xml.dom.Node.ELEMENT_NODE:
+                                action = path.getAttribute('action') or 'M'
+                                text = collect_text(path)
+                                file = FileRevision(file_name = text,
+                                                    action = action)
+                                files.append(file)
+                    else:
+                        hash[elt_name] = collect_text(subnode)
+            # Note that dateutil.parser can handle the fractional second and the
+            # "Z" timezone specification.
+            encoded_date = dateutil.parser.parse(hash['date'])
+            self.log_entries.append(Entry(encoded_date = encoded_date,
+                                          **hash))
+
+        def visit_node(node, prefix):
+            type = node.nodeType
+            if type == xml.dom.Node.ELEMENT_NODE \
+                    and node.tagName == 'logentry':
+                do_logentry(node)
+            else:
+                for subnode in node.childNodes:
+                    visit_node(subnode, prefix)
+
+        visit_node(xml.dom.minidom.parse(stream), '')
+        self.log_entries.sort(None, lambda x: x.encoded_date, True)
+
     cvs_date_format = "%Y-%m-%d %H:%M:%S"
     match_date_etc = re.compile("date: *([^;]+); *(.*)$", re.DOTALL)
 
@@ -134,7 +194,7 @@ class Parser:
             else:
                 tz_date = m.group(1)
                 date_etc = m.group(2)
-                encoded_date = parsedate_tz(tz_date, self.cvs_date_format)
+                encoded_date = dateutil.parser.parse(tz_date)
 
                 # Unpack the keyword options.
                 kwds = { }
@@ -274,9 +334,6 @@ class Parser:
         if state <> 'none':
             print >> sys.stderr, "Oops; bad final state '%s'" % (state)
         sort_file_rev_comments()
-
-    def parse(self, stream):
-        self.parse_cvs(stream)
 
 ### Main program
 

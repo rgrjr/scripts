@@ -92,6 +92,8 @@ test-svn-chrono-log-1a:
 	cmp $@.tmp test/$@-out.text
 	./vc-chrono-log.rb < test/test-svn-chrono-log-1.xml > $@.tmp
 	cmp $@.tmp test/$@-out.text
+	./vc-chrono-log.py < test/test-svn-chrono-log-1.xml > $@.tmp
+	cmp $@.tmp test/$@-out.text
 	rm -f $@.tmp
 # This assumes we are in a Subversion working copy, and checks that the Perl and
 # Ruby versions get the same thing for the same *current* log.
