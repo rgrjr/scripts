@@ -149,17 +149,35 @@ class Parser:
                                    file_name = file_name,
                                    file_rev = file_rev,
                                    **kwds)
-                # [put into comment_mods for now.  -- rgr, 14-Mar-09.]
-                if comment in comment_mods:
-                    comment_mods[comment].append(rev)
+
+                # Put rev into commit_mods if we have a commitid, else put it
+                # into comment_mods.
+                commit_id = rev.commitid
+                if commit_id: 
+                    if commit_id in commit_mods:
+                        commit_mods[commit_id].append(rev)
+                    else:
+                        commit_mods[commit_id] = [ rev ]
                 else:
-                    comment_mods[comment] = [ rev ]
+                    if comment in comment_mods:
+                        comment_mods[comment].append(rev)
+                    else:
+                        comment_mods[comment] = [ rev ]
 
         def sort_file_rev_comments():
 
             # Combine file entries that correspond to a single commit.
             combined_entries = [ ]
-            print >> sys.stderr, "[need to handle commitid entries.]"
+            for commit_id in commit_mods.keys():
+                mods = commit_mods[commit_id]
+                mod = mods[0]
+                new_entry = \
+                    Entry(encoded_date = mod.encoded_date,
+                          commitid = commit_id,
+                          author = mod.author,
+                          msg = mod.comment,
+                          files = mods)
+                combined_entries.append(new_entry)
 
             # Examine remaining entries by comment, then by date,
             # combining all that have the identical comment and nearly

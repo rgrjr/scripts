@@ -76,8 +76,13 @@ test-cvs-chrono-log-3:
 	./vc-chrono-log.py < test/test-cvs-chrono-log.text > $@.tmp
 	cmp test/test-cvs-chrono-log.out $@.tmp
 	rm -f $@.tmp
+# Test CVS "commitid" processing.
 test-cvs-chrono-log-4:
 	./vc-chrono-log.pl < test/$@.text > $@.tmp
+	cmp test/$@.out $@.tmp
+	./vc-chrono-log.rb < test/$@.text > $@.tmp
+	cmp test/$@.out $@.tmp
+	./vc-chrono-log.py < test/$@.text > $@.tmp
 	cmp test/$@.out $@.tmp
 	rm -f $@.tmp
 test-svn-chrono-log-1a:
