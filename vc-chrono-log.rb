@@ -44,8 +44,9 @@ class LogBase
     # any that are nil.
     def join_fields(field_names)
         field_names.reject do | name |
-            # Omit fields that are nil.
-            self.send(name).nil?
+            # Omit fields that are nil or the empty string.
+            value = self.send(name)
+            value.nil? || value == ''
         end .map do |name|
             # Format the rest.
             name + ': ' + self.send(name)

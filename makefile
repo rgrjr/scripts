@@ -61,7 +61,7 @@ test:	test-chrono-log test-email
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 			test-cvs-chrono-log-3 \
 			test-svn-chrono-log-1a \
-			test-perl-vs-ruby
+			test-compare-languages
 test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
 	cmp test/test-cvs-chrono-log.out $@.tmp
@@ -95,13 +95,15 @@ test-svn-chrono-log-1a:
 	./vc-chrono-log.py < test/test-svn-chrono-log-1.xml > $@.tmp
 	cmp $@.tmp test/$@-out.text
 	rm -f $@.tmp
-# This assumes we are in a Subversion working copy, and checks that the Perl and
-# Ruby versions get the same thing for the same *current* log.
-test-perl-vs-ruby:
+# This assumes we are in a Subversion working copy, and checks that the Perl,
+# Ruby, and Python versions get the same thing for the same *current* log.
+test-compare-languages:
 	svn log --xml --verbose > $@.tmp.text
 	./vc-chrono-log.pl < $@.tmp.text > $@.tmp.pl.text
 	./vc-chrono-log.rb < $@.tmp.text > $@.tmp.rb.text
 	cmp $@.tmp.pl.text $@.tmp.rb.text
+	./vc-chrono-log.py < $@.tmp.text > $@.tmp.py.text
+	cmp $@.tmp.pl.text $@.tmp.py.text
 	rm -f $@.tmp.*
 
 test-email:	test-forged-address

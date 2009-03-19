@@ -54,6 +54,17 @@ sub define_instance_accessors {
 	}
     }
 }
+
+sub join_fields {
+    my ($self, $fields) = @_;
+
+    join(';  ',
+	 map {
+	     my $name = $_;
+	     my $value = $self->$name;
+	     (defined($value) && length($value) ? "$name: $value" : ());
+	 } @$fields);
+}
 	
 ### The ChronoLog::Entry class.
 
@@ -102,9 +113,7 @@ sub report {
     my $formatted_date = time2str($date_format_string, $self->encoded_date);
     my $files = $self->files;
     print("$formatted_date:\n",
-	  "  ",
-	  # [kludge.  -- rgr, 11-Mar-06.]
-	  RGR::CVS::FileRevision::join_fields($self, $per_entry_fields), "\n");
+	  "  ", $self->join_fields($per_entry_fields), "\n");
     for my $line (split("\n", $self->msg)) {
 	# indent by two, skipping empty lines.
 	unless ($line =~ /^\s*$/) {
@@ -168,19 +177,6 @@ sub BEGIN {
     RGR::CVS::FileRevision->define_instance_accessors
 	(qw(comment raw_date encoded_date file_name file_rev
 	    action author state lines commitid branches));
-}
-
-sub join_fields {
-    my ($self, $fields) = @_;
-
-    join(';  ',
-	 map {
-	     my $name = $_;
-	     my $value = $self->$name;
-	     (defined($value)
-	      ? "$name: $value"
-	      : ());
-	 } @$fields);
 }
 
 package ChronoLog::Parser;
@@ -248,7 +244,7 @@ sub parse_svn_xml {
 	    my %keyed_content = @items;
 	    my $revision = $attrs->{revision};
 	    # warn "revision $revision";
-	    my $author = extract_subfield_string($keyed_content{author}) || "";
+	    my $author = extract_subfield_string($keyed_content{author});
 	    my $date = extract_subfield_string($keyed_content{date});
 	    my $encoded_date = str2time($date, 'UTC');
 	    my $entry = ChronoLog::Entry->new
