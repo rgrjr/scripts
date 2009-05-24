@@ -131,6 +131,20 @@ sub push_dar_compression_opt {
     }
 }
 
+sub push_dar_value_opt {
+    # Add an option string to @dar_options, insisting on a value but allowing
+    # duplicates.
+    my ($option, $value) = @_;
+
+    if (! defined($value)) {
+	# [this should really be an error.  -- rgr, 23-May-09.]
+	warn("$0:  Option '--$option' requires a value; ignored.\n");
+    }
+    else {
+	push(@dar_options, "--$option=$value");
+    }
+}
+
 my $usage = 0;
 my $help = 0;
 GetOptions('date=s' => \$file_date,
@@ -148,6 +162,15 @@ GetOptions('date=s' => \$file_date,
 	   'dar!' => \$dar_p,
 	   'gzip|z:i' => \&push_dar_compression_opt,
 	   'bzip2|y:i' => \&push_dar_compression_opt,
+	   'fs-root|R=s' => \&push_dar_value_opt,
+	   'exclude|X=s' => \&push_dar_value_opt,
+	   'include|I=s' => \&push_dar_value_opt,
+	   'prune|P=s' => \&push_dar_value_opt,
+	   'go-into|G=s' => \&push_dar_value_opt,
+	   # [note that Getopt::Long can't handle "-[" or "-]" as options;
+	   # these are synonyms for the next two.  -- rgr, 23-May-09.]
+	   'include-from-file=s' => \&push_dar_value_opt,
+	   'exclude-from-file=s' => \&push_dar_value_opt,
 	   'level=i' => \$level,
 	   'usage|?' => \$usage, 'help' => \$help)
     or pod2usage(-verbose => 0);
