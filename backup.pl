@@ -59,6 +59,19 @@ sub do_or_die {
     elsif (system(@_) == 0) {
 	1;
     }
+    elsif ($dar_p && (11 << 8) == $?) {
+	# dar returned an exit code of 11, which means (from the "man" page):
+	#
+	#    some saved files have changed while dar was reading them, this may
+	#    lead the data saved for this file not correspond to a valid state
+	#    for this file.
+	#
+	# Which means the backup is not helpful for recovering this file, but
+	# the other files are still good, and this file will surely get put on
+	# the next backup.  So, since dar will have already printed a message,
+	# we just ignore these.
+	1;
+    }
     elsif ($ignore_return_code_p && !($? & 255)) {
 	warn("$0:  Executing '$_[0]' failed:  Code $?\n",
 	     ($verbose_p
