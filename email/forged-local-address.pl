@@ -113,7 +113,7 @@ sub local_header_p {
 	# qmail format for delivery to our LAN address.
 	'lan';
     }
-    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \($local_network_prefix\.\d+\)/) {
+    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \((\S+\@)?$local_network_prefix\.\d+\)/) {
 	# qmail format for receipt from a LAN host.
 	'lan';
     }
