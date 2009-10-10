@@ -179,11 +179,17 @@ if ($local_p) {
 # that appears to be from us.  This is useful for getting copies from mailing
 # lists.
 my $envelope_sender = $ENV{SENDER} || '';
-for my $regexp (@sender_regexps) {
-    if ($envelope_sender =~ /$regexp/) {
-	warn "win:  sender '$envelope_sender' matches '$regexp'.\n"
-	    if $verbose_p;
-	exit($legit_exit);
+if (! $envelope_sender) {
+    warn "$0:  Can't check SENDER, as it's undefined.\n"
+	if $verbose_p || @sender_regexps;
+}
+else {
+    for my $regexp (@sender_regexps) {
+	if ($envelope_sender =~ /$regexp/) {
+	    warn "win:  sender '$envelope_sender' matches '$regexp'.\n"
+		if $verbose_p;
+	    exit($legit_exit);
+	}
     }
 }
 
