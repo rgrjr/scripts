@@ -4,7 +4,7 @@
 #
 # [created.  -- rgr, 18-Dec-99.]
 #
-# Copyright (C) 1999-2008 Robert G. Rogers Jr. <rogers@rgrjr.dyndns.org>
+# Copyright (C) 1999-2009 Robert G. Rogers Jr. <rogers@rgrjr.dyndns.org>
 #
 # This script is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -85,6 +85,12 @@ HOME_SERVER=192.168.57.12
 TRUSTED_SUBNETS="192.168.57.1 192.168.57.10/31 $HOME_SERVER"
 # Allow some exceptions for Jan's machine.
 JAN=192.168.57.17
+# And for Jan's other machine.
+JAN_HP=192.168.57.19
+# And also for Anna's laptop.
+ANNA=192.168.57.18
+# Define the collection of Windows machines.
+WINDOWS_MACHINES="$JAN $JAN_HP $ANNA"
 
 ### Output chain setup.
 # Allow arbitrary packets to leave, but not for attempts to open X11 connections
@@ -201,6 +207,8 @@ iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port ssh --syn -j LOG
 iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port ssh --syn -j ACCEPT
 # Enable this to accept incoming mail (SMTP) connections.
 iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port smtp --syn -j ACCEPT
+# Enable this to accept incoming submission (SMTP) connections.
+iptables -A ext-in -p TCP -d $OUR_EXT_IP --destination-port submission --syn -j ACCEPT
 
 # Allow return traffic from Webkinz (see below).
 iptables -A ext-in -p TCP -s 66.48.83.128/25 --sport 9876 -j ACCEPT
@@ -237,9 +245,13 @@ for subnet in $TRUSTED_SUBNETS; do
     iptables -A FORWARD -s $subnet -j ACCEPT
     iptables -A FORWARD -d $subnet -j ACCEPT
 done
-# Allow NAT traffic to/from Jan's machine for Webkinz (S.H Ganz Holdings Inc.).
-iptables -A FORWARD -p TCP -s $JAN -d 66.48.83.128/25 --dport 9876 -j ACCEPT
-iptables -A FORWARD -p TCP -d $JAN -s 66.48.83.128/25 --sport 9876 -j ACCEPT
+# Allow NAT traffic to/from all Windows machines for Webkinz (S.H Ganz Holdings
+# Inc.).
+Ganz=66.48.83.128/25
+for host in $WINDOWS_MACHINES; do
+    iptables -A FORWARD -p TCP -s $host -d $Ganz -j ACCEPT
+    iptables -A FORWARD -p TCP -d $host -s $Ganz -j ACCEPT
+done
 # Drop the rest.
 iptables -A FORWARD -j LOG
 iptables -A FORWARD -j REJECT
@@ -253,12 +265,14 @@ iptables -A FORWARD -j REJECT
 # chain, but PREROUTING happens before normal INPUT/FORWARD rule processing.
 # -- rgr, 21-Aug-03.]
 #
-# Do transparent proxying of Web requests from Jan's computer.
+# Do transparent proxying of Web requests from the Windows computers.
 iptables -t nat -F PREROUTING
 for tcp_proto in www https; do
-    iptables -t nat -A PREROUTING -i $int_iface -p tcp \
-		    -s $JAN --dport $tcp_proto \
-		    -j REDIRECT --to-port 3128
+    for host in $WINDOWS_MACHINES; do
+	iptables -t nat -A PREROUTING -i $int_iface -p tcp \
+			-s $host --dport $tcp_proto \
+			-j REDIRECT --to-port 3128
+    done
 done
 # Same for DNS queries, for all hosts, on both TCP and UDP.
 for ip_proto in tcp udp; do
@@ -279,7 +293,7 @@ fi
 # rule more general, since FORWARD also enforces the policy for us.  -- rgr,
 # 7-Jul-07.]
 iptables -t nat -F POSTROUTING
-for subnet in $TRUSTED_SUBNETS $JAN; do
+for subnet in $TRUSTED_SUBNETS $WINDOWS_MACHINES; do
     iptables -t nat -A POSTROUTING -s $subnet \
 		-o $ext_iface -d ! $INTERNAL_SUBNET \
 		-j SNAT --to-source $OUR_EXT_IP
