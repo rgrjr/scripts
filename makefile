@@ -24,8 +24,7 @@ published-modules = rename-into-tree.pm
 html-pages = ${published-scripts:.pl=.pl.html}
 
 base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts} ${vc-scripts}
-backup-scripts = backup.pl cd-dump.pl partition-backup-sizes.pl \
-		show-backups.pl svn-dump.pl vacuum.pl
+backup-scripts = backup.pl cd-dump.pl show-backups.pl svn-dump.pl vacuum.pl
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
 # rgr, 5-Dec-04.]
 root-scripts = xauth-local-host
