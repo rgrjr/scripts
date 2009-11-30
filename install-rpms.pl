@@ -7,14 +7,13 @@
 # $Id$
 
 use strict;
+use warnings;
+
 use Getopt::Long;
 use Pod::Usage;
 use Data::Dumper;
-require 'rpm.pm';
 
-my $revision = '$Revision$ ';
-our $VERSION = $revision =~ /([\d.]+)/ && $1;
-my $ID = '$Id$ ';
+require 'rpm.pm';
 
 # Command-line option variables.
 my $verbose_p = 0;
@@ -37,25 +36,23 @@ pod2usage(2) if $usage;
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
-warn "$0 version $VERSION:  $ID\n"
-    if $verbose_p;
-
 if (! %system_types_to_install) {
     $system_types_to_install{'noarch'}++;
-    # [this guesses the wrong thing for SuSE 8.1 on newer processors, since SuSE
-    # builds the RPMs so that they also run on older machines, hence the
-    # warning.  -- rgr, 20-Feb-04.]
     my $machine_name = `uname -m`;
     chomp($machine_name);
-    warn("$0:  Guessing that we need to install '*.$machine_name.rpm' ",
-	 "and '*.noarch.rpm' files.\n");
     $system_types_to_install{$machine_name}++;
+    if ($machine_name =~ /i\d86/) {
+	# Hack for the various Intel versions.  We have no hardware that (e.g.)
+	# requires i386 as opposed to i586, so we can treat these equivalently.
+	for my $name (qw(i386 i586 i686)) {
+	    $system_types_to_install{$name}++;
+	}
+    }
 }
-elsif ($verbose_p) {
-    warn("$0:  Installing ", 
-	 join(', ', map { "'*.$_.rpm'"; } sort(keys(%system_types_to_install))),
-	 " files.\n");
-}
+warn("$0:  Looking for ", 
+     join(', ', map { "'*.$_.rpm'"; } sort(keys(%system_types_to_install))),
+     " files to install/upgrade.\n")
+    if $verbose_p;
 
 ### Main program.
 
@@ -65,9 +62,9 @@ sub process_rpm_file {
     # Given an RPM file name, decide whether we need to install it.
     my $file = shift;
 
-    my $new_package = new rgrjr::RPM(file_name => $file);
+    my $new_package = rgrjr::RPM->new(file_name => $file);
     my $package_name = $new_package->name;
-    my $installed = as_installed rgrjr::RPM($package_name);
+    my $installed = rgrjr::RPM->as_installed($package_name);
     my $other_version = $rpms_to_install{$package_name};
     my $install_p = '';
     warn("[checking $package_name file $file vs installed ",
