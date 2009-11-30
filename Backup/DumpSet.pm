@@ -77,27 +77,33 @@ sub find_dumps {
 sub mark_current_entries {
     my ($self) = @_;
 
-    my $current_p = 0;
-    my $last_backup_level = 10;
-    my $last_pfx_date = '';
+    # First, extract entries by prefix.  [Pity we don't store them that way.
+    # -- rgr, 30-Nov-09.]
+    my %entries_from_prefix;
     my $dumps_from_date = $self->dumps_from_date;
-    # First, process entries backwards by date; the most recent one is always
-    # current.
     for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
 	my $entries = $dumps_from_date->{$date};
-	for my $entry (sort { $a->entry_cmp($b); } @$entries) {
-	    my $pfx_date = join('-', $entry->prefix, $entry->date);
-	    my $current_level = $entry->level;
-	    my $listing = $entry->listing;
-	    $current_p = ($pfx_date eq $last_pfx_date
-			  # same dump, no change in $current_p.
-			  ? $current_p
-			  # put a star if more comprehensive than the last.
-			  : $current_level < $last_backup_level);
+	for my $entry (@$entries) {
+	    push(@{$entries_from_prefix{$entry->prefix}}, $entry);
+	}
+    }
+
+    # Detect currency within each prefix separately.
+    for my $prefix (keys(%entries_from_prefix)) {
+	my $current_p = 0;
+	my $last_backup_level = 10;
+	# Process entries backwards by date and level; the most recent one is
+	# always current.
+	for my $entry (sort { $a->entry_cmp($b);
+		       } @{$entries_from_prefix{$prefix}}) {
+	    my $level = $entry->level;
+	    if ($level != $last_backup_level) {
+		# put a star if more comprehensive than the last.
+		$current_p = $level < $last_backup_level;
+	    }
 	    $entry->current_p($current_p);
-	    $last_backup_level = $current_level
+	    $last_backup_level = $level
 		if $current_p;
-	    $last_pfx_date = $pfx_date;
 	}
     }
 }

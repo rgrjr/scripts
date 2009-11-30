@@ -118,14 +118,17 @@ sub new_from_file {
 }
 
 sub entry_cmp {
-    # This sorts first by level backwards (if someone performs backups at two
-    # different levels on the same day, the second is usually an extracurricular
-    # L9 dump on top of the other), then by catalog_p (to put the catalogs
-    # first), and finally by index (for when a single backup is split across
-    # multiple files).
+    # This sorts first by date backwards, then by level backwards (if someone
+    # performs backups at two different levels on the same day, the second is
+    # usually an extracurricular L9 dump on top of the other), then prefix
+    # alphabetically, then by catalog_p (to put the catalogs first), and
+    # finally by index (for when a single backup is split across multiple
+    # files).
     my ($self, $other) = @_;
 
-    $other->level <=> $self->level
+    $other->date cmp $self->date
+	|| $other->level <=> $self->level
+	|| $self->prefix cmp $other->prefix
 	|| ($other->catalog_p || 0) <=> ($self->catalog_p || 0)
 	|| $self->index <=> $other->index;
 }
