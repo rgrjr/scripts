@@ -214,15 +214,28 @@ for my $header_name (qw(sender from)) {
     for my $header ($message->get($header_name)) {
 	# Get rid of RFC822 comments first, so we are not confused by commas in
 	# comments.  Parentheses nest.
-	while ($header =~ s/\([^()]*\)//g) {
-	    # Keep matching.
+	while ($header =~ s/\(([^()]*)\)//g) {
+	    my $comment = $1;
+	    # If a comment in a header intended to identify the sender has one
+	    # of our host names, then that is probably a forgery.
+	    ensure_nonlocal_host($comment, $header_name)
+		if $comment;
 	}
 	$header =~ s/\"[^""]*\"//g;
 	for my $address (split(/\s*,\s*/, $header)) {
-	    if ($address =~ /<([^<>]+)>/) {
-		ensure_nonlocal_host($1, $header_name);
+	    if ($address =~ /(.*)<([^<>]+)>(.*)/) {
+		my ($before, $addr, $after) = $address =~ //;
+		$addr =~ s/\s+//g;
+		ensure_nonlocal_host($addr, $header_name);
+		# We also need to do the stuff outside the angle brackets,
+		# since TMDA uses those to match against whitelisted senders.
+		ensure_nonlocal_host($before, $header_name)
+		    if $before;
+		ensure_nonlocal_host($after, $header_name)
+		    if $after; 
 	    }
 	    else {
+		$address =~ s/\s+//g;
 		ensure_nonlocal_host($address, $header_name);
 	    }
 	}
