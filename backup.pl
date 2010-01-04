@@ -48,8 +48,11 @@ my ($dar_p, $dump_program, $restore_program);
 sub do_or_die {
     # Utility function that executes the args and insists on success.  Also
     # responds to $test_p and $verbose_p values.
-    my $ignore_return_code_p = $_[0] eq '-ignore-return';
-    shift if $ignore_return_code_p;
+    my $ignore_return_code = 0;
+    if ($_[0] eq 'ignore_code') {
+	shift;
+	$ignore_return_code = shift;
+    }
 
     warn("$0:  Executing '", join(' ', @_), "'\n")
 	if $test_p || $verbose_p;
@@ -59,29 +62,12 @@ sub do_or_die {
     elsif (system(@_) == 0) {
 	1;
     }
-    elsif ($dar_p && (11 << 8) == $?) {
-	# dar returned an exit code of 11, which means (from the "man" page):
-	#
-	#    some saved files have changed while dar was reading them, this may
-	#    lead the data saved for this file not correspond to a valid state
-	#    for this file.
-	#
-	# Which means the backup is not helpful for recovering this file, but
-	# the other files are still good, and this file will surely get put on
-	# the next backup.  So, since dar will have already printed a message,
-	# we just ignore these.
-	1;
-    }
-    elsif ($ignore_return_code_p && !($? & 255)) {
-	warn("$0:  Executing '$_[0]' failed:  Code $?\n",
-	     ($verbose_p
-	      # no sense duplicating this.
-	      ? ()
-	      : ("Command:  '", join(' ', @_), "'\n")));
+    elsif (($ignore_return_code << 8) == $?) {
+	# We assume the backup program has already printed a message.
 	1;
     }
     else {
-	die("$0:  Executing '$_[0]' failed:  $?\n",
+	die("$0:  Executing '$_[0]' failed:  Code $?\n",
 	    ($verbose_p
 	     # no sense duplicating this.
 	     ? ()
@@ -390,8 +376,18 @@ else {
 	# Turn this into a proper stem.
 	$reference_file_stem =~ s/\.\d+\.dar$//;
     }
-    do_or_die($dump_program,
-	      '-c', $dump_file, @dar_options,
+    # If dar returns an exit code of 11, it means (from the "man" page):
+    #
+    #    some saved files have changed while dar was reading them, this may
+    #    lead the data saved for this file not correspond to a valid state
+    #    for this file.
+    #
+    # Which means the backup is not helpful for recovering this file, but
+    # the other files are still good, and this file will surely get put on
+    # the next backup.  So, since dar will have already printed a message,
+    # we just ignore these.
+    do_or_die(ignore_code => 11,
+	      $dump_program, '-c', $dump_file, @dar_options,
 	      ($dump_volume_size ? ('-s', $dump_volume_size.'K') : ()),
 	      ($reference_file_stem ? ('-A', $reference_file_stem) : ()),
 	      '-R', $mount_point);
@@ -411,7 +407,15 @@ else {
 
 print "Done creating $dump_file; verifying . . .\n";
 if ($dar_p) {
-    do_or_die('-ignore-return',
+    # According to the man page, dar returns 5 in the following circumstance
+    # (among others):
+    #
+    #     While comparing [-d], it is the case when a file in the archive does
+    #     not match the one in the filesystem.
+    #
+    # Since this just means that those files will still need saving in the next
+    # backup, that is not a problem.
+    do_or_die(ignore_code => 5,
 	      $dump_program, '-d', $dump_file, '-R', $mount_point);
 }
 else {
