@@ -92,17 +92,25 @@ sub mark_current_entries {
     for my $prefix (keys(%entries_from_prefix)) {
 	my $current_p = 0;
 	my $last_backup_level = 10;
+	my $last_date = '';
 	# Process entries backwards by date and level; the most recent one is
 	# always current.
 	for my $entry (sort { $a->entry_cmp($b);
 		       } @{$entries_from_prefix{$prefix}}) {
 	    my $level = $entry->level;
-	    if ($level != $last_backup_level) {
-		# put a star if more comprehensive than the last.
+	    my $date = $entry->date;
+	    if ($level == $last_backup_level) {
+		# We are still current only if part of the same backup.
+		# [Better would be for Backup::Entry to include all files of a
+		# multifile dump.  -- rgr, 4-May-10.]
+		$current_p = $entry->date eq $last_date;
+	    }
+	    else {
+		# We are still current iff more comprehensive than the last.
 		$current_p = $level < $last_backup_level;
 	    }
 	    $entry->current_p($current_p);
-	    $last_backup_level = $level
+	    ($last_backup_level, $last_date) = ($level, $date)
 		if $current_p;
 	}
     }
