@@ -230,7 +230,7 @@ sub copy_one_file {
 	my $from_md5 = site_file_md5($from);
 	my $to_md5 = site_file_md5($to);
 	warn "[got checksums '$from_md5' and '$to_md5']\n"
-	    if $verbose_p;
+	    if $verbose_p > 1;
 	if ($from_md5 ne $to_md5 && ! $test_p) {
 	    # attempt cleanup (locally, anyway).
 	    unlink($to)
