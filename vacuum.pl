@@ -27,7 +27,7 @@ $warn =~ s@.*/@@;
 my $scp_program_name = '/usr/bin/scp';
 my $from = '';		# source directory; required arg.
 my $to = '';		# destination directory; required arg.
-my $prefix = '';	# file name prefix, to limit file choices.
+my @prefixes;		# file name prefix, to limit file choices.
 my $since;		# date string, e.g. 200611 or 20061203.
 my $mode = 'cp';	# 'mv' or 'cp'.
 my $min_free_left = 1024;	# min. disk space in MB to leave after copy.
@@ -38,7 +38,7 @@ my $help = 0;
 GetOptions('test+' => \$test_p, 'verbose+' => \$verbose_p,
 	   'usage|?' => \$usage, 'help' => \$help,
 	   'from=s' => \$from, 'to=s' => \$to,
-	   'mode=s' => \$mode, 'prefix=s' => \$prefix,
+	   'mode=s' => \$mode, 'prefix=s' => \@prefixes,
 	   'since=s' => \$since,
 	   'min-free-left=i' => \$min_free_left)
     or pod2usage(-verbose => 0);
@@ -249,10 +249,21 @@ sub copy_one_file {
 }
 
 sub copy_backup_files {
-    my ($from, $to, $prefix) = @_;
+    my ($from, $to) = @_;
 
-    my ($total_space, @need_copying) 
-	= find_files_to_copy($from, $to, $prefix);
+    my ($total_space, @need_copying);
+    if (@prefixes) {
+	for my $prefix (@prefixes) {
+	    my ($pfx_space, @pfx_files)
+		= find_files_to_copy($from, $to, $prefix);
+	    $total_space += $pfx_space;
+	    push(@need_copying, @pfx_files);
+	}
+    }
+    else {
+	# If we want them all, list them all at once.
+	($total_space, @need_copying) = find_files_to_copy($from, $to, '');
+    }
     if (@need_copying == 0) {
 	warn "$0:  Nothing to copy.\n"
 	    if $verbose_p;
@@ -284,7 +295,7 @@ sub copy_backup_files {
       } @need_copying;
 }
 
-copy_backup_files($from, $to, $prefix);
+copy_backup_files($from, $to);
 
 __END__
 
@@ -296,7 +307,7 @@ vacuum.pl - Suck backup files across the network.
 
     vacuum.pl [--test] [--verbose] [--usage|-?] [--help]
               [--from=<source-dir>] [--to=<dest-dir>]
-              [--mode=(mv|cp)] [--prefix=<tag>]
+              [--mode=(mv|cp)] [--prefix=<tag> ... ]
               [--since=<date-string>] [--min-free-left=<size>]
 
 =head1 DESCRIPTION
@@ -452,7 +463,8 @@ deleted after a successful copy.
 =item B<--prefix>
 
 Specifies the dump file prefix tag; may be used to select a subset of
-files to transfer.
+files to transfer.  May be specified more than once.  Unfortunately,
+wildcards are not supported.
 
 =item B<--since>
 
