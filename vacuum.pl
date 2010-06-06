@@ -182,7 +182,10 @@ sub find_files_to_copy {
     my ($from, $to, $prefix) = @_;
 
     my @to = Backup::DumpSet->site_list_files($to, $prefix);
-    my %to = map { $_->file => $_; } @to;
+    my $dest_latest_full;
+    my %to = map { $dest_latest_full = $_
+		       if $_->level == 0;
+		   $_->file => $_; } @to;
     my @from = Backup::DumpSet->site_list_files($from, $prefix);
 
     my @need_copying = ();
@@ -195,6 +198,16 @@ sub find_files_to_copy {
 	}
 	elsif (defined($to{$name})) {
 	    # already there.
+	}
+	elsif ($dest_latest_full && $from->level == 0
+	       && $dest_latest_full->date > $from->date) {
+	    # Superceded full dump.  This can happen when we are copying from a
+	    # partition with an older full dump, when the current full dump is
+	    # not present.  This is, of course, a kludge.  -- rgr, 5-Jun-10.
+	    warn("$0:  Superceded full dump:  Date of ", $from->file, ' is ',
+		 $from->date, ' which is older than ',
+		 $dest_latest_full->file, ".\n")
+		if $verbose_p;
 	}
 	else {
 	    # needs copying.
