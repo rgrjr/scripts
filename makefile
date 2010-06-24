@@ -219,5 +219,6 @@ publish:	${published-scripts} ${published-modules} ${html-pages}
 clean:
 	rm -f pod2htm*.tmp ${html-pages}
 tags:
-	find . -name '*.p[lm]' -o -name '*.rb' \
+	find . -name '*.p[lm]' -o -name '*.rb' -o -name '*.el' \
+		-o -name '*.erl' -o -name '*.py' \
 	    | etags --regex '/[ \t]*\(class\|module\|def\) +\([^ \t()<>]+\)/\2/' -
