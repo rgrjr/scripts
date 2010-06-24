@@ -7,27 +7,30 @@
 # rename_subtree: fix bug: return values in ! -e case.  -- rgr, 27-Oct-02.
 #
 
+use strict;
+use warnings;
+
 sub rename_subtree {
     # Returns 1 if moved successfully, else 0.
     my ($from, $to, $delete_dir_p) = @_;
 
     if (! -e $to) {
 	# should always be safe to rename in this case.
-	# warn "$warn:  Renamed 'to-write/$file' to 'written/$file'.\n";
+	# warn "$0:  Renamed 'to-write/$file' to 'written/$file'.\n";
 	# return 1;
 	if (! rename($from, $to)) {
-	    warn "$warn:  Can't rename '$from' to '$to':  $!";
+	    warn "$0:  Can't rename '$from' to '$to':  $!";
 	    0;
 	}
 	elsif ($verbose_p) {
-	    warn "$warn:  Renamed '$from' to '$to'.\n";
+	    warn "$0:  Renamed '$from' to '$to'.\n";
 	    1;
 	}
     }
     elsif (-d $to && -d $from) {
 	# directory-to-directory case
 	my $files_left = 0;
-	warn "$warn:  Renaming '$from' contents into '$to.\n"
+	warn "$0:  Renaming '$from' contents into '$to.\n"
 	    if $verbose_p;
 	opendir(FROM, $from) || die;
 	foreach my $file (readdir(FROM)) {
@@ -36,14 +39,14 @@ sub rename_subtree {
 		$files_left++;
 	    }
 	}
-	rmdir($from) || warn "$warn:  rmdir('$from') failed:  $!"
+	rmdir($from) || warn "$0:  rmdir('$from') failed:  $!"
 	    if $delete_dir_p && $files_left == 0;
-	warn "$warn:  Done renaming '$from' to '$to'.\n"
+	warn "$0:  Done renaming '$from' to '$to'.\n"
 	    if $verbose_p;
-	$files_left == 0;
+	$files_left ? 0 : 1;
     }
     else {
-	warn "$warn:  Can't rename $from on top of $to; skipping.\n";
+	warn "$0:  Can't rename $from on top of $to; skipping.\n";
 	0;
     }
 }
