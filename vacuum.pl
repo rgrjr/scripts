@@ -19,7 +19,7 @@ use Getopt::Long;
 use Pod::Usage;
 
 use Backup::DumpSet;
-use Backup::Entry;
+use Backup::Slice;
 
 my $warn = $0;
 $warn =~ s@.*/@@;

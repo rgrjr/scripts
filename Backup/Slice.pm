@@ -1,10 +1,11 @@
-### Base class for backup objects.
+### Backup slice objects.
 #
-# [created.  -- rgr, 3-Mar-08.]
+# [created (as Backup::Entry).  -- rgr, 3-Mar-08.]
+# [renamed to Backup::Slice.  -- rgr, 28-Jun-10.]
 #
 # $Id$
 
-package Backup::Entry;
+package Backup::Slice;
 
 use strict;
 use warnings;
@@ -14,7 +15,7 @@ use base qw(Backup::Thing);
 # define instance accessors.
 BEGIN {
     no strict 'refs';
-    Backup::Entry->make_class_slots
+    Backup::Slice->make_class_slots
 	(qw(prefix date level file base_name catalog_p index current_p));
 }
 
@@ -92,7 +93,7 @@ sub new_from_file {
 	my ($pfx, $date, $level, $alpha_index) = $file =~ //;
 	my $index = $alpha_index ? ord($alpha_index)-ord('a')+1 : 0;
 	return
-	    Backup::Entry->new(prefix => $pfx,
+	    Backup::Slice->new(prefix => $pfx,
 			       date => $date,
 			       level => $level,
 			       index => $index,
@@ -102,12 +103,12 @@ sub new_from_file {
 	# DAR format.
 	my ($pfx, $date, $level, $cat_p, $index) = $file =~ //;
 	return
-	    Backup::Entry->new(prefix => $pfx,
-			       date => $date,
-			       level => $level,
-			       catalog_p => ($cat_p ? 1 : 0),
-			       index => $index,
-			       file => $file);
+	    $class->new(prefix => $pfx,
+			date => $date,
+			level => $level,
+			catalog_p => ($cat_p ? 1 : 0),
+			index => $index,
+			file => $file);
     }
 }
 

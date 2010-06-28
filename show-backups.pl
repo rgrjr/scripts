@@ -18,7 +18,7 @@ use Getopt::Long;
 use Pod::Usage;
 
 use Backup::DumpSet;
-use Backup::Entry;
+use Backup::Slice;
 
 my $verbose_p = 0;		# this doesn't actually do anything yet.
 my $usage = 0;

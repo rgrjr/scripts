@@ -9,7 +9,7 @@ package Backup::DumpSet;
 use strict;
 use warnings;
 
-use Backup::Entry;
+use Backup::Slice;
 
 use base qw(Backup::Thing);
 
@@ -53,7 +53,7 @@ sub find_dumps {
     my $dump_set_from_prefix = { };
     while (<$in>) {
 	chomp;
-	my $entry = Backup::Entry->new_from_file($_);
+	my $entry = Backup::Slice->new_from_file($_);
 	next
 	    unless $entry;
 	my $set = $dump_set_from_prefix->{$prefix};
@@ -95,7 +95,7 @@ sub mark_current_entries {
 	    my $date = $entry->date;
 	    if ($level == $last_backup_level) {
 		# We are still current only if part of the same backup.
-		# [Better would be for Backup::Entry to include all files of a
+		# [Better would be for Backup::Slice to include all files of a
 		# multifile dump.  -- rgr, 4-May-10.]
 		$current_p = $entry->date eq $last_date;
 	    }
@@ -166,8 +166,8 @@ sub site_list_files {
 	    next;
 	}
 
-	# Turn that into a Backup::Entry object.
-	my $new_entry = Backup::Entry->new_from_file($file);
+	# Turn that into a Backup::Slice object.
+	my $new_entry = Backup::Slice->new_from_file($file);
 	next
 	    unless $new_entry;
 	next

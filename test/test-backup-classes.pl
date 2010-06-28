@@ -8,7 +8,7 @@ use lib '.';	# so that we test the right thing.
 use Test::More tests => 2 + 13*6 + 2 + 7*2 + 2*14;
 
 BEGIN {
-    use_ok('Backup::Entry');
+    use_ok('Backup::Slice');
     use_ok('Backup::DumpSet');
 }
 
@@ -16,7 +16,7 @@ sub test_new {
     # Six tests per invocation.
     my ($raw_file, $prefix, $date, $level, $index, $catalog_p) = @_;
 
-    my $e1 = Backup::Entry->new_from_file($raw_file);
+    my $e1 = Backup::Slice->new_from_file($raw_file);
     ok($e1, "parsed '$raw_file'");
     ok($e1->prefix eq $prefix, "prefix is '$prefix'");
     ok($e1->date eq $date, "date is '$date'");
