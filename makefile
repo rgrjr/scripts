@@ -55,7 +55,7 @@ all:
 	@echo Nobody here but us scripts.
 	@echo So tell me what you really want to do, e.g. \"make publish\".
 
-test:	test-chrono-log test-email
+test:	test-chrono-log test-email test-backup
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 			test-cvs-chrono-log-3 \
@@ -154,6 +154,10 @@ test-postfix-forged-address:
 		${modgen-config-options} --not < email/modgen-external.msg
 	SENDER=spammer@modulargenetics.com email/forged-local-address.pl \
 		${modgen-config-options} < email/modgen-external.msg
+
+test-backup:
+	perl -MTest::Harness -e 'runtests(@ARGV);' \
+		test/test-backup-classes.pl
 
 # This can't be put on the "test" target because it's too hard to make test
 # cases that last more than a day.
