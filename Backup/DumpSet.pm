@@ -14,15 +14,9 @@ use Backup::Entry;
 use base qw(Backup::Thing);
 
 # define instance accessors.
-sub BEGIN {
-  no strict 'refs';
-  for my $method (qw(prefix dumps_from_date)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift;
-      @_ ? ($self->{$field} = shift) : $self->{$field};
-    }
-  }
+BEGIN {
+    no strict 'refs';
+    Backup::DumpSet->make_class_slots(qw(prefix dumps_from_date));
 }
 
 sub new {

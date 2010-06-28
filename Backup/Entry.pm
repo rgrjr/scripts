@@ -12,16 +12,10 @@ use warnings;
 use base qw(Backup::Thing);
 
 # define instance accessors.
-sub BEGIN {
-  no strict 'refs';
-  for my $method (qw(prefix date level file base_name
-                     catalog_p index current_p)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift;
-      @_ ? ($self->{$field} = shift) : $self->{$field};
-    }
-  }
+BEGIN {
+    no strict 'refs';
+    Backup::Entry->make_class_slots
+	(qw(prefix date level file base_name catalog_p index current_p));
 }
 
 sub new {
