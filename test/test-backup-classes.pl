@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+use lib '.';	# so that we test the right thing.
+
 use Test::More tests => 2 + 13*6 + 2 + 7*2 + 2*14;
 
 BEGIN {
