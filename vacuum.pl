@@ -151,8 +151,15 @@ sub site_file_delete {
 	$result = 1 != unlink($file)
 	    if ! $test_p;
     }
-    die "$warn: could not delete '$file':  $!\n"
-	if $result && ! $no_error_p;
+    if (! $result) {
+	# Success.
+    }
+    elsif ($no_error_p) {
+	warn "$warn: could not delete '$file':  $!\n";
+    }
+    else {
+	die "$warn: could not delete '$file':  $!\n";
+    }
     $result;
 }
 
@@ -238,21 +245,22 @@ sub copy_one_file {
 	die "$warn:  Oops; copy of $from to $to got result $result; died"
 	    if $result;
     }
-    # now verify the copy.
+
+    # Now verify the copy.
     if ($command[0] ne '/bin/mv') {
 	my $from_md5 = site_file_md5($from);
 	my $to_md5 = site_file_md5($to);
 	warn "[got checksums '$from_md5' and '$to_md5']\n"
 	    if $verbose_p > 1;
 	if ($from_md5 ne $to_md5 && ! $test_p) {
-	    # attempt cleanup (locally, anyway).
-	    unlink($to)
-		if $to !~ /:/;
+	    # attempt cleanup.
+	    site_file_delete($to, 1);
 	    die("$warn:  $from (checksum '$from_md5') didn't copy ", 
-		"to $to (checksum '$from_md5')\n");
+		"to $to (checksum '$to_md5')\n");
 	}
     }
-    # now it is safe to delete the source copy, if we were moving it over the
+
+    # Now it is safe to delete the source copy, if we were moving it over the
     # network.
     if (! $local_to_local_p && $mode eq 'mv') {
 	site_file_delete($from);
