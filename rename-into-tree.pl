@@ -23,4 +23,4 @@ while (@ARGV) {
 die "$warn:  Missing 'from' and 'to' arguments.\nDied"
     unless defined($to);
 
-rename_subtree($from, $to, $delete_dir_p);
+rename_subtree($from, $to, $delete_dir_p, $verbose_p);

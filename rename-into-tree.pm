@@ -12,7 +12,7 @@ use warnings;
 
 sub rename_subtree {
     # Returns 1 if moved successfully, else 0.
-    my ($from, $to, $delete_dir_p) = @_;
+    my ($from, $to, $delete_dir_p, $verbose_p) = @_;
 
     if (! -e $to) {
 	# should always be safe to rename in this case.
@@ -33,9 +33,10 @@ sub rename_subtree {
 	warn "$0:  Renaming '$from' contents into '$to.\n"
 	    if $verbose_p;
 	opendir(FROM, $from) || die;
-	foreach my $file (readdir(FROM)) {
-	    next if $file eq '.' || $file eq '..';
-	    if (! rename_subtree("$from/$file", "$to/$file", 1)) {
+	for my $file (readdir(FROM)) {
+	    next
+		if $file eq '.' || $file eq '..';
+	    if (! rename_subtree("$from/$file", "$to/$file", 1, $verbose_p)) {
 		$files_left++;
 	    }
 	}

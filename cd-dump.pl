@@ -318,7 +318,7 @@ for my $file (@files_to_write) {
 	# cmp/diff will have generated a message.
 	warn "$warn:  Leaving '$to_write_file' in place.\n";
     }
-    elsif (! rename_subtree($to_write_file, $written_file, 1)) {
+    elsif (! rename_subtree($to_write_file, $written_file, 1, $verbose_p)) {
 	# rename_subtree issues its own warning if it fails.  -- rgr, 27-Oct-02.
 	# warn "$warn:  Can't rename '$to_write_file':  $?";
     }
