@@ -23,7 +23,8 @@ published-scripts = backup.pl cd-dump.pl vacuum.pl
 published-modules = rename-into-tree.pm
 html-pages = ${published-scripts:.pl=.pl.html}
 
-base-scripts = ${backup-scripts} ${log-scripts} ${install-scripts} ${vc-scripts}
+base-scripts =  ${backup-scripts} ${log-scripts} ${install-scripts} \
+		${vc-scripts} ${misc-scripts}
 backup-scripts = backup.pl cd-dump.pl show-backups.pl svn-dump.pl vacuum.pl
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
 # rgr, 5-Dec-04.]
@@ -41,6 +42,8 @@ install-scripts = install.pl install-rpms.pl copy-tree
 # utility scripts for version control systems.
 vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
+# random stuff that doesn't belong anywhere else.
+misc-scripts =	sdiff.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
 # Note that tar-backup.pm is not used by anything at the moment.
