@@ -4,7 +4,7 @@
 #
 # POD documentation at the bottom.
 #
-# Copyright (C) 2000-2008 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+# Copyright (C) 2000-2011 by Bob Rogers <rogers@rgrjr.dyndns.org>.
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
@@ -32,7 +32,6 @@ my $dump_name = '';
 # [$dump_dir is the scratch directory to which we write, $destination_dir is the
 # final directory to which we rename.  -- rgr, 17-Nov-02.]
 my $dump_dir = '';
-my $cd_p = 1;
 my $destination_dir = '';
 my $dump_volume_size = '';
 my ($dump_partition, $level);
@@ -80,12 +79,13 @@ sub check_for_existing_dump_files {
     my ($dump_name, $dump_dir, $destination_dir) = @_;
 
     my $dump_file = "$dump_dir/$dump_name";
-    die "$0:  '$dump_file' already exists; remove it if you want to overwrite.\n"
-	if -e $dump_file;
-    my $cd_dump_file = "$destination_dir/$dump_name";
-    die("$0:  '$cd_dump_file' already exists; ",
+    die("$0:  '$dump_file' already exists; ",
 	"remove it if you want to overwrite.\n")
-	if $destination_dir && -e $cd_dump_file;
+	if -e $dump_file;
+    my $dest_dump_file = "$destination_dir/$dump_name";
+    die("$0:  '$dest_dump_file' already exists; ",
+	"remove it if you want to overwrite.\n")
+	if -e $dest_dump_file;
 }
 
 sub maybe_find_prog {
@@ -150,9 +150,7 @@ GetOptions('date=s' => \$file_date,
 	   'file-name=s' => \$dump_name,
 	   'name-prefix=s' => \$partition_abbrev,
 	   'dump-dir=s' => \$dump_dir,
-	   'cd-dir=s' => \$destination_dir,
 	   'dest-dir=s' => \$destination_dir,
-	   'cd!' => \$cd_p,
 	   'test+' => \$test_p, 'verbose+' => \$verbose_p,
 	   'volsize=i' => \$dump_volume_size,
 	   'partition=s' => \$dump_partition,
@@ -216,33 +214,22 @@ pod2usage("$0:  '".shift(@ARGV)."' is an extraneous positional arg.")
 
 ### Compute some defaults.
 
-# [this is broken; there's no way to shut off the $dump_volume_size defaulting, 
-# and leave it unlimited.  -- rgr, 20-Aug-03.]
-if ($cd_p) {
-    # the CD-R and -RW disks are supposed to be 700MB, but leave a little room.
-    # [actually, dump appears to leave about 0.1% by itself.  and 712000kB is
-    # actually a bit over 695MB, which should be plenty.  -- rgr, 1-Jan-02.]
-    # [use 680000 blocks for nominal 650MB disks.  -- rgr, 18-Dec-04.]
-    $dump_volume_size ||= 680000;
-    $dump_dir ||= '/scratch/backups/cd';
-}
-else {
-    # Assume a Zip100 drive.  The "-B 94000" forces it to nearly fill the
-    # [Zip100] disk.  -- rgr, 20-Jan-00.
-    $dump_volume_size ||= 94000;
-    $dump_dir ||= '/mnt/zip';
-}
-if ($destination_dir) {
-    pod2usage("$0:  --dest-dir value must be an existing writable directory.")
-	unless -d $destination_dir && -w $destination_dir;
-    if (! $dump_dir || $dump_dir eq $destination_dir) {
-	# only one directory specified, or the same directory specified twice.
-	# skip the rename step.
-	$dump_dir = $destination_dir;
-	$destination_dir = '';
+$destination_dir ||= '.';
+pod2usage("$0:  --dest-dir value must be an existing writable directory.")
+    unless -d $destination_dir && -w $destination_dir;
+if (! $dump_dir) {
+    # $dump_dir defaults to "tmp" under $destination_dir.
+    $dump_dir = $destination_dir;
+    $dump_dir .= '/'
+	unless $dump_dir =~ m@/$@;
+    $dump_dir .= 'tmp';
+    if (! -e $dump_dir) {
+	mkdir($dump_dir)
+	    or die("$0:  Could not create temp dir '$dump_dir':  $!");
     }
 }
-$dump_dir ||= '.';
+pod2usage("$0:  --dest-dir must be different from --dump-dir.")
+    if $dump_dir eq $destination_dir;
 pod2usage("$0:  --dump-dir value '$dump_dir' must be "
 	  ."an existing writable directory.")
     unless -d $dump_dir && -w $dump_dir;
@@ -448,16 +435,14 @@ else {
 
 ### Rename dump files to their final destination.
 
-if ($destination_dir) {
-    for my $name (@dump_names) {
-	my $dump_file = "$dump_dir/$name";
-	my $cd_dump_file = "$destination_dir/$name";
-	rename($dump_file, $cd_dump_file)
-	    || die("$0:  rename('$dump_file', '$cd_dump_file') failed:  $?")
-	        unless $test_p;
-	warn "$0:  Renamed '$dump_file' to '$cd_dump_file'.\n"
-	    if $test_p || $verbose_p;
-    }
+for my $name (@dump_names) {
+    my $dump_file = "$dump_dir/$name";
+    my $dest_dump_file = "$destination_dir/$name";
+    rename($dump_file, $dest_dump_file)
+	|| die("$0:  rename('$dump_file', '$dest_dump_file') failed:  $?")
+	    unless $test_p;
+    warn "$0:  Renamed '$dump_file' to '$dest_dump_file'.\n"
+	if $test_p || $verbose_p;
 }
 if ($dar_p && $level == 0) {
     print "Creating DAR catalog . . .\n";
@@ -484,9 +469,8 @@ backup.pl -- Automated interface to create `dump/restore' or `dar' backups.
 	      [--dump-program=<dump-prog>] [--[no]dar]
 	      [--restore-program=<restore-prog>]
 	      [--gzip | -z] [--bzip2 | -y]
-              [--cd-dir=<mv-dir>] [--dump-dir=<dest-dir>]
-	      [--dest-dir=<destination-dir>]
-              [--[no]cd] [--volsize=<max-vol-size>]
+	      [--dest-dir=<destination-dir>] [--dump-dir=<dest-dir>]
+              [--volsize=<max-vol-size>]
 	      [--partition=<block-special-device> | <partition> ]
               [--level=<digit> | <level>]
 
@@ -565,14 +549,6 @@ file suffix.
 
 =over 4
 
-=item B<--cd>
-
-=item B<--nocd>
-
-Specifies whether we should expect that the dump file will eventually be
-written to a CD-R or CD-RW disk.  This affects the defaults for
-C<--dump-dir> and C<--volsize>.  The default is C<--cd>.
-
 =item B<--test>
 
 If specified, no commands will be executed.  Instead, the commands will
@@ -649,21 +625,21 @@ compression.  The optional integer values are for the compression
 level, from 1 to 9; if omitted, a value of 9 (maximum compresssion) is
 used.  Note that these options are only available for DAR.
 
-=item B<--dump-dir>
-
-Specifies the directory to which to write the dump file.  For CD backups
-(the default), this defaults to C</scratch/backups/cd>; for all others, it
-defaults to C</mnt/zip>.
-
-=item B<--cd-dir>
+=item B<--dest-dir>
 
 If specified, names a directory to which we should move the dump file
-after it has been verified successfully.  It doesn't have anything to
-do with CDs per se, it's just that the C<--cd-dir> can be used as the
-communication interface to C<cd-dump.pl> when both are running as cron
-jobs.  If there are files in this directory, then C<cd-dump.pl>
-assumes they are good backups and need to be written to the CD; if
-not, then C<cd-dump.pl> won't bother to waste the bits.
+after it has been verified successfully.  This directory must exist
+and be writable by the user running C<backup.pl> The default is "."
+(the current directory).
+
+=item B<--dump-dir>
+
+Specifies a temporary directory to which to write the dump file.  If
+the backup fails, any dump in progress is left in this directory to
+aid debugging, without interfering with any C<vacuum.pl> job that is
+supposed to pick up completed dumps.  The C<--dump-dir> defaults to
+C<tmp> underneath C<--dest-dir>, and must be on the same partition as
+C<--dest-dir>; it is created if it does not exist.
 
 =item B<--partition>
 
@@ -718,6 +694,8 @@ greatly simplify backup C<crontab> entries; only one would be needed.
 C<backup.pl> should refuse to proceed if the size of the dumps it
 produces are expected to be larger than the free space remaining on
 the disk.  If you can't finish, there's no point getting started.
+Unfortunately, computing the likely size without actually doing the
+dump is impossible if compression is used.
 
 The C<--bzip2> and C<--gzip> options should be supported for
 dump/restore as well.
@@ -746,7 +724,7 @@ If you find any more, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2008 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2000-2011 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
