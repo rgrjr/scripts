@@ -1,4 +1,4 @@
-### Base class for backup objects.
+### Sets of backup objects.
 #
 # [created.  -- rgr, 3-Mar-08.]
 #
@@ -15,7 +15,6 @@ use base qw(Backup::Thing);
 
 # define instance accessors.
 BEGIN {
-    no strict 'refs';
     Backup::DumpSet->make_class_slots(qw(prefix dumps_from_date));
 }
 
@@ -32,7 +31,7 @@ sub add_dump_entry {
     my ($self, $entry) = @_;
 
     push(@{$self->dumps_from_date->{$entry->date || die}}, $entry);
-    $entry;
+    return $entry;
 }
 
 ### Finding backup dumps on disk.
@@ -204,3 +203,57 @@ sub site_list_files {
 }
 
 1;
+
+__END__
+
+=head1 Backup::DumpSet
+
+=head2 Slots and methods
+
+=head3 add_dump_entry
+
+Add a new C<Backup::Slice>.  Semi-internal.
+
+=head3 current_entries
+
+After doing C<mark_current_entries>, return a list of current 
+backup slices.
+
+=head3 dumps_from_date
+
+Returns or sets a hash that maps date strings (the 8-digit format that
+is used in the backup file names) to an arrayref of C<Backup::Slice>
+objects.
+
+=head3 find_dumps
+
+Given as keyword options a C<prefix> (which defaults to "home") and a set
+of C<search_roots> (which defaults to "."), find all backups
+
+C<prefix> can be "*", in which case all dumps are found.  The return
+value is a hash of prefix to a C<Backup::DumpSet> object that contains
+all backups that have that prefix.  This is normally invoked as a
+class method.
+
+=head3 mark_current_entries
+
+Sets the C<current_p> slot for each C<Backup::Slice> object.  Each
+prefix is treated separately.
+
+=head3 new
+
+Takes slot initializers, and creates and returns a new
+C<Backup::DumpSet> object.
+
+=head3 prefix
+
+Returns or sets a string that names a backup file prefix.  This is
+only used if the dump set consists of only one prefix.
+
+=head3 site_list_files
+
+Parse directory listings, dealing with remote file syntax.  This is
+used by C<vacuum.pl>, and isn't very well integrated with the rest of
+the module.
+
+=cut
