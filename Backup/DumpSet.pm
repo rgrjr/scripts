@@ -75,10 +75,10 @@ sub find_dumps {
 	my $entry = Backup::Slice->new_from_file($_);
 	next
 	    unless $entry;
-	my $set = $dump_set_from_prefix->{$prefix};
+	my $set = $dump_set_from_prefix->{$entry->prefix};
 	if (! $set) {
-	    $set = $class->new(prefix => $prefix);
-	    $dump_set_from_prefix->{$prefix} = $set;
+	    $set = $class->new(prefix => $entry->prefix);
+	    $dump_set_from_prefix->{$entry->prefix} = $set;
 	}
 	$set->add_dump_entry($entry);
     }
