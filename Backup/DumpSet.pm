@@ -10,12 +10,14 @@ use strict;
 use warnings;
 
 use Backup::Slice;
+use Backup::Dump;
 
 use base qw(Backup::Thing);
 
 # define instance accessors.
 BEGIN {
-    Backup::DumpSet->make_class_slots(qw(prefix dumps_from_date));
+    Backup::DumpSet->make_class_slots(qw(prefix dumps_from_date
+                                         dumps_from_key dumps sorted_p));
 }
 
 sub new {
@@ -24,14 +26,32 @@ sub new {
     my $self = $class->SUPER::new(@_);
     $self->dumps_from_date({ })
 	unless $self->dumps_from_date;
+    die "bug"
+	unless $self->prefix;
     $self;
 }
 
 sub add_dump_entry {
-    my ($self, $entry) = @_;
+    my ($self, $slice) = @_;
 
-    push(@{$self->dumps_from_date->{$entry->date || die}}, $entry);
-    return $entry;
+    push(@{$self->dumps_from_date->{$slice->date || die}}, $slice);
+    my $key = $slice->dump_key;
+    my $dumps_from_key = $self->dumps_from_key;
+    $self->dumps_from_key($dumps_from_key = { })
+	unless $dumps_from_key;
+    my $dump = $dumps_from_key->{$key};
+    if (! $dump) {
+	$self->sorted_p(0);
+	$dump = Backup::Dump->new(prefix => $slice->prefix,
+				  date => $slice->date,
+				  level => $slice->level,
+				  base_name => $slice->base_name,
+				  slices => [ ]);
+	$self->dumps_from_key->{$key} = $dump;
+	push(@{$self->{_dumps}}, $dump);
+    }
+    push(@{$dump->slices}, $slice);
+    return $slice;
 }
 
 ### Finding backup dumps on disk.
@@ -67,64 +87,36 @@ sub find_dumps {
 
 ### Finding and extracting current entries.
 
-sub mark_current_entries {
+sub mark_current_dumps {
     my ($self) = @_;
 
-    # First, extract entries by prefix.  [Pity we don't store them that way.
-    # -- rgr, 30-Nov-09.]
-    my %entries_from_prefix;
-    my $dumps_from_date = $self->dumps_from_date;
-    for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
-	my $entries = $dumps_from_date->{$date};
-	for my $entry (@$entries) {
-	    push(@{$entries_from_prefix{$entry->prefix}}, $entry);
-	}
-    }
+    # Sort our "dumps" slot backwards in time.
+    my $dumps = $self->dumps || [ ];
+    $dumps = [ sort { $a->entry_cmp($b); } @{$self->dumps} ];
+    $self->dumps($dumps);
+    $self->sorted_p(1);
 
-    # Detect currency within each prefix separately.
-    for my $prefix (keys(%entries_from_prefix)) {
-	my $current_p = 0;
-	my $last_backup_level = 10;
-	my $last_date = '';
-	# Process entries backwards by date and level; the most recent one is
-	# always current.
-	for my $entry (sort { $a->entry_cmp($b);
-		       } @{$entries_from_prefix{$prefix}}) {
-	    my $level = $entry->level;
-	    my $date = $entry->date;
-	    if ($level == $last_backup_level) {
-		# We are still current only if part of the same backup.
-		# [Better would be for Backup::Slice to include all files of a
-		# multifile dump.  -- rgr, 4-May-10.]
-		$current_p = $entry->date eq $last_date;
-	    }
-	    else {
-		# We are still current iff more comprehensive than the last.
-		$current_p = $level < $last_backup_level;
-	    }
-	    $entry->current_p($current_p);
-	    ($last_backup_level, $last_date) = ($level, $date)
-		if $current_p;
-	}
+    # Process entries backwards by date and level; the most recent one is
+    # always current.
+    my $current_p = 0;
+    my $last_backup_level = 10;
+    for my $dump (@$dumps) {
+	my $level = $dump->level;
+	# We are still current iff more comprehensive than the last.
+	$current_p = $level < $last_backup_level;
+	$dump->current_p($current_p);
+	$last_backup_level = $level
+	    if $current_p;
     }
 }
 
-sub current_entries {
+sub current_dumps {
     my ($self) = @_;
 
-    $self->mark_current_entries();
-    my @current_entries;
-    my $dumps_from_date = $self->dumps_from_date;
-    # First, process entries backwards by date; the most recent one is always
-    # current.
-    for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
-	my $entries = $dumps_from_date->{$date};
-	for my $entry (sort { $a->entry_cmp($b); } @$entries) {
-	    push(@current_entries, $entry)
-		if $entry->current_p;
-	}
-    }
-    return @current_entries;
+    $self->mark_current_dumps()
+	unless $self->sorted_p;
+    my $dumps = $self->dumps || [ ];
+    return grep { $_->current_p; } @$dumps;
 }
 
 ### vacuum.pl support.
@@ -174,7 +166,7 @@ sub site_list_files {
 	$new_entry->size($size);
 
 	# Decide if this file is current.  [Should merge this someday with the
-	# current_entries logic above, but currently each Backup::DumpSet can
+	# current_dumps logic above, but currently each Backup::DumpSet can
 	# only handle one prefix.  -- rgr, 14-Apr-08.]
 	my ($tag, $date, $new_level)
 	    = ($new_entry->prefix, $new_entry->date, $new_entry->level);
@@ -214,10 +206,10 @@ __END__
 
 Add a new C<Backup::Slice>.  Semi-internal.
 
-=head3 current_entries
+=head3 current_dumps
 
-After doing C<mark_current_entries>, return a list of current 
-backup slices.
+This returns a list of current C<Backup::Dump> objects, sorting them
+if necessary.
 
 =head3 dumps_from_date
 
@@ -235,10 +227,10 @@ value is a hash of prefix to a C<Backup::DumpSet> object that contains
 all backups that have that prefix.  This is normally invoked as a
 class method.
 
-=head3 mark_current_entries
+=head3 mark_current_dumps
 
-Sets the C<current_p> slot for each C<Backup::Slice> object.  Each
-prefix is treated separately.
+Sorts the C<dumps> elements by time and level, and sets the
+C<current_p> slot for each C<Backup::Dump> object.
 
 =head3 new
 
@@ -247,8 +239,8 @@ C<Backup::DumpSet> object.
 
 =head3 prefix
 
-Returns or sets a string that names a backup file prefix.  This is
-only used if the dump set consists of only one prefix.
+Returns or sets a string that names the backup file prefix for all of
+the dumps contained in this dump set.  This is required.
 
 =head3 site_list_files
 

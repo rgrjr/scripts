@@ -5,7 +5,7 @@ use warnings;
 
 use lib '.';	# so that we test the right thing.
 
-use Test::More tests => 2 + 13*6 + 2 + 7*2 + 2*14;
+use Test::More tests => 2 + 13*6 + 2 + 7*2 + 2*9;
 
 BEGIN {
     use_ok('Backup::Slice');
@@ -67,18 +67,18 @@ test_order(9, 8, 1);
 test_order(9, 9, 0);
 
 sub check_current {
-    # 14 tests per invocation.
+    # 9 tests per invocation.
     my $set = shift;
 
-    $set->mark_current_entries();
-    my @current = $set->current_entries;
-    ok(@current == 8, "have 8 current entries");
-    my @current_p = qw(1 1 1 1 0 0 0 0 0 1 1 1 1);
-    for my $idx (0..12) {
-	my $entry = $entries[$idx];
+    $set->mark_current_dumps();
+    my @current = $set->current_dumps;
+    ok(@current == 3, "have 3 current entries");
+    my @current_p = qw(1 1 0 0 0 0 0 1);
+    for my $idx (0..@current_p-1) {
+	my $dump = $set->dumps->[$idx];
 	my $current_p = $current_p[$idx];
-	ok(! $current_p == ! $entry->current_p,
-	   join(' ', $entry->base_name,
+	ok(! $current_p == ! $dump->current_p,
+	   join(' ', $dump->base_name,
 		$current_p ? 'is' : 'is not',
 		'current'));
     }
@@ -90,13 +90,9 @@ ok($set->prefix eq 'home', "prefix set to 'home'");
 for my $entry (@entries) {
     $set->add_dump_entry($entry);
 }
-$set->mark_current_entries();
 check_current($set);
 
-# Create a new dump set with a permutation (after resetting).
-for my $entry (@entries) {
-    $entry->current_p(0);
-}
+# Create a new dump set with a permutation.
 my $set2 = Backup::DumpSet->new(prefix => 'home');
 for my $idx (qw(0 11 3 1 10 5 9 7 12 2 4 6 8)) {
     $set2->add_dump_entry($entries[$idx]);

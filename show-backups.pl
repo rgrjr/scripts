@@ -63,14 +63,12 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     my $set = $dump_set_from_prefix->{$pfx};
     print "\n"
 	if $n_prefixes;
-    $set->mark_current_entries();
-    my $dumps_from_date = $set->dumps_from_date;
-    for my $date (sort { $b <=> $a; } keys(%$dumps_from_date)) {
-	my $entries = $dumps_from_date->{$date};
-	for my $entry (sort { $a->entry_cmp($b); } @$entries) {
+    $set->mark_current_dumps();
+    for my $dump (@{$set->dumps}) {
+	for my $entry (sort { $a->entry_cmp($b); } @{$dump->slices}) {
 	    my $listing = $entry->listing;
 	    substr($listing, 1, 1) = '*'
-		if $entry->current_p;
+		if $dump->current_p;
 	    print $listing, "\n";
 	}
     }

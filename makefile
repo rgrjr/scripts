@@ -23,7 +23,8 @@ published-scripts = backup.pl cd-dump.pl vacuum.pl
 published-modules = rename-into-tree.pm
 html-pages = ${published-scripts:.pl=.pl.html}
 
-base-scripts =  ${backup-scripts} ${log-scripts} ${install-scripts} \
+# All but ${backup-scripts}.
+base-scripts =  ${log-scripts} ${install-scripts} \
 		${vc-scripts} ${misc-scripts}
 backup-scripts = backup.pl cd-dump.pl show-backups.pl svn-dump.pl vacuum.pl
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
@@ -167,15 +168,13 @@ test-backup:
 test-show-backups:
 	./show-backups.pl > $@.tmp
 	cmp $@-1.text $@.tmp
-	./show-backups.pl --prefix sequencing > $@.tmp
+	./show-backups.pl --prefix shared > $@.tmp
 	cmp $@-2.text $@.tmp
 	rm $@.tmp
 
 install:	install-base
 install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
-	mkdir -p ${pm-directory}/Backup
-	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
 	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
 	${INSTALL} -m 555 ${root-scripts} /root/bin
 	${INSTALL} -m 444 ${log-files} /root/bin
@@ -184,6 +183,10 @@ install-base:
 	if [ ! -r /root/bin/burn-backups ]; then \
 	    ${INSTALL} -m 555 burn-backups /root/bin; \
 	fi
+install-backup:
+	mkdir -p ${pm-directory}/Backup
+	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
+	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
 install-afpd:

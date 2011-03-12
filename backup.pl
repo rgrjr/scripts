@@ -349,19 +349,17 @@ else {
 
 	my $sets = Backup::DumpSet->find_dumps(prefix => $partition_abbrev,
 					       root => $destination_dir);
-	my @entries = ($sets->{$partition_abbrev} 
-		       ? $sets->{$partition_abbrev}->current_entries
-		       : ());
-	while (@entries && $entries[0]->level >= $level) {
-	    # $entries[0] is too incremental, and therefore irrelevant.
-	    shift(@entries);
+	my @dumps = ($sets->{$partition_abbrev} 
+		     ? $sets->{$partition_abbrev}->current_dumps
+		     : ());
+	while (@dumps && $dumps[0]->level >= $level) {
+	    # $dumps[0] is too incremental, and therefore irrelevant.
+	    shift(@dumps);
 	}
 	die("$0:  Can't find the last dump for '$partition_abbrev', ",
 	    "for a DAR level $level dump.\n")
-	    unless @entries;
-	$reference_file_stem = $entries[0]->file;
-	# Turn this into a proper stem.
-	$reference_file_stem =~ s/\.\d+\.dar$//;
+	    unless @dumps;
+	$reference_file_stem = $dumps[0]->file_stem;
     }
     # If dar returns an exit code of 11, it means (from the "man" page):
     #

@@ -16,7 +16,7 @@ use base qw(Backup::Thing);
 BEGIN {
     no strict 'refs';
     Backup::Slice->make_class_slots
-	(qw(prefix date level file base_name catalog_p index current_p));
+	(qw(prefix date level file base_name catalog_p index));
 }
 
 sub new {
@@ -110,6 +110,13 @@ sub new_from_file {
 			index => $index,
 			file => $file);
     }
+}
+
+sub dump_key {
+    # Use for matching up slices with their dumps.
+    my ($self) = @_;
+
+    return join(':', $self->prefix, $self->date, $self->level);
 }
 
 sub entry_cmp {
