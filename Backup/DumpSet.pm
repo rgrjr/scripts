@@ -31,30 +31,58 @@ sub new {
     $self;
 }
 
-sub add_dump_entry {
-    my ($self, $slice) = @_;
+sub add_dump {
+    my ($self, $file_name, $date, $level) = @_;
 
-    push(@{$self->dumps_from_date->{$slice->date || die}}, $slice);
-    my $key = $slice->dump_key;
-    my $dumps_from_key = $self->dumps_from_key;
-    $self->dumps_from_key($dumps_from_key = { })
-	unless $dumps_from_key;
-    my $dump = $dumps_from_key->{$key};
+    my $key = "$date:$level";
+    my $dump = $self->{_dumps_from_key}->{$key};
     if (! $dump) {
 	$self->sorted_p(0);
-	$dump = Backup::Dump->new(prefix => $slice->prefix,
-				  date => $slice->date,
-				  level => $slice->level,
-				  base_name => $slice->base_name,
+	my $base_name = $file_name;
+	$base_name =~ s@.*/@@;
+	$dump = Backup::Dump->new(prefix => $self->prefix,
+				  date => $date,
+				  level => $level,
+				  base_name => $base_name,
 				  slices => [ ]);
-	$self->dumps_from_key->{$key} = $dump;
+	$self->{_dumps_from_key}->{$key} = $dump;
 	push(@{$self->{_dumps}}, $dump);
     }
+    return $dump;
+}
+
+sub add_slice {
+    my ($self, $file_name, $date, $level, $index, $cat_p) = @_;
+
+    my $dump = $self->add_dump($file_name, $date, $level);
+    my $slice = Backup::Slice->new(prefix => $self->prefix,
+				   date => $date,
+				   level => $level,
+				   catalog_p => $cat_p,
+				   index => $index,
+				   file => $file_name);
     push(@{$dump->slices}, $slice);
     return $slice;
 }
 
 ### Finding backup dumps on disk.
+
+sub _parse_file_name {
+    # Returns nothing if the file name is not parseable as a valid dump file.
+    my ($file_name) = @_;
+
+    if ($file_name =~ m@([^/]+)-(\d+)-l(\d)(\w*)\.dump$@) {
+	# dump/restore format.
+	my ($pfx, $date, $level, $alpha_index) = $file_name =~ //;
+	my $index = $alpha_index ? ord($alpha_index)-ord('a')+1 : 0;
+	return ($pfx, $date, $level, $index, 0);
+    }
+    elsif ($file_name =~ m@([^/]+)-(\d+)-l(\d)(-cat)?\.(\d+)\.dar$@) {
+	# DAR format.
+	my ($pfx, $date, $level, $cat_p, $index) = $file_name =~ //;
+	return ($pfx, $date, $level, $index, $cat_p ? 1 : 0);
+    }
+}
 
 sub find_dumps {
     my ($class, %options) = @_;
@@ -72,15 +100,15 @@ sub find_dumps {
     my $dump_set_from_prefix = { };
     while (<$in>) {
 	chomp;
-	my $entry = Backup::Slice->new_from_file($_);
+	my ($prefix, $date, $level, $index, $cat_p) = _parse_file_name($_);
 	next
-	    unless $entry;
-	my $set = $dump_set_from_prefix->{$entry->prefix};
+	    unless $prefix;
+	my $set = $dump_set_from_prefix->{$prefix};
 	if (! $set) {
-	    $set = $class->new(prefix => $entry->prefix);
-	    $dump_set_from_prefix->{$entry->prefix} = $set;
+	    $set = $class->new(prefix => $prefix);
+	    $dump_set_from_prefix->{$prefix} = $set;
 	}
-	$set->add_dump_entry($entry);
+	$set->add_slice($_, $date, $level, $index, $cat_p);
     }
     return $dump_set_from_prefix;
 }
@@ -158,31 +186,35 @@ sub site_list_files {
 	}
 
 	# Turn that into a Backup::Slice object.
-	my $new_entry = Backup::Slice->new_from_file($file);
+	my ($pfx, $date, $level, $index, $cat_p) = _parse_file_name($file);
 	next
-	    unless $new_entry;
+	    unless $pfx;
 	next
-	    if $prefix && $new_entry->prefix ne $prefix;
+	    if $prefix && $pfx ne $prefix;
+	my $new_entry = Backup::Slice->new(prefix => $pfx,
+					   date => $date,
+					   level => $level,
+					   catalog_p => $cat_p,
+					   index => $index,
+					   file => $file);
 	$new_entry->size($size);
 
 	# Decide if this file is current.  [Should merge this someday with the
 	# current_dumps logic above, but currently each Backup::DumpSet can
 	# only handle one prefix.  -- rgr, 14-Apr-08.]
-	my ($tag, $date, $new_level)
-	    = ($new_entry->prefix, $new_entry->date, $new_entry->level);
-	my $entry = $levels{$tag};
+	my $entry = $levels{$pfx};
 	my ($entry_tag, $entry_date, $entry_level)
 	    = ($entry ? @$entry : ('', '', undef));
-	if (! defined($entry_level) || $new_level < $entry_level) {
+	if (! defined($entry_level) || $level < $entry_level) {
 	    # it's a keeper.
-	    # warn "[file $file, tag $tag, date $date, level $new_level]\n";
-	    $levels{$tag} = [$tag, $date, $new_level];
+	    # warn "[file $file, tag $pfx, date $date, level $level]\n";
+	    $levels{$pfx} = [$pfx, $date, $level];
 	    push(@result, $new_entry);
 	}
-	elsif ($new_level == $entry_level
-	       && $tag eq $entry_tag && $date eq $entry_date) {
+	elsif ($level == $entry_level
+	       && $pfx eq $entry_tag && $date eq $entry_date) {
 	    # another file of the current set.
-	    # warn "[another $file, tag $tag, date $date, level $new_level]\n";
+	    # warn "[another $file, tag $pfx, date $date, level $level]\n";
 	    push(@result, $new_entry);
 	}
 	else {
@@ -202,9 +234,17 @@ __END__
 
 =head2 Slots and methods
 
-=head3 add_dump_entry
+=head3 add_dump
 
-Add a new C<Backup::Slice>.  Semi-internal.
+Given file name, date, and level arguments, look for and return an
+existing C<Backup::Dump> with those characteristics, and create a new
+one if not.  Semi-internal.
+
+=head3 add_slice
+
+Given file name, date, level, index, and "catalog_p" arguments, create
+and return a new C<Backup::Slice>, adding it to one of our dumps.
+Semi-internal.
 
 =head3 current_dumps
 

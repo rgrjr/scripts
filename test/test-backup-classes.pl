@@ -5,66 +5,38 @@ use warnings;
 
 use lib '.';	# so that we test the right thing.
 
-use Test::More tests => 2 + 13*6 + 2 + 7*2 + 2*9;
+use Test::More tests => 137;
 
 BEGIN {
     use_ok('Backup::Slice');
     use_ok('Backup::DumpSet');
 }
 
-sub test_new {
-    # Six tests per invocation.
-    my ($raw_file, $prefix, $date, $level, $index, $catalog_p) = @_;
+### Subroutines.
 
-    my $e1 = Backup::Slice->new_from_file($raw_file);
-    ok($e1, "parsed '$raw_file'");
-    ok($e1->prefix eq $prefix, "prefix is '$prefix'");
-    ok($e1->date eq $date, "date is '$date'");
-    ok($e1->level == $level, "level is $level");
-    ok($e1->index == $index, "index is $index");
-    ok(! $e1->catalog_p == ! $catalog_p,
-       ($catalog_p ? 'is' : 'not').' a catalog');
-    return $e1;
+sub test_dump_order {
+    # Two tests per invocation.
+    my ($dump1, $dump2, $cmp) = @_;
+
+    my $base_name_1 = $dump1->base_name;
+    my $base_name_2 = $dump2->base_name;
+    ok($cmp == $dump1->entry_cmp($dump2),
+       "dump $base_name_1 cmp $base_name_2 is $cmp");
+    ok(-$cmp == $dump2->entry_cmp($dump1),
+       "dump $base_name_2 cmp $base_name_1 is ".-$cmp);
 }
 
-my @entries
-    = (test_new('home-20100628-l3.1.dar', qw(home 20100628 3 1 0)),
-       test_new('home-20100626-l1.1.dar', qw(home 20100626 1 1 0)),
-       test_new('home-20100626-l1.2.dar', qw(home 20100626 1 2 0)),
-       test_new('home-20100626-l1.3.dar', qw(home 20100626 1 3 0)),
-       test_new('home-20100625-l7.1.dar', qw(home 20100625 7 1 0)),
-       test_new('home-20100624-l4.1.dar', qw(home 20100624 4 1 0)),
-       test_new('home-20100623-l5.1.dar', qw(home 20100623 5 1 0)),
-       test_new('home-20100622-l2.1.dar', qw(home 20100622 2 1 0)),
-       test_new('home-20100621-l1.1.dar', qw(home 20100621 1 1 0)),
-       test_new('home-20100612-l0.1.dar', qw(home 20100612 0 1 0)),
-       test_new('home-20100612-l0.2.dar', qw(home 20100612 0 2 0)),
-       test_new('home-20100612-l0.3.dar', qw(home 20100612 0 3 0)),
-       test_new('home-20100612-l0-cat.1.dar', qw(home 20100612 0 1 1))
-    );
-ok(@entries == 13, "have 13 entries");
-
-sub test_order {
+sub test_slice_order {
     # Two tests per invocation.
-    my ($idx1, $idx2, $cmp) = @_;
+    my ($entry1, $entry2, $cmp) = @_;
 
-    my $entry1 = $entries[$idx1];
-    my $entry2 = $entries[$idx2];
     my $base_name_1 = $entry1->base_name;
     my $base_name_2 = $entry2->base_name;
     ok($cmp == $entry1->entry_cmp($entry2),
-       "$base_name_1 cmp $base_name_2 is $cmp");
+       "slice $base_name_1 cmp $base_name_2 is $cmp");
     ok(-$cmp == $entry2->entry_cmp($entry1),
-       "$base_name_2 cmp $base_name_1 is ".-$cmp);
+       "slice $base_name_2 cmp $base_name_1 is ".-$cmp);
 }
-
-test_order(0, 1, -1);
-test_order(1, 2, -1);
-test_order(2, 3, -1);
-test_order(4, 5, -1);
-test_order(0, 8, -1);
-test_order(9, 8, 1);
-test_order(9, 9, 0);
 
 sub check_current {
     # 9 tests per invocation.
@@ -84,17 +56,59 @@ sub check_current {
     }
 }
 
+### Main code.
+
+my @specs
+    = ([ qw(home-20100628-l3.1.dar 20100628 3 1 0) ],
+       [ qw(home-20100626-l1.1.dar 20100626 1 1 0) ],
+       [ qw(home-20100626-l1.2.dar 20100626 1 2 0) ],
+       [ qw(home-20100626-l1.3.dar 20100626 1 3 0) ],
+       [ qw(home-20100625-l7.1.dar 20100625 7 1 0) ],
+       [ qw(home-20100624-l4.1.dar 20100624 4 1 0) ],
+       [ qw(home-20100623-l5.1.dar 20100623 5 1 0) ],
+       [ qw(home-20100622-l2.1.dar 20100622 2 1 0) ],
+       [ qw(home-20100621-l1.1.dar 20100621 1 1 0) ],
+       [ qw(home-20100612-l0.1.dar 20100612 0 1 0) ],
+       [ qw(home-20100612-l0.2.dar 20100612 0 2 0) ],
+       [ qw(home-20100612-l0.3.dar 20100612 0 3 0) ],
+       [ qw(home-20100612-l0-cat.1.dar 20100612 0 1 1) ]
+    );
+
 # Create a dump set with these.
 my $set = Backup::DumpSet->new(prefix => 'home');
 ok($set->prefix eq 'home', "prefix set to 'home'");
-for my $entry (@entries) {
-    $set->add_dump_entry($entry);
+for my $spec (@specs) {
+    $set->add_slice(@$spec);
 }
 check_current($set);
+
+# Check the order of dumps.
+my $n_dumps = scalar(@{$set->dumps});
+for my $i (0..$n_dumps-1) {
+    for my $j ($i..$n_dumps-1) {
+	test_dump_order($set->dumps->[$i], $set->dumps->[$j], $i <=> $j);
+    }
+}
+
+# Check the order of slices within dumps.
+for my $i (0..$n_dumps-1) {
+    my $slices = $set->dumps->[$i]->slices;
+    my $n_slices = @$slices;
+    for my $j (0..$n_slices-1) {
+	my $slice_j = $slices->[$j];
+	for my $k ($j..$n_slices-1) {
+	    my $slice_k = $slices->[$k];
+	    my $result = ($slice_j->catalog_p
+			  ? ($slice_k->catalog_p ? $j <=> $k : -1)
+			  : ($slice_k->catalog_p ? 1 : $j <=> $k));
+	    test_slice_order($slice_j, $slice_k, $result);
+	}
+    }
+}
 
 # Create a new dump set with a permutation.
 my $set2 = Backup::DumpSet->new(prefix => 'home');
 for my $idx (qw(0 11 3 1 10 5 9 7 12 2 4 6 8)) {
-    $set2->add_dump_entry($entries[$idx]);
+    $set2->add_slice(@{$specs[$idx]});
 }
 check_current($set2);

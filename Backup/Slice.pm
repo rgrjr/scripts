@@ -84,41 +84,6 @@ sub listing {
     return (' 'x(14-length($size)))."$size $base_name [$host_name:$dir_name]";
 }
 
-sub new_from_file {
-    # Returns nothing if the file name is not parseable as a valid dump file.
-    my ($class, $file) = @_;
-
-    if ($file =~ m@([^/]+)-(\d+)-l(\d)(\w*)\.dump$@) {
-	# dump/restore format.
-	my ($pfx, $date, $level, $alpha_index) = $file =~ //;
-	my $index = $alpha_index ? ord($alpha_index)-ord('a')+1 : 0;
-	return
-	    Backup::Slice->new(prefix => $pfx,
-			       date => $date,
-			       level => $level,
-			       index => $index,
-			       file => $file);
-    }
-    elsif ($file =~ m@([^/]+)-(\d+)-l(\d)(-cat)?\.(\d+)\.dar$@) {
-	# DAR format.
-	my ($pfx, $date, $level, $cat_p, $index) = $file =~ //;
-	return
-	    $class->new(prefix => $pfx,
-			date => $date,
-			level => $level,
-			catalog_p => ($cat_p ? 1 : 0),
-			index => $index,
-			file => $file);
-    }
-}
-
-sub dump_key {
-    # Use for matching up slices with their dumps.
-    my ($self) = @_;
-
-    return join(':', $self->prefix, $self->date, $self->level);
-}
-
 sub entry_cmp {
     # This sorts first by date backwards, then by level backwards (if someone
     # performs backups at two different levels on the same day, the second is
