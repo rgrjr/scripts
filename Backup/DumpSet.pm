@@ -120,7 +120,7 @@ sub mark_current_dumps {
 
     # Sort our "dumps" slot backwards in time.
     my $dumps = $self->dumps || [ ];
-    $dumps = [ sort { $a->entry_cmp($b); } @{$self->dumps} ];
+    $dumps = [ sort { $a->entry_cmp($b); } @$dumps ];
     $self->dumps($dumps);
     $self->sorted_p(1);
 
@@ -143,8 +143,7 @@ sub current_dumps {
 
     $self->mark_current_dumps()
 	unless $self->sorted_p;
-    my $dumps = $self->dumps || [ ];
-    return grep { $_->current_p; } @$dumps;
+    return grep { $_->current_p; } @{$self->dumps};
 }
 
 ### vacuum.pl support.
