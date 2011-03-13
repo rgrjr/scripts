@@ -69,19 +69,65 @@ sub add_slice {
 
 sub _parse_file_name {
     # Returns nothing if the file name is not parseable as a valid dump file.
-    my ($file_name) = @_;
+    my ($line, $ls_p) = @_;
+
+    my ($size, $file_name);
+    if (! $ls_p) {
+	$file_name = $line;
+    }
+    else {
+	# Look for the file date as a way of recognizing the size and name in
+	# an "ls" listing.  [bug:  this is not portable.  -- rgr, 13-Mar-11.]
+	if ($line =~ /(\d+) ([A-Z][a-z][a-z] +\d+|\d\d-\d\d) +[\d:]+ (.+)$/) {
+	    ($size, $file_name) = ($1, $3);
+	}
+	elsif ($line =~ /(\d+) \d+-\d\d-\d\d +\d\d:\d\d (.+)$/) {
+	    # numeric ISO date.
+	    ($size, $file_name) = $line =~ //;
+	}
+	else {
+	    # not a file line.
+	    return;
+	}
+    }
 
     if ($file_name =~ m@([^/]+)-(\d+)-l(\d)(\w*)\.dump$@) {
 	# dump/restore format.
 	my ($pfx, $date, $level, $alpha_index) = $file_name =~ //;
 	my $index = $alpha_index ? ord($alpha_index)-ord('a')+1 : 0;
-	return ($pfx, $date, $level, $index, 0);
+	return ($pfx, $date, $level, $index, 0, $file_name, $size);
     }
     elsif ($file_name =~ m@([^/]+)-(\d+)-l(\d)(-cat)?\.(\d+)\.dar$@) {
 	# DAR format.
 	my ($pfx, $date, $level, $cat_p, $index) = $file_name =~ //;
-	return ($pfx, $date, $level, $index, $cat_p ? 1 : 0);
+	return ($pfx, $date, $level, $index, $cat_p ? 1 : 0, $file_name, $size);
     }
+}
+
+sub _find_dumps_from_command {
+    # Given a command that generates a series of file names one line per name
+    # (e.g. "ls" or "find"), return a hashref of prefix => Backup::DumpSet.
+    my ($class, $command, $ls_p) = @_;
+
+    open(my $in, "$command |")
+	or die "Oops; could not open pipe from '$command':  $!";
+    my $dump_set_from_prefix = { };
+    while (<$in>) {
+	chomp;
+	my ($prefix, $date, $level, $index, $cat_p, $file_name, $size)
+	    = _parse_file_name($_, $ls_p);
+	next
+	    unless $prefix;
+	my $set = $dump_set_from_prefix->{$prefix};
+	if (! $set) {
+	    $set = $class->new(prefix => $prefix);
+	    $dump_set_from_prefix->{$prefix} = $set;
+	}
+	my $slice = $set->add_slice($file_name, $date, $level, $index, $cat_p);
+	$slice->size($size)
+	    if defined($size);
+    }
+    return $dump_set_from_prefix;
 }
 
 sub find_dumps {
@@ -95,22 +141,7 @@ sub find_dumps {
 	if $prefix ne '*';
     my $command = join(' ', 'find', @search_roots,
 		       '-name', "'$find_glob_pattern'");
-    open(my $in, "$command |")
-	or die "Oops; could not open pipe from '$command':  $!";
-    my $dump_set_from_prefix = { };
-    while (<$in>) {
-	chomp;
-	my ($prefix, $date, $level, $index, $cat_p) = _parse_file_name($_);
-	next
-	    unless $prefix;
-	my $set = $dump_set_from_prefix->{$prefix};
-	if (! $set) {
-	    $set = $class->new(prefix => $prefix);
-	    $dump_set_from_prefix->{$prefix} = $set;
-	}
-	$set->add_slice($_, $date, $level, $index, $cat_p);
-    }
-    return $dump_set_from_prefix;
+    return $class->_find_dumps_from_command($command);
 }
 
 ### Finding and extracting current entries.
@@ -154,75 +185,22 @@ sub site_list_files {
     my ($self, $dir, $prefix) = @_;
     my @result = ();
 
+    my $command;
     if ($dir =~ /:/) {
 	my ($host, $spec) = split(':', $dir, 2);
-	open(IN, "ssh '$host' \"ls -l '$spec'\" |")
-	    or die;
+	$command = qq{ssh '$host' "ls -l '$spec'"};
     }
     else {
-	open(IN, "ls -l '$dir' |")
-	    or die;
+	$command = "ls -l '$dir'";
     }
-
-    # Now go backward through the files, taking only those that aren't
-    # superceded by a more recent file of the same or higher backup level.
-    my %levels = ();
-    for my $line (reverse(<IN>)) {
-	chomp($line);
-
-	# Look for the file date as a way of recognizing the size and name.
-	my ($size, $file);
-	if ($line =~ /(\d+) ([A-Z][a-z][a-z] +\d+|\d\d-\d\d) +[\d:]+ (.+)$/) {
-	    ($size, $file) = ($1, $3);
-	}
-	elsif ($line =~ /(\d+) \d+-\d\d-\d\d +\d\d:\d\d (.+)$/) {
-	    # numeric ISO date.
-	    ($size, $file) = $line =~ //;
-	}
-	else {
-	    # not a file line.
-	    next;
-	}
-
-	# Turn that into a Backup::Slice object.
-	my ($pfx, $date, $level, $index, $cat_p) = _parse_file_name($file);
-	next
-	    unless $pfx;
-	next
-	    if $prefix && $pfx ne $prefix;
-	my $new_entry = Backup::Slice->new(prefix => $pfx,
-					   date => $date,
-					   level => $level,
-					   catalog_p => $cat_p,
-					   index => $index,
-					   file => $file);
-	$new_entry->size($size);
-
-	# Decide if this file is current.  [Should merge this someday with the
-	# current_dumps logic above, but currently each Backup::DumpSet can
-	# only handle one prefix.  -- rgr, 14-Apr-08.]
-	my $entry = $levels{$pfx};
-	my ($entry_tag, $entry_date, $entry_level)
-	    = ($entry ? @$entry : ('', '', undef));
-	if (! defined($entry_level) || $level < $entry_level) {
-	    # it's a keeper.
-	    # warn "[file $file, tag $pfx, date $date, level $level]\n";
-	    $levels{$pfx} = [$pfx, $date, $level];
-	    push(@result, $new_entry);
-	}
-	elsif ($level == $entry_level
-	       && $pfx eq $entry_tag && $date eq $entry_date) {
-	    # another file of the current set.
-	    # warn "[another $file, tag $pfx, date $date, level $level]\n";
-	    push(@result, $new_entry);
-	}
-	else {
-	    # must have been superceded by something we've seen already.
+    my $dump_sets = $self->_find_dumps_from_command($command, 1);
+    my @slices;
+    for my $prefix (sort(keys(%$dump_sets))) {
+	for my $dump ($dump_sets->{$prefix}->current_dumps) {
+	    push(@slices, @{$dump->slices});
 	}
     }
-    close(IN)
-	or die "oops; pipe error:  $!";
-    reverse(@result);
+    return @slices;
 }
 
 1;
