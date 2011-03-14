@@ -1,4 +1,4 @@
-# Publication of backup scripts and documentation.
+# Script publication, testing, and documentation.
 #
 # [created.  -- rgr, 27-Feb-03.]
 #
@@ -6,11 +6,9 @@
 
 # make INSTALL_OPTS=--diff install
 
-# [for some reason, this does not work without "perl" as root on alexandria; it
-# says "make: execvp: ./install.pl: Permission denied", for reasons obscure.  --
-# rgr, 28-Jul-03.]
+# [install.pl may not work without "perl", as it may not be executable.]
 INSTALL_OPTS = --show
-INSTALL = perl ./install.pl ${INSTALL_OPTS}
+INSTALL = perl install.pl ${INSTALL_OPTS}
 
 PREFIX = /usr/local
 bin-directory = ${PREFIX}/bin
