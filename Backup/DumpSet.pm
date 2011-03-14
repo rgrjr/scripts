@@ -16,16 +16,14 @@ use base qw(Backup::Thing);
 
 # define instance accessors.
 BEGIN {
-    Backup::DumpSet->make_class_slots(qw(prefix dumps_from_date
-                                         dumps_from_key dumps sorted_p));
+    Backup::DumpSet->make_class_slots(qw(prefix dumps_from_key
+                                         dumps sorted_p));
 }
 
 sub new {
     my $class = shift;
 
     my $self = $class->SUPER::new(@_);
-    $self->dumps_from_date({ })
-	unless $self->dumps_from_date;
     die "bug"
 	unless $self->prefix;
     $self;
@@ -226,13 +224,19 @@ Semi-internal.
 =head3 current_dumps
 
 This returns a list of current C<Backup::Dump> objects, sorting them
-if necessary.
+via C<mark_current_dumps> if necessary.
 
-=head3 dumps_from_date
+=head3 dumps
 
-Returns or sets a hash that maps date strings (the 8-digit format that
-is used in the backup file names) to an arrayref of C<Backup::Slice>
-objects.
+Returns or sets an arrayref of all of our dumps.  If sorted (see
+C<sorted_p>), the dumps are in reverse chronological order (most
+recent first).  Sorting is done by C<mark_current_dumps> (q.v.).
+
+=head3 dumps_from_key
+
+Returns or sets a hash that maps "date:level" strings (using the same
+8-digit date format as in the backup file names) to a C<Backup::Dump>
+object.
 
 =head3 find_dumps
 
@@ -264,5 +268,11 @@ the dumps contained in this dump set.  This is required.
 Parse directory listings, dealing with remote file syntax.  This is
 used by C<vacuum.pl>, and isn't very well integrated with the rest of
 the module.
+
+=head3 sorted_p
+
+Returns or sets a boolean indicating whether or not the dumps in the
+C<dumps> slot are sorted.  Sorting is done by C<mark_current_dumps>,
+which sets this flag; C<add_dump> clears it.
 
 =cut
