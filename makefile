@@ -157,9 +157,11 @@ test-postfix-forged-address:
 	SENDER=spammer@modulargenetics.com email/forged-local-address.pl \
 		${modgen-config-options} < email/modgen-external.msg
 
-test-backup:
+test-backup:	test-backup-classes
+test-backup-classes:
 	perl -MTest::Harness -e 'runtests(@ARGV);' \
-		test/test-backup-classes.pl
+		test/test-backup-classes.pl \
+		test/test-config.pl
 
 # This can't be put on the "test" target because it's too hard to make test
 # cases that last more than a day.
