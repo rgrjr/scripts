@@ -14,7 +14,6 @@ use base qw(Backup::Thing);
 
 # define instance accessors.
 BEGIN {
-    no strict 'refs';
     Backup::Slice->make_class_slots
 	(qw(prefix date level file base_name catalog_p index));
 }
