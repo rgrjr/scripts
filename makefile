@@ -24,7 +24,8 @@ html-pages = ${published-scripts:.pl=.pl.html}
 # All but ${backup-scripts}.
 base-scripts =  ${log-scripts} ${install-scripts} \
 		${vc-scripts} ${misc-scripts}
-backup-scripts = backup.pl cd-dump.pl show-backups.pl svn-dump.pl vacuum.pl
+backup-scripts = backup.pl clean-backups.pl cd-dump.pl \
+		 show-backups.pl svn-dump.pl vacuum.pl
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
 # rgr, 5-Dec-04.]
 root-scripts = xauth-local-host
