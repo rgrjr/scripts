@@ -34,6 +34,7 @@ my $help = 0;
 my $config = Backup::Config->new();
 GetOptions('verbose+' => \$verbose_p,
 	   'test!' => \$test_p,
+	   'config=s' => sub { die "$0:  The --conf option must be first.\n" },
 	   'usage|?' => \$usage, 'help' => \$help)
     or pod2usage(-verbose => 0);
 pod2usage(-verbose => 1) if $usage;
@@ -168,8 +169,15 @@ different prefixes.
 If C<clean-backups.pl> decides to delete a dump, it deletes slices on
 all partitions, and not just the one under consideration.
 
-C<clean-backups.pl> does not produce the promised error message when
-the min-free target is not met.
+C<clean-backups.pl> does not produce the promised error message or
+return code when the min-free target cannot be met.
+
+On a former C<vacuum.pl> destination partition, once fresh backups are
+no longer copied there, C<clean-backups.pl> will refuse to remove what
+it thinks are the "current" dumps, even though they are well past the
+minimum retention limits.  This is OK for dump destination partitions,
+but not for C<vacuum.pl> destinations, so there ought to be an option
+to control this.
 
 If you find any others, please let me know.
 
