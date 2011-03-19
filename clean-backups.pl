@@ -71,6 +71,7 @@ $config->sort_dumps_by_partition($dump_set_from_prefix, \@partitions_to_clean);
 for my $partition (@partitions_to_clean) {
     $partition->clean_partition($config);
 }
+exit($config->fail_p ? 1 : 0);
 
 __END__
 
@@ -168,9 +169,6 @@ different prefixes.
 
 If C<clean-backups.pl> decides to delete a dump, it deletes slices on
 all partitions, and not just the one under consideration.
-
-C<clean-backups.pl> does not produce the promised error message or
-return code when the min-free target cannot be met.
 
 On a former C<vacuum.pl> destination partition, once fresh backups are
 no longer copied there, C<clean-backups.pl> will refuse to remove what

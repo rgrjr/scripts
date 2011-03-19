@@ -13,7 +13,7 @@ use base qw(Backup::Thing);
 
 # define instance accessors.
 BEGIN {
-    Backup::Config->make_class_slots(qw(config_file verbose_p test_p
+    Backup::Config->make_class_slots(qw(config_file verbose_p test_p fail_p
                                         stanza_hashes config_name));
 }
 

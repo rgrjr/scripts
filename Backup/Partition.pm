@@ -146,10 +146,16 @@ sub clean_partition {
 	    }
 	}
     }
-    warn("  Deleted $n_deletions dumps",
+
+    # Wrap up.
+    my $fail_p = $available < $min_free_blocks;
+    warn(($fail_p ? "$0:  Failed to meet target:  " : '  '),
+	 "Deleted $n_deletions dumps",
 	 ($n_deletions == $n_slices ? '' : " with $n_slices slices"),
 	 ", free space now $available blocks.\n")
-	if $n_deletions && $verbose_p;
+	if $fail_p || ($n_deletions && $verbose_p);
+    $config->fail_p(1)
+	if $fail_p;
     $self->avail_blocks($available);
 }
 
