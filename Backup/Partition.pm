@@ -106,8 +106,7 @@ sub clean_partition {
 	my $dumps = $dumps_from_level->[$level_class];
 	next
 	    unless $dumps;
-	warn("  Partition ", $self->mount_point,
-	     ' ', ($level_class ? 'even' : 'odd'),
+	warn("  Partition $mount_point ", ($level_class ? 'even' : 'odd'),
 	     " dailies, ", scalar(@$dumps),
 	     " total dumps, $available blocks free.\n")
 	    if $verbose_p > 1;
@@ -136,8 +135,12 @@ sub clean_partition {
 	    warn "    delete dump ", $dump->base_name, "\n"
 		if $verbose_p > 1;
 	    for my $slice (@{$dump->slices}) {
-		$n_slices++;
+		# Delete only slices on this partition.
 		my $file = $slice->file;
+		next
+		    if (substr($file, 0, length($mount_point)+1)
+		        ne "$mount_point/");
+		$n_slices++;
 		warn "      delete slice $file\n"
 		    if $verbose_p > 2;
 		unlink($file)
@@ -150,8 +153,7 @@ sub clean_partition {
     # Wrap up.
     my $fail_p = $available < $min_free_blocks;
     warn(($fail_p ? "$0:  Failed to meet target:  " : '  '),
-	 "Deleted $n_deletions dumps",
-	 ($n_deletions == $n_slices ? '' : " with $n_slices slices"),
+	 "Deleted $n_slices slices from $n_deletions dumps",
 	 ", free space now $available blocks.\n")
 	if $fail_p || ($n_deletions && $verbose_p);
     $config->fail_p(1)

@@ -167,9 +167,6 @@ how to do the cleaning.
 It is not possible to specify different retention policies for
 different prefixes.
 
-If C<clean-backups.pl> decides to delete a dump, it deletes slices on
-all partitions, and not just the one under consideration.
-
 On a former C<vacuum.pl> destination partition, once fresh backups are
 no longer copied there, C<clean-backups.pl> will refuse to remove what
 it thinks are the "current" dumps, even though they are well past the
