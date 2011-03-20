@@ -152,7 +152,7 @@ sub clean_partition {
 
     # Wrap up.
     my $fail_p = $available < $min_free_blocks;
-    warn(($fail_p ? "$0:  Failed to meet target:  " : '  '),
+    warn(($fail_p ? "$0:  Failed to meet target for $mount_point:  " : '  '),
 	 "Deleted $n_slices slices from $n_deletions dumps",
 	 ", free space now $available blocks.\n")
 	if $fail_p || ($n_deletions && $verbose_p);
