@@ -40,6 +40,8 @@ GetOptions('verbose+' => \$verbose_p,
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
 
+$verbose_p ||= 1
+    if $test_p;
 $config->verbose_p($verbose_p);
 $config->test_p($test_p);
 
@@ -81,7 +83,10 @@ clean-backups.pl -- Automated interface to remove old backups.
 
 =head1 SYNOPSIS
 
-[tbd.  -- rgr, 14-Mar-11.]
+        clean-backups.pl [ --conf=<config-file> ]
+                         [ --[no]test ] [ --verbose ... ]
+
+        clean-backups.pl [ --usage | --help ]
 
 =head1 DESCRIPTION
 
@@ -95,30 +100,29 @@ treated independently, and multiple backup prefixes (denoting the
 partition from which the backup was made) are considered when deciding
 what to free up.
 
-    # Note that this must be the mount point here.
-    [/scratch4]
-    clean = home, src
-    min-free-space = 5
-
 For each partition on the local system that stores backups and for
-which the "clean" option specifies some or all backup prefixes, try to
-ensure that the following constraints are all satisfied:
+which the "clean" option specifies some or all backup prefixes,
+C<clean-backups.pl> tries to ensure that the following constraints are
+all satisfied:
 
 =over 4
 
 =item 1.
 
 At least C<min-free-space> gigabytes (as reported by C<df>) are free.
+the default is 10GB.
 
 =item 2.
 
 At least C<min-odd-retention> days worth of odd daily backups
-(e.g. levels 3, 5, 7, and 9) are kept on all local partitions.
+(e.g. levels 3, 5, 7, and 9) are kept on all local partitions.  The
+default is 30 days.
 
 =item 3.
 
 At least C<min-even-retention> days worth of even daily backups
-(e.g. levels 2, 4, 6, and 8) are kept on all local partitions.
+(e.g. levels 2, 4, 6, and 8) are kept on all local partitions.  The
+default is 60 days.
 
 =back
 
@@ -138,7 +142,7 @@ completion.
 
 The "clean" option for the partition may be of the form
 
-    clean = home, src
+    clean = home, shared
 
 to consider only backups with the home or src prefix, or
 
@@ -154,9 +158,135 @@ are written to DVD and may sometimes be more "expendable" than
 dailies.  In any case, level 0 dumps should always be removed
 manually.  -- rgr, 14-Mar-11.]
 
+=head2 Configuration file format
+
+C<clean-backups.pl> is driven by a configuration file (see the
+C<--conf> option) with a "stanza" for each partition, one of which
+might look like this:
+
+    # Note that this must be the mount point here.
+    [/scratch4]
+    clean = home, src
+    min-free-space = 5
+
+Comments (starting with "#") and blank lines are ignored, keywords and
+values appear one per line and are separated by "=", and whitespace is
+ignored except when internal to a partition name, keyword, or value.
+
+Partitions are named with a single token, which must be the mount
+point without a trailing "/" (e.g. "/scratch4" in the example above),
+and not the device name (which might be something like "/dev/sda4").
+The only exception is that a "default" partition may be given
+keyword/value pairs that apply for all partitions unless overridden.
+Keyword/value pairs appearing before the first partition are also
+included in the "default" partition.  All partitions other than
+"default" must start with a "/".
+
+When looking for a value, we search the specific partition first, then
+the "default" partition (if any), and then use the global default.
+
+=head2 Configuration options
+
+This is the complete list of options used by C<clean-backups.pl>.
+Other options are silently ignored, because they may be needed by
+other backup utilities, so be on the lookout for spelling errors.
+
+=over 4
+
+=item B<clean>
+
+Specifies the prefixes to clean as a comma-separated list, or "*" to
+clean them all.  For example,
+
+    clean = home, shared
+
+There is no global default (which is why C<clean-backups.pl> requires
+a configuration file in order to be useful).
+
+=item B<min-even-retention>
+
+Specifies the minimum number of days worth of even daily backups
+(e.g. levels 2, 4, 6, and 8) that must kept on all local partitions.
+Even dailies newer than this are never deleted.
+
+=item B<min-free-space>
+
+Specifies the target free space for the partition.  The default is
+10GB.
+
+=item B<min-odd-retention>
+
+Specifies the minimum number of days worth of odd daily backups
+(e.g. levels 3, 5, 7, and 9) that must kept on all local partitions.
+Odd dailies newer than this are never deleted, but all of them that
+are older than this will be deleted before C<clean-backups.pl> starts
+in on the even dailies.
+
+=item B<test>
+
+If this is true (i.e. specified and neither zero nor the empty
+string), then no deletions are done, just as if C<--test> had been
+specified, and the C<--notest> command line option is ignored.  This
+configuration keyword allows testing to be enabled for some partitions
+and not others.
+
+=item B<verbose>
+
+If this is a number that is not zero, then additional progress
+information is printed, just as if C<--verbose> had been specified the
+corresponding number of times.  The C<--verbose> command line
+overrules the configuration option for all partitions.  This
+configuration keyword allows verbosity to be enabled for some
+partitions and not others.
+
+=back
+
 =head1 OPTIONS
 
-[finish.  -- rgr, 19-Mar-11.]
+As with all C<Getopt::Long> scripts (and with the exception of
+C<--conf>), single hyphens work the same as double hyphens, options
+may be abbreviated to the shortest unambiguous string (e.g. "-v" for
+C<--verbose>).
+
+=over 4
+
+=item B<--conf>
+
+Specifies the configuration file to use.  If specified, this must be
+the first option on the command line, and must not be abbreviated.
+
+If not specified, C<clean-backups.pl> looks for a file named
+C<.backup.conf> in the user's home directory (if the "HOME"
+environment variable exists), else the global C</etc/backup.conf>
+directory.
+
+=item B<--help>
+
+Displays the complete script documentation page.
+
+=item B<--notest>
+
+=item B<--test>
+
+If specified, no deletions are done, but C<clean-backups.pl> goes
+through the motions.  The default is C<--notest>.  This also implies
+C<--verbose>; if sufficient verbosity is enabled, C<clean-backups.pl>
+will tell you exactly what it would do.
+
+=item B<--verbose>
+
+Specifies additional progress output; C<clean-backups.pl> normally
+runs silently except in case of error.  If C<--verbose> is specified
+once, per-partition information is show.  If specified twice,
+additional information on dumps that are being deleted is shown,
+Finally, specifying C<--verbose> three times produces per-slice
+information.
+
+=item B<--usage>
+
+Displays the "Usage" and "Options" section of this page.
+
+=back
 
 =head1 KNOWN BUGS
 
