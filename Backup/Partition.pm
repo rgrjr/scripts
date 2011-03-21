@@ -74,7 +74,8 @@ sub clean_partition {
 	warn "$0:  Partition $mount_point has no dumps?\n";
 	return;
     }
-    warn("Checking for excess backups on $mount_point",
+    my $available = $self->avail_blocks;
+    warn("Checking for excess backups on $mount_point, $available blocks free",
 	 ($test_p ? ' (test)' : ''), ".\n")
 	if $verbose_p;
 
@@ -98,7 +99,6 @@ sub clean_partition {
     my $min_free_blocks = $min_free_gigabytes * 1024 * 1024;
 
     # Perform deletions.
-    my $available = $self->avail_blocks;
     my ($n_deletions, $n_slices) = (0, 0);
     for my $level_class (0 .. @$dumps_from_level-1) {
 	last
