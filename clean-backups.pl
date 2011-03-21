@@ -46,31 +46,22 @@ $config->verbose_p($verbose_p);
 $config->test_p($test_p);
 
 # Find partitions that want cleaning.
-my @partitions = Backup::Partition->find_partitions();
-my @partitions_to_clean;
-for my $partition (@partitions) {
-    my $clean = $config->find_option('clean', $partition->mount_point, 0);
-    next
-	unless $clean;
-    $partition->prefixes([ split(/[, ]+/, $clean) ])
-	unless $clean eq '*';
-    push(@partitions_to_clean, $partition);
-}
-die "$0:  Nothing to clean.\n"
-    unless @partitions_to_clean;
+my $partitions_to_clean = $config->find_partitions_to_clean();
+exit(0)
+    unless @$partitions_to_clean;
 
 # We need to find all dumps at once, because we don't know how they fall across
 # the various partitions, we don't know which prefixes we're going to need, and
 # we can't properly find the current ones without having them all.
-my $search_roots = [ map { $_->mount_point; } @partitions_to_clean ];
+my $search_roots = [ map { $_->mount_point; } @$partitions_to_clean ];
 warn 'Looking for dumps in ', join(' ', @$search_roots)
     if $verbose_p;
 my $dump_set_from_prefix
     = Backup::DumpSet->find_dumps(prefix => '*', root => $search_roots);
 
 # Clean dumps by partition.
-$config->sort_dumps_by_partition($dump_set_from_prefix, \@partitions_to_clean);
-for my $partition (@partitions_to_clean) {
+$config->sort_dumps_by_partition($dump_set_from_prefix, $partitions_to_clean);
+for my $partition (@$partitions_to_clean) {
     $partition->clean_partition($config);
 }
 exit($config->fail_p ? 1 : 0);

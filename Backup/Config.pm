@@ -131,6 +131,37 @@ sub find_search_roots {
     return @search_roots;
 }
 
+sub find_partitions_to_clean {
+    # Find partitions that want cleaning.
+    my ($self) = @_;
+    require Backup::Partition;
+
+    my @partitions = Backup::Partition->find_partitions();
+    my $partitions_to_clean = [ ];
+    for my $partition (@partitions) {
+	my $mp = $partition->mount_point;
+	my $clean = $self->find_option('clean', $mp, 0);
+	next
+	    unless $clean;
+	$partition->prefixes([ split(/[, ]+/, $clean) ])
+	    unless $clean eq '*';
+
+	# Find our minimum free space (in blocks, to avoid overflow).
+	my $min_free_gigabytes = $self->find_option('min-free-space', $mp, 10);
+	my $min_free_blocks = $min_free_gigabytes * 1024 * 1024;
+	my $available = $partition->avail_blocks;
+	if ($available >= $min_free_blocks) {
+	    my $verbose_p = ($self->verbose_p
+			     || $self->find_option('verbose', $mp, 0));
+	    warn("Skipping $mp, $available blocks free\n")
+		if $verbose_p;
+	    next;
+	}
+	push(@$partitions_to_clean, $partition)
+    }
+    return $partitions_to_clean;
+}
+
 ### Backup operations.
 
 sub sort_dumps_by_partition {
