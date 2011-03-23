@@ -14,14 +14,21 @@ use base qw(Backup::Thing);
 # define instance accessors.
 BEGIN {
     Backup::Config->make_class_slots(qw(config_file verbose_p test_p fail_p
-                                        stanza_hashes config_name));
+                                        host_name stanza_hashes config_name));
 }
 
 sub new {
     # Also read a configuration file, if we were given or can find one.
     my $class = shift;
 
+    # Initialize host name.
     my $self = $class->SUPER::new(@_);
+    if (! $self->host_name) {
+	chomp(my $host_name = `hostname`);
+	$self->host_name($host_name);
+    }
+
+    # Look for a default config.
     my $config_file = $self->config_file;
     if (! $config_file) {
 	if (! @ARGV) {
@@ -66,6 +73,12 @@ sub read_from_file {
 	elsif (/^\[\s*(.*)\s*?\]/) {
 	    # New stanza.
 	    $stanza = $1;
+	    if (! ($stanza eq 'default' || $stanza =~ /:/)) {
+		# Needs a host name prefix.
+		warn "$file_name:$.: Funny partition name '$stanza'.\n"
+		    if $stanza !~ m@^/@;
+		$stanza = join(':', $self->host_name, $stanza);
+	    }
 	}
 	elsif (/^\s*([^=]*)=\s*(.*)/) {
 	    my ($key, $value) = //;
@@ -81,6 +94,8 @@ sub read_from_file {
 sub find_option {
     my ($self, $option_name, $stanza, $default) = @_;
     $stanza ||= $self->config_name;
+    $stanza = join(':', $self->host_name, $stanza)
+	unless $stanza eq 'default' || $stanza =~ /:/;
 
     my $result = $self->{_stanza_hashes}{$stanza}{$option_name};
     $result = $self->{_stanza_hashes}{'default'}{$option_name}
