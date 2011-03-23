@@ -28,8 +28,9 @@ sub find_partitions {
 	or die("Bug:  Can't open pipe from df:  $!");
     <$in>;	# ignore heading.
     my $line = <$in>;
+    my $next;
     while ($line) {
-	my $next = <$in>;
+	$next = <$in>;
 	while ($next && $next =~ /^\s/) {
 	    # Continuation line.
 	    $line .= $next;
@@ -37,6 +38,9 @@ sub find_partitions {
 	}
 	my ($device, $total_blocks, $used_blocks, $avail_blocks,
 	    $use_pct, $mount_point) = split(' ', $line);
+	next
+	    # Don't include NFS mounts.
+	    if $device =~ /:/;
 	my ($dev, $inode, $mode, $nlink, $uid, $gid, $rdev, $size,
 	    $atime, $mtime, $ctime, $blksize, $blocks) = stat($mount_point);
 	if ($dev && (! $max_free_blocks
@@ -53,6 +57,8 @@ sub find_partitions {
 		 " out of ", $total_blocks, " available ($use_pct).\n")
 		if 0;
 	}
+    }
+    continue {
 	$line = $next;
     }
     return @partitions;
