@@ -169,7 +169,7 @@ sub find_partitions_to_clean {
 	    my $verbose_p = ($self->verbose_p
 			     || $self->find_option('verbose', $mp, 0));
 	    warn("Skipping $mp, $available blocks free\n")
-		if $verbose_p;
+		if $verbose_p > 2;
 	    next;
 	}
 	push(@$partitions_to_clean, $partition)
