@@ -20,6 +20,7 @@ use Pod::Usage;
 
 use Backup::DumpSet;
 use Backup::Slice;
+use Backup::Partition;
 
 my $warn = $0;
 $warn =~ s@.*/@@;
@@ -91,47 +92,14 @@ sub print_items {
 }
 
 sub free_disk_space {
-    # parse df output, dealing with remote file syntax.
     my ($dir) = @_;
-    my $result;
 
-    my ($host, $spec) = split(/:/, $dir);
-    if (defined($spec)) {
-	open(IN, "ssh '$host' \"df '$spec'\" |")
-	    or die;
-    }
-    else {
-	($host, $spec) = ('localhost', $dir);
-	open(IN, "df '$dir' |")
-	    or die;
-    }
-    my $line = <IN>;
-    while (! defined($result) && defined($line)) {
-	if ($line =~ /^Filesystem/) {
-	    $line = <IN>;
-	    next;
-	}
-	chomp($line);
-	my $peek = <IN>;
-	while (defined($peek) && $peek =~ /^ /) {
-	    # continuation line.  this is especially likely for LVM volumes,
-	    # which have device files with long names.
-	    chomp($peek);
-	    $line .= $peek;
-	    $peek = <IN>;
-	}
-	# line now contains all continuations.
-	die "$0:  '$dir' is mounted via NFS on $host.\n"
-	    if $line =~ /^[-\w\d.]+:/;
-	my @fields = split(' ', $line);
-	$result = $fields[3] >> 10
-	    if $fields[3] =~ /^\d+$/;
-	$line = $peek;
-    }
-    close(IN);
-    die "$0:  Couldn't determine free space for '$spec' on $host.\n"
-	unless $result;
-    $result;
+    my ($partition, @others)
+	= Backup::Partition->find_partitions(partition => $dir);
+    return
+	if @others || ! $partition;
+    # divide by 1024.
+    return $partition->avail_blocks >> 10;
 }
 
 sub site_file_delete {

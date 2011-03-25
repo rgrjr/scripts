@@ -14,18 +14,39 @@ use base qw(Backup::Thing);
 # define instance accessors.
 BEGIN {
     Backup::Partition->make_class_slots
-	(qw(device_number device_name mount_point
+	(qw(device_number device_name host_name mount_point
             total_blocks used_blocks avail_blocks use_pct
             dumps_from_level prefixes));
 }
 
 sub find_partitions {
-    my ($class, $max_free_blocks) = @_;
+    my ($class, %options) = @_;
+    my $max_free_blocks = $options{max_free_blocks};
+    my $partition = $options{partition};
+
+    # Figure out how to get the df listing.
+    my $command = 'df';
+    my $host;
+    if ($partition) {
+	my $spec;
+	($host, $spec) = split(/:/, $partition);
+	if (defined($spec)) {
+	    # [shell quoting is probably incomplete.  -- rgr, 24-Mar-11.]
+	    $command = qq{ssh '$host' "df '$spec'"};
+	}
+	else {
+	    $command = qq{df '$partition'};
+	}
+    }
+    if (! $host) {
+	# [this must be the same as Backup::Config::new.  -- rgr, 24-Mar-11.]
+	chomp($host = `hostname`);
+    }
+    open(my $in, "$command |")
+	or die("Bug:  Can't open pipe from '$command':  $!");
 
     # Find free spaces.
     my @partitions;
-    open(my $in, 'df |')
-	or die("Bug:  Can't open pipe from df:  $!");
     <$in>;	# ignore heading.
     my $line = <$in>;
     my $next;
@@ -48,6 +69,7 @@ sub find_partitions {
 	    push(@partitions,
 		 $class->new(device_name => $device,
 			     device_number => $dev,
+			     host_name => $host,
 			     mount_point => $mount_point,
 			     total_blocks => $total_blocks,
 			     used_blocks => $used_blocks,
