@@ -93,17 +93,39 @@ sub read_from_file {
 
 sub find_option {
     my ($self, $option_name, $stanza, $default) = @_;
-    $stanza = join(':', $self->host_name, $stanza)
-	unless $stanza eq 'default' || $stanza =~ /:/;
+    # warn "[looking for $option_name in $stanza]";
 
+    if ($stanza eq 'default') {
+	# Try the default, and then the default default.
+	my $result = $self->{_stanza_hashes}{'default'}{$option_name};
+	return $result
+	    if defined($result);
+	return $default
+	    if @_ > 3;
+	die "$0:  'Option '$option_name' is undefined in '$stanza'.\n";
+    }
+
+    # Make sure the stanza name has a "host:".
+    my $host_colon;
+    if ($stanza !~ /:/) {
+	$host_colon = $self->host_name . ':';
+	$stanza = $host_colon . $stanza;
+    }
+
+    # Try the full name.
     my $result = $self->{_stanza_hashes}{$stanza}{$option_name};
-    $result = $self->{_stanza_hashes}{'default'}{$option_name}
-        unless defined($result);
     return $result
 	if defined($result);
-    return $default
-	if @_ > 3;
-    die "$0:  'Option '$option_name' is undefined in '$stanza'.\n";
+
+    # Try the "host:".
+    $host_colon ||= ($stanza =~ m/^(.+:)/ && $1);
+    # warn "host_colon $host_colon from $stanza [1]";
+    if ($host_colon) {
+	$result = $self->{_stanza_hashes}{$host_colon}{$option_name};
+	return $result
+	    if defined($result);
+    }
+    $self->find_option($option_name, 'default', $default);
 }
 
 sub find_prefix {
