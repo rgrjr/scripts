@@ -14,7 +14,7 @@ use base qw(Backup::Thing);
 # define instance accessors.
 BEGIN {
     Backup::Config->make_class_slots(qw(config_file verbose_p test_p fail_p
-                                        host_name stanza_hashes config_name));
+                                        host_name stanza_hashes));
 }
 
 sub new {
@@ -30,7 +30,7 @@ sub new {
 
     # Look for a default config.
     my $config_file = $self->config_file;
-    if (! $config_file) {
+    if (! defined($config_file)) {
 	if (! @ARGV) {
 	    # No options.
 	}
@@ -93,7 +93,6 @@ sub read_from_file {
 
 sub find_option {
     my ($self, $option_name, $stanza, $default) = @_;
-    $stanza ||= $self->config_name;
     $stanza = join(':', $self->host_name, $stanza)
 	unless $stanza eq 'default' || $stanza =~ /:/;
 
