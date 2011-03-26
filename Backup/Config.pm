@@ -94,6 +94,9 @@ sub read_from_file {
 sub find_option {
     my ($self, $option_name, $stanza, $default) = @_;
 
+    $stanza = $stanza->host_colon_mount
+	# Assume this is a partition object.
+	if ref($stanza);
     if ($stanza eq 'default') {
 	# Try the default, and then the default default.
 	my $result = $self->{_stanza_hashes}{'default'}{$option_name};
@@ -194,6 +197,12 @@ sub find_partitions_to_clean {
 	push(@$partitions_to_clean, $partition)
     }
     return $partitions_to_clean;
+}
+
+sub local_partition_p {
+    my ($self, $partition) = @_;
+
+    return $partition->host_name eq $self->host_name;
 }
 
 ### Backup operations.

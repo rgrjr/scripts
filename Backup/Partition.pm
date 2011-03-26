@@ -19,6 +19,12 @@ BEGIN {
             dumps_from_level prefixes));
 }
 
+sub host_colon_mount {
+    my $self = shift;
+
+    join(':', $self->host_name, $self->mount_point);
+}
+
 sub find_partitions {
     my ($class, %options) = @_;
     my $max_free_blocks = $options{max_free_blocks};
@@ -35,6 +41,7 @@ sub find_partitions {
 	    $command = qq{ssh '$host' "df '$spec'"};
 	}
 	else {
+	    undef($host);
 	    $command = qq{df '$partition'};
 	}
     }
