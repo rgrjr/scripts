@@ -93,7 +93,6 @@ sub read_from_file {
 
 sub find_option {
     my ($self, $option_name, $stanza, $default) = @_;
-    # warn "[looking for $option_name in $stanza]";
 
     if ($stanza eq 'default') {
 	# Try the default, and then the default default.
@@ -119,7 +118,6 @@ sub find_option {
 
     # Try the "host:".
     $host_colon ||= ($stanza =~ m/^(.+:)/ && $1);
-    # warn "host_colon $host_colon from $stanza [1]";
     if ($host_colon) {
 	$result = $self->{_stanza_hashes}{$host_colon}{$option_name};
 	return $result
