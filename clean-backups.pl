@@ -53,7 +53,9 @@ exit(0)
 # We need to find all dumps at once, because we don't know how they fall across
 # the various partitions, we don't know which prefixes we're going to need, and
 # we can't properly find the current ones without having them all.
-my $search_roots = [ map { $_->mount_point; } @$partitions_to_clean ];
+my $search_roots = [ $config->find_search_roots() ];
+$search_roots = [ map { $_->mount_point; } @$partitions_to_clean ]
+    unless @$search_roots;
 warn 'Looking for dumps in ', join(' ', @$search_roots)
     if $verbose_p;
 my $dump_set_from_prefix

@@ -145,6 +145,7 @@ sub find_prefix {
 sub find_search_roots {
     # Figure out where to search for backups.
     my ($self, $stanza) = @_;
+    $stanza ||= $self->host_name . ':';
 
     my $search_roots = $self->find_option('search-roots', $stanza, '');
     my @search_roots;
