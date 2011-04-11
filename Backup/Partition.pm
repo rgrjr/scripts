@@ -106,7 +106,8 @@ sub clean_partition {
 	if ! $test_p;
     my $dumps_from_level = $self->dumps_from_level;
     if (! $dumps_from_level) {
-	warn "$0:  Partition $mount_point has no dumps?\n";
+	warn "$0:  Partition $mount_point has no daily dumps.\n"
+	    if $verbose_p;
 	return;
     }
     my $available = $self->avail_blocks;
