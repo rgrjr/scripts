@@ -154,14 +154,14 @@ sub find_files_to_copy {
     # specified prefix (if any), and are more recent than the $since date 
     # (if specified).  returns the list of file structures, prefixed
     # by the total space required.
-    my ($from, $to, $prefix) = @_;
+    my ($from, $to, $prefixes) = @_;
 
-    my @to = Backup::DumpSet->site_list_files($to, $prefix);
+    my @to = Backup::DumpSet->site_list_files($to, $prefixes);
     my $dest_latest_full;
     my %to = map { $dest_latest_full = $_
 		       if $_->level == 0;
 		   $_->file => $_; } @to;
-    my @from = Backup::DumpSet->site_list_files($from, $prefix);
+    my @from = Backup::DumpSet->site_list_files($from, $prefixes);
 
     my @need_copying = ();
     my $total_space = 0;
@@ -240,19 +240,8 @@ sub copy_one_file {
 sub copy_backup_files {
     my ($from, $to) = @_;
 
-    my ($total_space, @need_copying);
-    if (@prefixes) {
-	for my $prefix (@prefixes) {
-	    my ($pfx_space, @pfx_files)
-		= find_files_to_copy($from, $to, $prefix);
-	    $total_space += $pfx_space;
-	    push(@need_copying, @pfx_files);
-	}
-    }
-    else {
-	# If we want them all, list them all at once.
-	($total_space, @need_copying) = find_files_to_copy($from, $to, '');
-    }
+    my ($total_space, @need_copying)
+	= find_files_to_copy($from, $to, @prefixes ? \@prefixes : '');
     if (@need_copying == 0) {
 	warn "$0:  Nothing to copy.\n"
 	    if $verbose_p;

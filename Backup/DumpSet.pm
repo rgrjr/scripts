@@ -180,7 +180,7 @@ sub current_dumps {
 sub site_list_files {
     # Parse directory listings, dealing with remote file syntax.  This is used
     # by vacuum.pl, and isn't very well integrated with the rest of the module.
-    my ($self, $dir, $prefix) = @_;
+    my ($self, $dir, $prefixes) = @_;
     my @result = ();
 
     my $command;
@@ -193,7 +193,9 @@ sub site_list_files {
     }
     my $dump_sets = $self->_find_dumps_from_command($command, 1);
     my @slices;
-    for my $pfx ($prefix ? ($prefix) : sort(keys(%$dump_sets))) {
+    for my $pfx (! $prefixes ? sort(keys(%$dump_sets))
+		 : ref($prefixes) ? @$prefixes
+		 : ($prefixes)) {
 	for my $dump ($dump_sets->{$pfx}->current_dumps) {
 	    push(@slices, @{$dump->slices});
 	}
