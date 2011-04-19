@@ -193,8 +193,8 @@ sub site_list_files {
     }
     my $dump_sets = $self->_find_dumps_from_command($command, 1);
     my @slices;
-    for my $prefix (sort(keys(%$dump_sets))) {
-	for my $dump ($dump_sets->{$prefix}->current_dumps) {
+    for my $pfx ($prefix ? ($prefix) : sort(keys(%$dump_sets))) {
+	for my $dump ($dump_sets->{$pfx}->current_dumps) {
 	    push(@slices, @{$dump->slices});
 	}
     }
