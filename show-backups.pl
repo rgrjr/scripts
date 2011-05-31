@@ -24,7 +24,7 @@ my $verbose_p = 0;		# this doesn't actually do anything yet.
 my $usage = 0;
 my $help = 0;
 my $man = 0;
-my $prefix = 'home';
+my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'verbose+' => \$verbose_p,
@@ -93,7 +93,7 @@ where:
      --man	              Print man page.
      --usage                  Print this synopsis.
      --verbose                Get debugging output; repeat to increase.
-     --prefix         'home'  Required prefix on files; '*' to include all.
+     --prefix           '*'   Partition prefix on files; wildcarded.
 
 =head1 DESCRIPTION
 
@@ -137,9 +137,8 @@ default is whatever the C<hostname> command prints.
 
 =item B<--prefix>
 
-Specifies the dump file prefix.  This can be a glob-style wildcard,
-e.g. if '*' is specified, then all dump files are considered.  The
-default is 'home'.
+Specifies the dump file prefix.  This can be a glob-style wildcard;
+the default is '*', which includes all dump files.
 
 =back
 
