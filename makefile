@@ -138,6 +138,8 @@ test-new-forged-address:
 		${rgrjr-config-options} < email/perl6-spam.text
 	SENDER=invokingsd0@rayongzone.com email/forged-local-address.pl \
 		${rgrjr-config-options} < email/spam-6.text
+	SENDER=whoever@wherever.com email/forged-local-address.pl \
+		${rgrjr-config-options} < email/spam-7.text
 test-nonforged-addresses:
 	SENDER=perl6-internals-return-48162-etc@perl.org \
 	    email/forged-local-address.pl --sender-re='@perl.org$$' --not \

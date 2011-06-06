@@ -210,7 +210,7 @@ ensure_nonlocal_host($envelope_sender, 'envelope sender')
     if $envelope_sender;
 
 # Look for forged local addresses in appropriate headers.
-for my $header_name (qw(sender from)) {
+for my $header_name (qw(sender from reply-to)) {
     for my $header ($message->get($header_name)) {
 	# Get rid of RFC822 comments first, so we are not confused by commas in
 	# comments.  Parentheses nest.

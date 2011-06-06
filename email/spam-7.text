@@ -1,0 +1,135 @@
+Return-Path: <nilkg@200-140-164-200.bsace706.dsl.brasiltelecom.net.br>
+Delivered-To: rogers-perl6@rgrjr.dyndns.org
+Received: (qmail 29744 invoked by uid 89); 5 Jun 2011 20:11:27 -0000
+Received: from unknown (HELO rgrjr.com) (216.146.47.5)
+  by home with SMTP; 5 Jun 2011 20:11:27 -0000
+Received: from rgrjr.com (localhost [127.0.0.1])
+	by rgrjr.com (Postfix on CentOS) with ESMTP id 0D23D1600E4
+	for <rogers-perl6@rgrjr.dyndns.org>; Sun,  5 Jun 2011 20:11:24 +0000 (UTC)
+X-Spam-Flag: YES
+X-Spam-Checker-Version: SpamAssassin 3.2.4 (2008-01-01) on rgrjr.com
+X-Spam-Level: **********************************
+X-Spam-Status: Yes, score=34.1 required=5.0 tests=FH_DATE_PAST_20XX,
+	FH_HELO_EQ_D_D_D_D,HELO_DYNAMIC_HCC,HELO_DYNAMIC_IPADDR2,HTML_IMAGE_ONLY_32,
+	HTML_MESSAGE,INVALID_DATE,MIME_HTML_ONLY,RCVD_IN_PBL,RCVD_IN_SORBS_DUL,
+	RDNS_DYNAMIC,SPOOF_COM2COM,SPOOF_COM2OTH,TVD_RCVD_IP,URIBL_AB_SURBL,
+	URIBL_BLACK,URIBL_JP_SURBL,URIBL_RHS_DOB,URIBL_SBL,URIBL_WS_SURBL
+	autolearn=failed version=3.2.4
+X-Spam-Report: 
+	*  0.5 RCVD_IN_PBL RBL: Received via a relay in Spamhaus PBL
+	*      [200.140.164.200 listed in zen.spamhaus.org]
+	*  1.6 RCVD_IN_SORBS_DUL RBL: SORBS: sent directly from dynamic IP address
+	*      [200.140.164.200 listed in dnsbl.sorbs.net]
+	*  2.0 URIBL_BLACK Contains an URL listed in the URIBL blacklist
+	*      [URIs: summerdiscountz.com]
+	*  1.6 URIBL_AB_SURBL Contains an URL listed in the AB SURBL blocklist
+	*      [URIs: summerdiscountz.com]
+	*  2.1 URIBL_WS_SURBL Contains an URL listed in the WS SURBL blocklist
+	*      [URIs: summerdiscountz.com]
+	*  2.9 URIBL_JP_SURBL Contains an URL listed in the JP SURBL blocklist
+	*      [URIs: summerdiscountz.com]
+	*  0.9 URIBL_RHS_DOB Contains an URI of a new domain (Day Old Bread)
+	*      [URIs: summerdiscountz.com]
+	*  4.3 HELO_DYNAMIC_HCC Relay HELO'd using suspicious hostname (HCC)
+	*  4.4 HELO_DYNAMIC_IPADDR2 Relay HELO'd using suspicious hostname (IP addr
+	*       2)
+	*  0.5 FH_HELO_EQ_D_D_D_D Helo is d-d-d-d
+	*  1.7 INVALID_DATE Invalid Date: header (not RFC 2822)
+	*  1.6 TVD_RCVD_IP TVD_RCVD_IP
+	*  3.4 FH_DATE_PAST_20XX The date is grossly in the future.
+	*  0.8 SPOOF_COM2OTH URI: URI contains ".com" in middle
+	*  0.3 SPOOF_COM2COM URI: URI contains ".com" in middle and end
+	*  1.3 HTML_IMAGE_ONLY_32 BODY: HTML: images with 2800-3200 bytes of words
+	*  0.0 HTML_MESSAGE BODY: HTML included in message
+	*  1.7 MIME_HTML_ONLY BODY: Message only has text/html MIME parts
+	*  2.5 URIBL_SBL Contains an URL listed in the SBL blocklist
+	*      [URIs: summerdiscountz.com]
+	*  0.1 RDNS_DYNAMIC Delivered to trusted network by host with
+	*      dynamic-looking rDNS
+Received: from 200-140-164-200.bsace706.dsl.brasiltelecom.net.br (200-140-164-200.bsace706.dsl.brasiltelecom.net.br [200.140.164.200])
+	by rgrjr.com (Postfix on CentOS) with ESMTP id 36DED160126
+	for <rogers-perl6@rgrjr.dyndns.org>; Sun,  5 Jun 2011 20:11:20 +0000 (UTC)
+Received: (qmail 2585 by uid 722); Sun, 05 Jun 2011 23:10:47 +0400
+Message-ID: <20110605231047.2587.qmail@200-140-164-200.bsace706.dsl.brasiltelecom.net.br>
+From: ROLEX <nilkg@200-140-164-200.bsace706.dsl.brasiltelecom.net.br>
+To: rogers-perl6@rgrjr.dyndns.org
+Reply-To: rogers-perl6@rgrjr.dyndns.org
+Subject: rogers-perl6@rgrjr.dyndns.org Rolex.com For You -32%
+Date: 5.6.2011
+MIME-Version: 1.0
+Content-Type: text/html; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+Importance: Normal
+
+<html bgcolor="#000000" style="background:#000000; color:#FFFFFF; font-size:12px; font-family:Lucida Sans Unicode, Lucida Grande, Sans-Serif;" xmlns="http://www.w3.org/1999/xhtml" xmlns:custom="urn:custom-functions">
+<head>
+<style type="text/css">
+body, html { background:#000000; color:#FFFFFF; font-size:12px; font-family:Lucida Sans Unicode, Lucida Grande, Sans-Serif; }
+h3 { font-family:Times New Roman; font-size:14px; color:#FFFFFF; }
+a { text-decoration:none; color:#FFFFFF; }
+</style>
+</head>
+<body bgcolor="#000000" style="background:#000000; color:#FFFFFF; font-size:12px; font-family:Lucida Sans Unicode, Lucida Grande, Sans-Serif;">
+<table width="455" cellpadding="0" cellspacing="0" border="0" align="center">
+<tr>
+<td>
+<table>
+<tr>
+<td height="50" width="455"/>
+</tr>
+<tr width="455">
+<td>
+<a href="http://www.rolex.com.ghqi.summerdiscountz.com?hbm=rogers-perl6@rgrjr.dyndns.org"><img style="border:none;" src="http://www.rolex.com/images/email/baselEmailLogo.jpg" width="455" height="59"/>
+</td>
+</tr>
+<tr>
+<td height="50" width="455"/>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<table>
+<tr width="455" style="font-size:12px; font-family:Lucida Sans Unicode, Lucida Grande, Sans-Serif ;">
+<td>
+<h3 style="margin:0;font-size:20px; color:#FFFFFF;">Dear rogers-perl6@rgrjr.dyndns.org</h3>
+<h3 style="margin:0; color:#FFFFFF;">WANTS TO SHARE SOMETHING WITH YOU</h3>
+<p style="margin:0; color:#FFFFFF;">While exploring the Rolex.Com website, discovered this official Rolex address and thought you would be interested. </p>
+<a href="http://www.rolex.com.pjbi.summerdiscountz.com?olv=rogers-perl6@rgrjr.dyndns.org" style="color:#b89c43; text-decoration:underline;">http://www.rolex.com</a>;
+<p style="margin:0; color:#FFFFFF;">and wanted to share it with you.</p>
+<p style="margin:0; color:#FFFFFF;">Thank you. </p>
+<p style="margin:0; color:#FFFFFF;">See you soon on Rolex.com </p>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<table>
+<tr width="455">
+<td>
+<a href="http://www.rolex.com.qkyp.summerdiscountz.com?sve=rogers-perl6@rgrjr.dyndns.org"><img style="border:none;" src="http://www.rolex.com/images/email/BaselEmailWatch.jpg"/>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td>
+<table>
+<tr width="455" align="center" style="font-family:Lucida Sans Unicode, Lucida Grande, Sans-Serif; font-size:10px;">
+<td>
+<p style="margin:0; color:#FFFFFF;">Rolex S.A. respects your right to privacy and is committed to maintaining your confidence and trust. Any information you provide us through our website will not be sold or rented.</p>
+<p style="margin:0; color:#FFFFFF;">Rolex S.A. does not collect any information from you without your knowledge and permission, and does not ask that you enter any personal information to access the website.</p>
+<p style="margin:0; color:#FFFFFF;">Information you provide Rolex S.A. is stored in a secure location and is accessible only by designated staff.</p>
+<p style="margin:0; color:#FFFFFF;">© Rolex SA, Geneva, Switzerland</p>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>
