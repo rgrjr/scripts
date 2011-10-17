@@ -196,7 +196,10 @@ sub site_list_files {
     for my $pfx (! $prefixes ? sort(keys(%$dump_sets))
 		 : ref($prefixes) ? @$prefixes
 		 : ($prefixes)) {
-	for my $dump ($dump_sets->{$pfx}->current_dumps) {
+	my $set = $dump_sets->{$pfx};
+	next
+	    unless $set;
+	for my $dump ($set->current_dumps) {
 	    push(@slices, @{$dump->slices});
 	}
     }
