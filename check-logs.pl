@@ -322,12 +322,14 @@ sub parse_firewall_log_event {
 	$hash{DST} = $dest_ip;
 	$hash{DPT} = $dest_port;
     }
-    elsif ($description =~ /^IN=\S* OUT=\S* MAC=/) {
+    elsif ($description =~ /^(.*)(IN=\S* OUT=\S* MAC=.*)/) {
 	# iptables; call it ipchains for simplicity.
+	my ($message, $rpt) = $description =~ //;
 	%hash = map {
 	    my @stuff = split(/=/, $_, 2);
 	    ($stuff[0], $stuff[1] || '');
-	} split(' ', $description);
+	} split(' ', $rpt);
+	$hash{MESSAGE} = $message;
 	$hash{DISP} = 'REJECT';
 	$hash{FORMAT} = 'iptables';
     }
@@ -416,7 +418,7 @@ sub process_log_file {
 		elsif ($description =~ /^([\w\d_]+): *(.*)$/) {
 		    # reclassify.
 		    $reporting_module = $1;
-		    $description = $1;
+		    $description = $2;
 		}
 	    }
 	}
@@ -425,7 +427,7 @@ sub process_log_file {
 	$disp = $standard_module_dispositions{'default'} || 'unknown'
 	    unless defined($disp);
 	next if $disp eq 'ignore';
-	if ($description =~ /^IN=\S* OUT=\S* MAC=/) {
+	if ($description =~ /IN=\S* OUT=\S* MAC=/) {
 	    # iptables; call it ipchains for simplicity.
 	    $reporting_module = 'ipchains';
 	}

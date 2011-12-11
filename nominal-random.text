@@ -33,3 +33,4 @@ kernel: sda: scsidisk I/O error: dev 08:00, sector 0
 kernel: unable to read partition table 
 sda: Write Protect is off
 sda: sda4
+kernel: ip_conntrack: table full, dropping packet.

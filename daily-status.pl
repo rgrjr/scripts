@@ -12,7 +12,9 @@ use warnings;
 # File which keeps track of when we last ran.
 my $status_since = '/root/bin/status-since';
 
-my @log_files = qw(/var/log/messages);
+my @log_files = @ARGV;
+push(@log_files, qw(/var/log/messages))
+    if ! @log_files;
 push(@log_files, '/var/log/firewall')
     if -r '/var/log/firewall';
 
