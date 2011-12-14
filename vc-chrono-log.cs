@@ -9,18 +9,55 @@ using System.IO;
 // "Working with Text Files" p.542.
 using System.Text;
 // "Using Regular Expressions: Regex"
+// http://msdn.microsoft.com/en-us/library/system.text.regularexpressions.aspx
 using System.Text.RegularExpressions;
+// http://msdn.microsoft.com/en-us/library/system.collections.hashtable.aspx
+using System.Collections;
 
 public class Parser {
     string vcs_name = "unknown";
 
     enum parse_state { none, headings, descriptions }
 
+    static Regex match_rcs = new Regex("RCS file: ");
+    static Regex match_date_etc
+	= new Regex("date: *(?<date>[^;]+); *(?<etc>.*)$");
+    static Regex match_pair_delim = new Regex("; +");
+    static Regex match_pair_parse
+	= new Regex("(?<kwd>[^:]+): *(?<val>.*)");
+
+    private void record_file_rev_comment(string file_name, string file_rev,
+					 string date_etc, string comment) {
+	Console.WriteLine("woop:  '{0}', '{1}', '{2}', '{3}'",
+			  file_name, file_rev, date_etc, comment);
+	Match m = match_date_etc.Match(date_etc);
+	if (m == null) {
+	    Console.WriteLine("Oops; can't identify date in '{0}' -- skipping.",
+			      date_etc);
+	}
+	else {
+	    string tz_date = m.Groups["date"].ToString();
+	    date_etc = m.Groups["etc"].ToString();
+	    // encoded_date = dateutil.parser.parse(tz_date)
+
+	    // Unpack the keyword options.
+	    Hashtable kwds = new Hashtable();
+	    foreach (string pair in match_pair_delim.Split(date_etc)) {
+		Match m2 = match_pair_parse.Match(pair);
+		if (m2 != null) {
+		    String key = m2.Groups["kwd"].ToString();
+		    String val = m2.Groups["val"].ToString();
+		    kwds.Add(key, val);
+		    Console.WriteLine("[added '{0} => {1}']", key, val);
+		}
+	    }
+	}
+    }
+
     public void parse_cvs(TextReader input) {
 
 	vcs_name = "CVS";
 	parse_state state = parse_state.none;
-	Regex match_rcs = new Regex("RCS file: ");
 	string file_name = "";
 	string file_rev = "";
 
@@ -47,13 +84,12 @@ public class Parser {
 		}
 		while (line != null
 		       && ! Regex.IsMatch(line, "^---+$|^===+$")) {
-		    comment = comment + line;
+		    comment = comment + line + "\n";
 		    line = input.ReadLine();
 		}
 		// [replace this with record_file_rev_comment.  --
 		// rgr, 12-Dec-11.]
-		Console.WriteLine("woop:  '{0}', '{1}', '{2}', '{3}'",
-				  file_name, file_rev, date_etc, comment);
+		record_file_rev_comment(file_name, file_rev, date_etc, comment);
                 if (line == null || Regex.IsMatch(line, "^========"))
                     state = parse_state.none;
                 else
@@ -82,7 +118,7 @@ public class Parser {
 		    file_name = m.Groups["val"].ToString();
 		}
 		else {
-		    Console.WriteLine("Got tag '{0}'", tag);
+		    // Console.WriteLine("Got tag '{0}'", tag);
 		}
 	    }
 	    line = input.ReadLine();
