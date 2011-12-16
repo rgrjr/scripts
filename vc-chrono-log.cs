@@ -13,6 +13,31 @@ using System.Text;
 using System.Text.RegularExpressions;
 // http://msdn.microsoft.com/en-us/library/system.collections.hashtable.aspx
 using System.Collections;
+// "List<T>" p.215.
+using System.Collections.Generic;
+
+public class FileRevision {
+    public string comment = "";
+    public string raw_date = "";
+    public System.DateTime encoded_date;
+    public string file_name = "";
+    public string file_rev = "";
+    public string action = "";
+    public string author = "";
+    public string state = "";
+    public string lines = "";
+    public string commitid = "";
+    public string branches = "";
+
+    public FileRevision(string raw_date, System.DateTime encoded_date,
+			string comment, string file_name, string file_rev) {
+	this.raw_date = raw_date;
+	this.encoded_date = encoded_date;
+	this.comment = comment;
+	this.file_name = file_name;
+	this.file_rev = file_rev;
+    }
+}
 
 public class Parser {
     string vcs_name = "unknown";
@@ -26,10 +51,14 @@ public class Parser {
     static Regex match_pair_parse
 	= new Regex("(?<kwd>[^:]+): *(?<val>.*)");
 
+    // For matching individual file revisions.
+    Hashtable commit_mods = new Hashtable();
+    Hashtable comment_mods = new Hashtable();
+
     private void record_file_rev_comment(string file_name, string file_rev,
 					 string date_etc, string comment) {
-	Console.WriteLine("woop:  '{0}', '{1}', '{2}', '{3}'",
-			  file_name, file_rev, date_etc, comment);
+	// Console.WriteLine("woop:  '{0}', '{1}', '{2}', '{3}'",
+	// file_name, file_rev, date_etc, comment);
 	Match m = match_date_etc.Match(date_etc);
 	if (m == null) {
 	    Console.WriteLine("Oops; can't identify date in '{0}' -- skipping.",
@@ -38,7 +67,9 @@ public class Parser {
 	else {
 	    string tz_date = m.Groups["date"].ToString();
 	    date_etc = m.Groups["etc"].ToString();
-	    // encoded_date = dateutil.parser.parse(tz_date)
+	    System.DateTime encoded_date;
+	    if (! System.DateTime.TryParse(tz_date, out encoded_date))
+		Console.WriteLine("Oops; can't parse date '{0}'.", tz_date);
 
 	    // Unpack the keyword options.
 	    Hashtable kwds = new Hashtable();
@@ -48,9 +79,45 @@ public class Parser {
 		    String key = m2.Groups["kwd"].ToString();
 		    String val = m2.Groups["val"].ToString();
 		    kwds.Add(key, val);
-		    Console.WriteLine("[added '{0} => {1}']", key, val);
 		}
 	    }
+
+	    // Define the revision.
+	    FileRevision rev = new FileRevision(tz_date, encoded_date, comment,
+						file_name, file_rev);
+	    if (kwds.Contains("action"))
+		rev.action = (string) kwds["action"];
+	    if (kwds.Contains("author"))
+		rev.author = (string) kwds["author"];
+	    if (kwds.Contains("state"))
+		rev.state = (string) kwds["state"];
+	    if (kwds.Contains("lines"))
+		rev.lines = (string) kwds["lines"];
+	    if (kwds.Contains("commitid"))
+		rev.commitid = (string) kwds["commitid"];
+	    if (kwds.Contains("branches"))
+		rev.branches = (string) kwds["branches"];
+
+	    // Put rev into commit_mods if we have a commitid, else put it
+	    // into comment_mods.
+	    List<FileRevision> list;
+	    string commit_id = rev.commitid;
+	    if (commit_id.Length > 0) {
+		Console.WriteLine("Have rev.commitid = '{0}'", commit_id);
+		list = (List<FileRevision>) commit_mods[commit_id];
+		if (list == null) {
+		    list = new List<FileRevision>();
+		    commit_mods[commit_id] = list;
+		}
+	    }
+	    else {
+		list = (List<FileRevision>) comment_mods[comment];
+		if (list == null) {
+		    list = new List<FileRevision>();
+		    comment_mods[comment] = list;
+		}
+	    }
+	    list.Add(rev);
 	}
     }
 
@@ -126,6 +193,8 @@ public class Parser {
 	if (state != parse_state.none) {
 	    Console.WriteLine("Oops; bad final state.");
 	}
+	Console.WriteLine("Total of {0} commit revs and {1} comment revs.",
+			  commit_mods.Count, comment_mods.Count);
     }
 }
 
