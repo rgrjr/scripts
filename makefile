@@ -77,7 +77,11 @@ test-cvs-chrono-log-3:
 	cmp test/test-cvs-chrono-log.out $@.tmp
 	rm -f $@.tmp
 # Test CVS "commitid" processing.
-test-cvs-chrono-log-4:
+vc-chrono-log.exe:		vc-chrono-log.cs
+	gmcs $^
+test-cvs-chrono-log-4:		vc-chrono-log.exe
+	mono vc-chrono-log.exe < test/$@.text > $@.tmp
+	cmp test/$@.out $@.tmp
 	./vc-chrono-log.pl < test/$@.text > $@.tmp
 	cmp test/$@.out $@.tmp
 	./vc-chrono-log.rb < test/$@.text > $@.tmp

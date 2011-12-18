@@ -4,6 +4,7 @@
 //
 // $Id: vc-chrono-log.rb 218 2009-03-19 02:47:39Z rogers $
 
+// General lib ref:  http://msdn.microsoft.com/en-us/library/gg145045.aspx
 using System;
 using System.IO;
 // "Working with Text Files" p.542.
@@ -13,7 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 // http://msdn.microsoft.com/en-us/library/system.collections.hashtable.aspx
 using System.Collections;
-// "List<T>" p.215.
+// "List<T>" p.215, http://msdn.microsoft.com/en-us/library/6sh2ey19.aspx
 using System.Collections.Generic;
 
 public class FileRevision {
@@ -39,6 +40,115 @@ public class FileRevision {
     }
 }
 
+public class Entry {
+    public string author = "";
+    public string commitid = "";
+    public System.DateTime encoded_date;
+    public List<FileRevision> files;
+    public string msg = "";
+    public string revision = "";
+
+    public Entry(System.DateTime encoded_date,
+		 string commitid,
+		 string author,
+		 string msg,
+		 List<FileRevision> files) {
+	this.encoded_date = encoded_date;
+	this.commitid = commitid;
+	this.author = author;
+	this.msg = msg;
+	this.files = files;
+    }
+
+    // Some constants for output generation.
+    static char[] semicolon_char = {';'};
+    static char[] newline_char = {'\n'};
+
+    public void report() {
+        // string local_date = this.encoded_date.ToString();
+	Console.WriteLine("{0}:", encoded_date.ToString("yyyy-MM-dd HH:mm:ss"));
+
+        // [in perl, this is a simple print/join/map over qw(revision author
+        // commitid), but random access of object slots in C# is probably too
+        // painful.  -- rgr, 16-Dec-11.]
+        string items = "";
+        if (this.revision.Length > 0)
+            items = String.Format("revision: {0}", this.revision);
+        if (this.author.Length > 0) {
+	    if (items.Length > 0)
+		items = items + ";  ";
+            items = items + String.Format("author: {0}", this.author);
+	}
+        if (this.commitid.Length > 0) {
+	    if (items.Length > 0)
+		items = items + ";  ";
+            items = items + String.Format("commitid: {0}", this.commitid);
+	}
+        if (items.Length > 0)
+            Console.WriteLine("  {0}", items.Trim(semicolon_char));
+
+	foreach (string line in this.msg.Trim(newline_char).Split('\n')) {
+	    // indent by two, skipping empty lines.
+	    // [TBD]
+	    Console.WriteLine("  {0}", line);
+	}
+	if (this.files != null) {
+	    int n_matches = 0;
+	    int n_files = 0;
+	    int lines_removed = 0;
+	    int lines_added = 0;
+	    foreach (FileRevision entry in this.files) {
+		// [finish this.  -- rgr, 17-Dec-11.]
+		string result
+		    = entry.file_rev.Length > 0
+		    ? String.Format("  => {0} {1}:",
+				    entry.file_name, entry.file_rev)
+		    : String.Format("  => {0}:", entry.file_name);
+		// qw(state action lines branches)
+                if (entry.state.Length > 0)
+                    result = result + String.Format("  state: {0};",
+						    entry.state);
+                if (entry.action.Length > 0)
+                    result = result + String.Format("  action: {0};",
+						    entry.action);
+                if (entry.lines.Length > 0)
+                    result = result + String.Format("  lines: {0};",
+						    entry.lines);
+                if (entry.branches.Length > 0)
+                    result = result + String.Format("  branches: {0};",
+						    entry.branches);
+		Console.WriteLine(result.Trim(semicolon_char));
+
+		// Accumulate totals.
+		string lines = entry.lines;
+		Match m = Regex.Match(lines, @"\+(?<a>[0-9]+) -(?<r>[0-9]+)");
+		if (m != null) {
+		    string add_string = m.Groups["a"].ToString();
+		    // Console.WriteLine("added {0} lines", add_string);
+		    if (add_string.Length > 0) {
+			lines_added += Int32.Parse(add_string);
+			string rem_string = m.Groups["r"].ToString();
+			// Console.WriteLine("removed {0} lines", rem_string);
+			if (rem_string.Length > 0)
+			    lines_removed += Int32.Parse(rem_string);
+			n_matches += 1;
+		    }
+		}
+		n_files += 1;
+	    }
+
+            // Summarize the file set.
+            if (n_matches > 1 && (lines_removed > 1 || lines_added > 1)) {
+                string incomplete_spew
+		    = n_matches == n_files ? "" : " (incomplete)";
+                Console.WriteLine("     Total lines: +{0} -{1}{2}",
+				  lines_added, lines_removed, incomplete_spew);
+	    }
+	}
+	Console.WriteLine("");
+    }
+}
+
 public class Parser {
     string vcs_name = "unknown";
 
@@ -54,6 +164,9 @@ public class Parser {
     // For matching individual file revisions.
     Hashtable commit_mods = new Hashtable();
     Hashtable comment_mods = new Hashtable();
+
+    // Resulting revisions.
+    public List<Entry> log_entries;
 
     private void record_file_rev_comment(string file_name, string file_rev,
 					 string date_etc, string comment) {
@@ -103,7 +216,6 @@ public class Parser {
 	    List<FileRevision> list;
 	    string commit_id = rev.commitid;
 	    if (commit_id.Length > 0) {
-		Console.WriteLine("Have rev.commitid = '{0}'", commit_id);
 		list = (List<FileRevision>) commit_mods[commit_id];
 		if (list == null) {
 		    list = new List<FileRevision>();
@@ -118,6 +230,78 @@ public class Parser {
 		}
 	    }
 	    list.Add(rev);
+	}
+    }
+
+    private static int compare_revs_by_date(FileRevision r1,
+					    FileRevision r2) {
+	return r1.encoded_date.CompareTo(r2.encoded_date);
+    }
+
+    private static int compare_entries_by_date(Entry r1, Entry r2) {
+	return r1.encoded_date.CompareTo(r2.encoded_date);
+    }
+
+    private void sort_file_rev_comments() {
+	// Combine file entries that correspond to a single commit.
+	List<Entry> combined_entries = new List<Entry>();
+	foreach (string commit_id in commit_mods.Keys) {
+	    List<FileRevision> mods
+		= (List<FileRevision>) commit_mods[commit_id];
+	    FileRevision mod = mods[0];
+	    Entry new_entry
+		= new Entry(mod.encoded_date, commit_id, mod.author,
+			    mod.comment, mods);
+	    combined_entries.Add(new_entry);
+	}
+
+	// Examine remaining entries by comment, then by date, combining all
+	// that have the identical comment and nearly the same date.  [we should
+	// also refuse to merge them if their modified files are not disjoint.
+	// -- rgr, 29-Aug-05.]
+	foreach (string comment in comment_mods.Keys) {
+	    System.DateTime zero_date = new System.DateTime(0);
+	    System.DateTime last_date = zero_date;
+	    List<FileRevision> entries = new List<FileRevision>();
+	    List<FileRevision> mods
+		= (List<FileRevision>) comment_mods[comment];
+	    mods.Sort(compare_revs_by_date);
+	    foreach (FileRevision mod in mods) {
+		// mod.Display();
+		System.DateTime date = mod.encoded_date;
+		if (last_date != zero_date && date > last_date) {
+		    // the current entry probably represents a "cvs commit"
+		    // event that is distinct from the previous entry(ies).
+		    FileRevision entry_mod = entries[0];
+		    Entry new_entry
+			= new Entry(entry_mod.encoded_date, "",
+				    entry_mod.author, comment, entries);
+		    combined_entries.Add(new_entry);
+		    entries = new List<FileRevision>();
+		    last_date = zero_date;
+		}
+		if (last_date == zero_date) {
+		    // Console.WriteLine("woop");
+		    last_date = date.AddSeconds(120);
+		}
+		entries.Add(mod);
+	    }
+	    if (entries.Count > 0) {
+		// Take care of leftovers.
+		FileRevision entry_mod = entries[0];
+		Entry new_entry
+		    = new Entry(entry_mod.encoded_date, "",
+				entry_mod.author, entry_mod.comment, entries);
+		combined_entries.Add(new_entry);
+		// Console.WriteLine("final, {0} entries", entries.Count);
+	    }
+
+            // Now resort by date.  We can't just ask for the reversed sort
+            // because that puts the first two entries (which happened at the
+            // same time when the repository was created) in the opposite order.
+            combined_entries.Sort(compare_entries_by_date);
+	    combined_entries.Reverse();
+	    this.log_entries = combined_entries;
 	}
     }
 
@@ -193,8 +377,7 @@ public class Parser {
 	if (state != parse_state.none) {
 	    Console.WriteLine("Oops; bad final state.");
 	}
-	Console.WriteLine("Total of {0} commit revs and {1} comment revs.",
-			  commit_mods.Count, comment_mods.Count);
+	sort_file_rev_comments();
     }
 }
 
@@ -203,5 +386,8 @@ public class HelloWorld {
 	TextReader input = Console.In;
 	Parser parser = new Parser();
 	parser.parse_cvs(input);
+	foreach (Entry entry in parser.log_entries) {
+	    entry.report();
+	}
     }
 }
