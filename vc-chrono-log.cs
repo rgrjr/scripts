@@ -64,6 +64,15 @@ public class Entry {
     static char[] semicolon_char = {';'};
     static char[] newline_char = {'\n'};
 
+    private static int compare_files_by_name(FileRevision r1,
+					     FileRevision r2) {
+	// Note that we cannot use the default "culture-sensitive" sorting,
+	// since that produces the wrong order, e.g. due to case and treatment
+	// of non-alphabetics.
+	return String.Compare(r1.file_name, r2.file_name,
+				StringComparison.Ordinal);
+    }
+
     public void report() {
         // string local_date = this.encoded_date.ToString();
 	Console.WriteLine("{0}:", encoded_date.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -97,6 +106,7 @@ public class Entry {
 	    int n_files = 0;
 	    int lines_removed = 0;
 	    int lines_added = 0;
+	    this.files.Sort(compare_files_by_name);
 	    foreach (FileRevision entry in this.files) {
 		// [finish this.  -- rgr, 17-Dec-11.]
 		string result
