@@ -70,7 +70,7 @@ public class Entry {
 	// since that produces the wrong order, e.g. due to case and treatment
 	// of non-alphabetics.
 	return String.Compare(r1.file_name, r2.file_name,
-				StringComparison.Ordinal);
+			      StringComparison.Ordinal);
     }
 
     public void report() {
@@ -134,11 +134,9 @@ public class Entry {
 		Match m = Regex.Match(lines, @"\+(?<a>[0-9]+) -(?<r>[0-9]+)");
 		if (m != null) {
 		    string add_string = m.Groups["a"].ToString();
-		    // Console.WriteLine("added {0} lines", add_string);
 		    if (add_string.Length > 0) {
 			lines_added += Int32.Parse(add_string);
 			string rem_string = m.Groups["r"].ToString();
-			// Console.WriteLine("removed {0} lines", rem_string);
 			if (rem_string.Length > 0)
 			    lines_removed += Int32.Parse(rem_string);
 			n_matches += 1;
@@ -171,6 +169,19 @@ public class Parser {
     static Regex match_pair_parse
 	= new Regex("(?<kwd>[^:]+): *(?<val>.*)");
 
+    // Useful "uninitialized" marker.
+    static System.DateTime zero_date = new System.DateTime(0);
+    // date_disambiguator is a hash of "comment1:comment2" to the number of
+    // occurrences, where "comment1" is different from "comment2" and appears
+    // just before before it, for two file revisions with the identical date.
+    // This is for preserving the order of synthesized commits that happen at
+    // the same time; otherwise Sort gives a different permutation of the two
+    // initial CVS log entries than do all other languages.
+    static Hashtable date_disambiguator = new Hashtable();
+    // Date of the last such rev, for recognizing date collisions.
+    static System.DateTime last_rev_date = zero_date;
+    static string last_rev_comment = "";
+
     // For matching individual file revisions.
     Hashtable commit_mods = new Hashtable();
     Hashtable comment_mods = new Hashtable();
@@ -180,8 +191,6 @@ public class Parser {
 
     private void record_file_rev_comment(string file_name, string file_rev,
 					 string date_etc, string comment) {
-	// Console.WriteLine("woop:  '{0}', '{1}', '{2}', '{3}'",
-	// file_name, file_rev, date_etc, comment);
 	Match m = match_date_etc.Match(date_etc);
 	if (m == null) {
 	    Console.WriteLine("Oops; can't identify date in '{0}' -- skipping.",
@@ -240,6 +249,18 @@ public class Parser {
 		}
 	    }
 	    list.Add(rev);
+
+	    // Update date_disambiguator if appropriate.
+	    if (last_rev_date == encoded_date
+		&& last_rev_comment != comment) {
+		string key = last_rev_comment + ":" + comment;
+		int count = (int) (date_disambiguator[key] == null
+				   ? 0
+				   : date_disambiguator[key]);
+		date_disambiguator[key] = count + 1;
+	    }
+	    last_rev_date = encoded_date;
+	    last_rev_comment = comment;
 	}
     }
 
@@ -249,7 +270,26 @@ public class Parser {
     }
 
     private static int compare_entries_by_date(Entry r1, Entry r2) {
-	return r1.encoded_date.CompareTo(r2.encoded_date);
+	int result = r1.encoded_date.CompareTo(r2.encoded_date);
+	if (result != 0)
+	    return result;
+	string msg1 = r1.msg;
+	string msg2 = r2.msg;
+	if (msg1 == msg2)
+	    return 0;
+
+	// The dates are the same, but the commit messages are different.  Use
+	// date_disambiguator to try to preserve the original order.
+	string key1 = msg1 + ":" + msg2;
+	int count1 = (int) (date_disambiguator[key1] == null
+			    ? 0
+			    : date_disambiguator[key1]);
+	string key2 = msg2 + ":" + msg1;
+	int count2 = (int) (date_disambiguator[key2] == null
+			    ? 0
+			    : date_disambiguator[key2]);
+	result = count1.CompareTo(count2);
+	return result;
     }
 
     private void sort_file_rev_comments() {
@@ -270,7 +310,6 @@ public class Parser {
 	// also refuse to merge them if their modified files are not disjoint.
 	// -- rgr, 29-Aug-05.]
 	foreach (string comment in comment_mods.Keys) {
-	    System.DateTime zero_date = new System.DateTime(0);
 	    System.DateTime last_date = zero_date;
 	    List<FileRevision> entries = new List<FileRevision>();
 	    List<FileRevision> mods
@@ -291,7 +330,6 @@ public class Parser {
 		    last_date = zero_date;
 		}
 		if (last_date == zero_date) {
-		    // Console.WriteLine("woop");
 		    last_date = date.AddSeconds(120);
 		}
 		entries.Add(mod);
@@ -303,7 +341,6 @@ public class Parser {
 		    = new Entry(entry_mod.encoded_date, "",
 				entry_mod.author, entry_mod.comment, entries);
 		combined_entries.Add(new_entry);
-		// Console.WriteLine("final, {0} entries", entries.Count);
 	    }
 
             // Now resort by date.  We can't just ask for the reversed sort
@@ -377,9 +414,6 @@ public class Parser {
 		}
 		else if (tag.Equals("Working file")) {
 		    file_name = m.Groups["val"].ToString();
-		}
-		else {
-		    // Console.WriteLine("Got tag '{0}'", tag);
 		}
 	    }
 	    line = input.ReadLine();

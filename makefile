@@ -59,7 +59,7 @@ all:
 test:	test-chrono-log test-email test-backup
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
-			test-cvs-chrono-log-3 \
+			test-cvs-chrono-log-3 test-cvs-chrono-log-3.5 \
 			test-svn-chrono-log-1a \
 			test-compare-languages
 test-cvs-chrono-log-1:
@@ -74,6 +74,10 @@ test-cvs-chrono-log-2:
 	rm -f $@.tmp
 test-cvs-chrono-log-3:
 	./vc-chrono-log.py < test/test-cvs-chrono-log.text > $@.tmp
+	cmp test/test-cvs-chrono-log.out $@.tmp
+	rm -f $@.tmp
+test-cvs-chrono-log-3.5:	vc-chrono-log.exe
+	mono vc-chrono-log.exe < test/test-cvs-chrono-log.text > $@.tmp
 	cmp test/test-cvs-chrono-log.out $@.tmp
 	rm -f $@.tmp
 # Test CVS "commitid" processing.
