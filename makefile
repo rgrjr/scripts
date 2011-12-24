@@ -106,13 +106,15 @@ test-csharp-chrono-log:	vc-chrono-log.exe
 	cmp test/test-svn-chrono-log-1a-out.text $@.tmp
 	rm -f $@.tmp
 # This assumes we are in a Subversion working copy, and checks that the Perl,
-# Ruby, and Python versions get the same thing for the same *current* log.
-test-compare-languages:
-	svn log --xml --verbose > $@.tmp.text
-	./vc-chrono-log.pl < $@.tmp.text > $@.tmp.pl.text
-	./vc-chrono-log.rb < $@.tmp.text > $@.tmp.rb.text
+# Ruby, Python, and C# versions get the same thing for the same *current* log.
+test-compare-languages:	vc-chrono-log.exe
+	svn log --xml --verbose > $@.tmp.xml
+	./vc-chrono-log.pl < $@.tmp.xml > $@.tmp.pl.text
+	mono $^ < $@.tmp.xml > $@.tmp.cs.text
+	cmp $@.tmp.pl.text $@.tmp.cs.text
+	./vc-chrono-log.rb < $@.tmp.xml > $@.tmp.rb.text
 	cmp $@.tmp.pl.text $@.tmp.rb.text
-	./vc-chrono-log.py < $@.tmp.text > $@.tmp.py.text
+	./vc-chrono-log.py < $@.tmp.xml > $@.tmp.py.text
 	cmp $@.tmp.pl.text $@.tmp.py.text
 	rm -f $@.tmp.*
 

@@ -267,7 +267,7 @@ public class Parser {
 	}
 
 	// Now resort by date.
-	log_entries.Sort(compare_entries_by_date);
+	log_entries.Sort(compare_entries_by_revision);
 	log_entries.Reverse();
     }
 
@@ -349,6 +349,12 @@ public class Parser {
     private static int compare_revs_by_date(FileRevision r1,
 					    FileRevision r2) {
 	return r1.encoded_date.CompareTo(r2.encoded_date);
+    }
+
+    private static int compare_entries_by_revision(Entry r1, Entry r2) {
+	int rev1 = Int32.Parse(r1.revision);
+	int rev2 = Int32.Parse(r2.revision);
+	return rev1.CompareTo(rev2);
     }
 
     private static int compare_entries_by_date(Entry r1, Entry r2) {
