@@ -6,6 +6,8 @@
 
 // General lib ref:  http://msdn.microsoft.com/en-us/library/gg145045.aspx
 using System;
+// http://msdn.microsoft.com/en-us/library/system.io.aspx
+// http://msdn.microsoft.com/en-us/library/system.io.textreader.aspx
 using System.IO;
 // "Working with Text Files" p.542.
 using System.Text;
@@ -16,6 +18,8 @@ using System.Text.RegularExpressions;
 using System.Collections;
 // "List<T>" p.215, http://msdn.microsoft.com/en-us/library/6sh2ey19.aspx
 using System.Collections.Generic;
+// http://msdn.microsoft.com/en-us/library/system.xml.aspx
+using System.Xml;
 
 public class FileRevision {
     public string comment = "";
@@ -187,7 +191,85 @@ public class Parser {
     Hashtable comment_mods = new Hashtable();
 
     // Resulting revisions.
-    public List<Entry> log_entries;
+    public List<Entry> log_entries = new List<Entry>();
+
+    public void parse(TextReader stream) {
+	// Generic parser, assuming we can dispatch on the first character.
+	int first_char = stream.Peek();
+	if (first_char == (int) '<')
+	    parse_svn_xml(stream);
+	else
+	    parse_cvs(stream);
+    }
+
+    public void parse_svn_xml(TextReader stream) {
+	// Use System.Xml.XmlReader to parse stream, in a SAX-like element-at-a-
+	// time fashion, turning all <logentry> elements into Entry objects on
+	// log_entries.  Finally, sort log_entries by date.
+	XmlReaderSettings settings = new XmlReaderSettings();
+	settings.IgnoreComments = true;
+	settings.IgnoreProcessingInstructions = true;
+	settings.IgnoreWhitespace = true;
+	settings.ConformanceLevel = ConformanceLevel.Document;
+	XmlReader reader = XmlReader.Create(stream, settings);
+	reader.ReadStartElement("log");
+
+	// Loop over <logentry> elements.
+	while (reader.IsStartElement()) {
+	    string rev_number = reader.GetAttribute("revision");
+	    if (reader.Name != "logentry")
+		Console.WriteLine("[on element {0} instead of 'logentry']",
+				  reader.Name);
+	    reader.ReadStartElement("logentry");
+
+	    // Parse author and date.  The <author> element is optional, and
+	    // omitted in the first commit by cvs2svn.
+	    string author = "";
+	    if (reader.Name == "author") {
+		author = reader.ReadString();
+		reader.ReadEndElement();
+	    }
+	    reader.ReadStartElement("date");
+	    string date = reader.ReadString();
+	    reader.ReadEndElement();
+	    System.DateTime encoded_date = zero_date;
+	    if (! System.DateTime.TryParse(date, out encoded_date))
+		Console.WriteLine("Oops; can't parse revision {0} date '{1}'.",
+				  rev_number, date);
+
+	    // Parse paths.
+	    reader.ReadStartElement("paths");
+	    List<FileRevision> files = new List<FileRevision>();
+	    while (reader.IsStartElement()) {
+		string action = reader.GetAttribute("action");
+		reader.ReadStartElement("path");
+		string pathname = reader.ReadString();
+		FileRevision rev = new FileRevision
+		    (date, encoded_date, "", pathname, "");
+		rev.action = action;
+		rev.author = author;
+		files.Add(rev);
+		reader.ReadEndElement();
+	    }
+	    reader.ReadEndElement();
+
+	    // Get the commit message.
+	    reader.ReadStartElement("msg");
+	    string msg = reader.ReadString();
+	    reader.ReadEndElement();
+
+	    // Create and add an entry.
+	    Entry new_entry = new Entry(encoded_date, "", author, msg, files);
+	    new_entry.revision = rev_number;
+	    log_entries.Add(new_entry);
+	    // End of the <logentry>.
+	    reader.ReadEndElement();
+	}
+
+	// Now resort by date.
+	log_entries.Sort(compare_entries_by_date);
+	log_entries.Reverse();
+    }
 
     private void record_file_rev_comment(string file_name, string file_rev,
 					 string date_etc, string comment) {
@@ -294,7 +376,6 @@ public class Parser {
 
     private void sort_file_rev_comments() {
 	// Combine file entries that correspond to a single commit.
-	List<Entry> combined_entries = new List<Entry>();
 	foreach (string commit_id in commit_mods.Keys) {
 	    List<FileRevision> mods
 		= (List<FileRevision>) commit_mods[commit_id];
@@ -302,7 +383,7 @@ public class Parser {
 	    Entry new_entry
 		= new Entry(mod.encoded_date, commit_id, mod.author,
 			    mod.comment, mods);
-	    combined_entries.Add(new_entry);
+	    log_entries.Add(new_entry);
 	}
 
 	// Examine remaining entries by comment, then by date, combining all
@@ -325,7 +406,7 @@ public class Parser {
 		    Entry new_entry
 			= new Entry(entry_mod.encoded_date, "",
 				    entry_mod.author, comment, entries);
-		    combined_entries.Add(new_entry);
+		    log_entries.Add(new_entry);
 		    entries = new List<FileRevision>();
 		    last_date = zero_date;
 		}
@@ -340,15 +421,14 @@ public class Parser {
 		Entry new_entry
 		    = new Entry(entry_mod.encoded_date, "",
 				entry_mod.author, entry_mod.comment, entries);
-		combined_entries.Add(new_entry);
+		log_entries.Add(new_entry);
 	    }
 
             // Now resort by date.  We can't just ask for the reversed sort
             // because that puts the first two entries (which happened at the
             // same time when the repository was created) in the opposite order.
-            combined_entries.Sort(compare_entries_by_date);
-	    combined_entries.Reverse();
-	    this.log_entries = combined_entries;
+            log_entries.Sort(compare_entries_by_date);
+	    log_entries.Reverse();
 	}
     }
 
@@ -427,9 +507,8 @@ public class Parser {
 
 public class HelloWorld {
     static public void Main () {
-	TextReader input = Console.In;
 	Parser parser = new Parser();
-	parser.parse_cvs(input);
+	parser.parse(Console.In);
 	foreach (Entry entry in parser.log_entries) {
 	    entry.report();
 	}

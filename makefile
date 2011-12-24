@@ -59,9 +59,8 @@ all:
 test:	test-chrono-log test-email test-backup
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
-			test-cvs-chrono-log-3 test-cvs-chrono-log-3.5 \
-			test-svn-chrono-log-1a \
-			test-compare-languages
+			test-cvs-chrono-log-3 test-svn-chrono-log-1a \
+			test-compare-languages test-csharp-chrono-log
 test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
 	cmp test/test-cvs-chrono-log.out $@.tmp
@@ -76,16 +75,8 @@ test-cvs-chrono-log-3:
 	./vc-chrono-log.py < test/test-cvs-chrono-log.text > $@.tmp
 	cmp test/test-cvs-chrono-log.out $@.tmp
 	rm -f $@.tmp
-test-cvs-chrono-log-3.5:	vc-chrono-log.exe
-	mono vc-chrono-log.exe < test/test-cvs-chrono-log.text > $@.tmp
-	cmp test/test-cvs-chrono-log.out $@.tmp
-	rm -f $@.tmp
 # Test CVS "commitid" processing.
-vc-chrono-log.exe:		vc-chrono-log.cs
-	gmcs $^
 test-cvs-chrono-log-4:		vc-chrono-log.exe
-	mono vc-chrono-log.exe < test/$@.text > $@.tmp
-	cmp test/$@.out $@.tmp
 	./vc-chrono-log.pl < test/$@.text > $@.tmp
 	cmp test/$@.out $@.tmp
 	./vc-chrono-log.rb < test/$@.text > $@.tmp
@@ -102,6 +93,17 @@ test-svn-chrono-log-1a:
 	cmp $@.tmp test/$@-out.text
 	./vc-chrono-log.py < test/test-svn-chrono-log-1.xml > $@.tmp
 	cmp $@.tmp test/$@-out.text
+	rm -f $@.tmp
+# Test the C# version separately, since it may not be installed.
+vc-chrono-log.exe:		vc-chrono-log.cs
+	gmcs $^
+test-csharp-chrono-log:	vc-chrono-log.exe
+	mono vc-chrono-log.exe < test/test-cvs-chrono-log.text > $@.tmp
+	cmp test/test-cvs-chrono-log.out $@.tmp
+	mono vc-chrono-log.exe < test/test-cvs-chrono-log-4.text > $@.tmp
+	cmp test/test-cvs-chrono-log-4.out $@.tmp
+	mono $^ < test/test-svn-chrono-log-1.xml > $@.tmp
+	cmp test/test-svn-chrono-log-1a-out.text $@.tmp
 	rm -f $@.tmp
 # This assumes we are in a Subversion working copy, and checks that the Perl,
 # Ruby, and Python versions get the same thing for the same *current* log.
