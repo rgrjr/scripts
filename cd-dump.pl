@@ -84,7 +84,7 @@ GetOptions('help' => \$help, 'man' => \$man, 'verbose+' => \$verbose_p,
 	   'written-subdir=s' => \$written_subdir,
 	   make_option_forwarders(\@mkisofs_options,
 				  qw(max-iso9660-filenames relaxed-filenames
-				     V=s)),
+				     R! J! V=s)),
 	   make_option_forwarders(\@cdrecord_options, qw(speed=s)))
     or pod2usage(2);
 pod2usage(2) if $usage;
