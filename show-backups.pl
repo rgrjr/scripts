@@ -10,6 +10,7 @@ use strict;
 use warnings;
 
 BEGIN {
+    # [this is useful for debugging.  -- rgr, 18-Jan-12.]
     unshift(@INC, $1)
 	if $0 =~ m@(.+)/@;
 }
@@ -23,11 +24,16 @@ use Backup::Slice;
 my $usage = 0;
 my $help = 0;
 my $man = 0;
+my ($min_level, $max_level);
 my $slices_p = 0;
 my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
+	   'level=s' => sub { ($min_level, $max_level) = split(/[:.]+/, $_[1]);
+			      $max_level = $min_level
+				  unless defined($max_level);
+	   },
 	   'prefix=s' => \$prefix)
     or pod2usage(2);
 pod2usage(2) if $usage;
@@ -61,10 +67,18 @@ my $dump_set_from_prefix
 my $n_prefixes = 0;
 for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     my $set = $dump_set_from_prefix->{$pfx};
-    print "\n"
-	if $n_prefixes && ! $slices_p;
     $set->mark_current_dumps();
+    my $first_slice_p = 1;
     for my $dump (@{$set->dumps}) {
+	next
+	    if (defined($min_level)
+		&& ! ($min_level <= $dump->level
+		      && $dump->level <= $max_level));
+	print "\n"
+	    # If not showing slice files, we want a blank line between the last
+	    # slice of one set and the first slice of the next set.
+	    if $n_prefixes && ! $slices_p && $first_slice_p;
+	$first_slice_p = 0;
 	for my $slice (sort { $a->entry_cmp($b); } @{$dump->slices}) {
 	    if ($slices_p) {
 		print $slice->file, "\n";
@@ -120,20 +134,23 @@ two words (e.g. C<--prefix '*'>) or in one word separated by an "="
 
 Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
 
-=item B<--man>
-
-Prints the full documentation in the Unix `manpage' style.
-
-=item B<--usage>
-
-Prints just the L<"SYNOPSIS"> section of this documentation.
-
 =item B<--host>
 
 Specifies the host name to use for constructing the full directory
 pathname in file listings.  This is useful for distinguishing
 duplicate copies after merging listings from different systems.  The
 default is whatever the C<hostname> command prints.
+
+=item B<--level>
+
+If specified as an integer from 0 to 9, prints only dumps at that
+level.  If two integers are given separated by dots or colons
+(e.g. "0:1" or "2..9"), then only dumps within that range of levels
+are considered.
+
+=item B<--man>
+
+Prints the full documentation in the Unix `manpage' style.
 
 =item B<--prefix>
 
@@ -144,6 +161,10 @@ the default is '*', which includes all dump files.
 
 If specified, print only the file name of each selected slice, one per
 line.  This is useful for piping to other commands via C<xargs>.
+
+=item B<--usage>
+
+Prints just the L<"SYNOPSIS"> section of this documentation.
 
 =back
 
@@ -177,7 +198,7 @@ If you find any, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2004-2005 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2004-2012 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
