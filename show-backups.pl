@@ -20,14 +20,14 @@ use Pod::Usage;
 use Backup::DumpSet;
 use Backup::Slice;
 
-my $verbose_p = 0;		# this doesn't actually do anything yet.
 my $usage = 0;
 my $help = 0;
 my $man = 0;
+my $slices_p = 0;
 my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
-	   'verbose+' => \$verbose_p,
+	   'slices!' => \$slices_p,
 	   'prefix=s' => \$prefix)
     or pod2usage(2);
 pod2usage(2) if $usage;
@@ -62,14 +62,19 @@ my $n_prefixes = 0;
 for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     my $set = $dump_set_from_prefix->{$pfx};
     print "\n"
-	if $n_prefixes;
+	if $n_prefixes && ! $slices_p;
     $set->mark_current_dumps();
     for my $dump (@{$set->dumps}) {
-	for my $entry (sort { $a->entry_cmp($b); } @{$dump->slices}) {
-	    my $listing = $entry->listing;
-	    substr($listing, 1, 1) = '*'
-		if $dump->current_p;
-	    print $listing, "\n";
+	for my $slice (sort { $a->entry_cmp($b); } @{$dump->slices}) {
+	    if ($slices_p) {
+		print $slice->file, "\n";
+	    }
+	    else {
+		my $listing = $slice->listing;
+		substr($listing, 1, 1) = '*'
+		    if $dump->current_p;
+		print $listing, "\n";
+	    }
 	}
     }
     $n_prefixes++;
@@ -83,17 +88,17 @@ show-backups.pl -- generate a sorted list of backup dump files.
 
 =head1 SYNOPSIS
 
-    show-backups.pl [ --help ] [ --man ] [ --usage ] [ --verbose ... ]
-                    [ --prefix=<pattern> ]
+    show-backups.pl [ --help ] [ --man ] [ --usage ]
+                    [ --slices ] [ --prefix=<pattern> ]
 
 where:
 
     Parameter Name     Deflt  Explanation
      --help	              Print detailed help.
      --man	              Print man page.
-     --usage                  Print this synopsis.
-     --verbose                Get debugging output; repeat to increase.
      --prefix           '*'   Partition prefix on files; wildcarded.
+     --slices                 If specified, print only slice file names.
+     --usage                  Print this synopsis.
 
 =head1 DESCRIPTION
 
@@ -104,8 +109,8 @@ backed up and when).
 =head1 OPTIONS
 
 As with all other C<Getopt::Long> scripts, option names can be
-abbreviated to anything long enough to be unambiguous (e.g. C<--ver>
-or C<--verb> for C<--verbose>), options with arguments can be given as
+abbreviated to anything long enough to be unambiguous (e.g. C<--sli>
+or C<--sl> for C<--slices>), options with arguments can be given as
 two words (e.g. C<--prefix '*'>) or in one word separated by an "="
 (e.g. C<--prefix='*'>), and "-" can be used instead of "--".
 
@@ -123,11 +128,6 @@ Prints the full documentation in the Unix `manpage' style.
 
 Prints just the L<"SYNOPSIS"> section of this documentation.
 
-=item B<--verbose>
-
-Turns on verbose message output.  Repeating this option results in
-greater verbosity.
-
 =item B<--host>
 
 Specifies the host name to use for constructing the full directory
@@ -139,6 +139,11 @@ default is whatever the C<hostname> command prints.
 
 Specifies the dump file prefix.  This can be a glob-style wildcard;
 the default is '*', which includes all dump files.
+
+=item B<--slices>
+
+If specified, print only the file name of each selected slice, one per
+line.  This is useful for piping to other commands via C<xargs>.
 
 =back
 
