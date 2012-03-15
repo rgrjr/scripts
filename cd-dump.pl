@@ -151,18 +151,17 @@ sub ensure_mount {
 # set up for DVD writing, if requested.
 my $growisofs_p = 0;
 if ($dvd_p) {
-    if (-x '/usr/bin/growisofs') {
-	$cdrecord_command = '/usr/bin/growisofs';
+    if (! -x $binary_name) {
+	for my $command_name (qw(wodim growisofs cdrecord-dvd)) {
+	    my $binary_name = "/usr/bin/$command_name";
+	    $cdrecord_command = $binary_name, last
+		if -x $binary_name;
+	}
+	die "$0:  Can't find a DVD burning command"
+	    unless -x $cdrecord_command;
     }
-    elsif (-x '/usr/bin/cdrecord-dvd') {
-	$cdrecord_command = '/usr/bin/cdrecord-dvd';
-    }
-    elsif (-x '/usr/local/bin/cdrecord-wrapper.sh') {
-	# cdrecord-wrapper.sh invokes cdrecord-ProDVD after license setup.  both
-	# can be downloaded from ftp://ftp.berlios.de/pub/cdrecord/ProDVD/.
-	# [but both are obsolete.  -- rgr, 2-Feb-07.]
-	$cdrecord_command = '/usr/local/bin/cdrecord-wrapper.sh';
-    }
+    $mkisofs_command = '/usr/bin/genisoimage'
+	if ! -x $mkisofs_command && -x '/usr/bin/genisoimage';
     $growisofs_p = $cdrecord_command =~ /growisofs$/;
     # [single-sided DVDs are 4.7G; call it 4.5 for safety.  -- rgr, 28-Oct-05.]
     $cd_max_size = 45000000;
