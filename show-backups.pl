@@ -16,6 +16,7 @@ BEGIN {
 }
 
 use Getopt::Long;
+use Date::Parse;
 use Pod::Usage;
 
 use Backup::DumpSet;
@@ -25,14 +26,20 @@ my $usage = 0;
 my $help = 0;
 my $man = 0;
 my ($min_level, $max_level);
+my $since_date;
 my $slices_p = 0;
 my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
-	   'level=s' => sub { ($min_level, $max_level) = split(/[:.]+/, $_[1]);
-			      $max_level = $min_level
-				  unless defined($max_level);
+	   'since=s' => sub {
+	       $since_date = str2time($_[1])
+		   or die "$0:  Can't parse date '$_[1]'.\n";
+	   },
+	   'level=s' => sub {
+	       ($min_level, $max_level) = split(/[:.]+/, $_[1]);
+	       $max_level = $min_level
+		   unless defined($max_level);
 	   },
 	   'prefix=s' => \$prefix)
     or pod2usage(2);
@@ -70,6 +77,8 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     $set->mark_current_dumps();
     my $first_slice_p = 1;
     for my $dump (@{$set->dumps}) {
+	last
+	    if $since_date && $since_date > str2time($dump->date);
 	next
 	    if (defined($min_level)
 		&& ! ($min_level <= $dump->level
@@ -103,14 +112,17 @@ show-backups.pl -- generate a sorted list of backup dump files.
 =head1 SYNOPSIS
 
     show-backups.pl [ --help ] [ --man ] [ --usage ]
-                    [ --slices ] [ --prefix=<pattern> ]
+                    [ --slices ] [ --since=<date> ] [ --prefix=<pattern> ]
+                    [ --level=<level> | --level=<min>:<max> ]
 
 where:
 
     Parameter Name     Deflt  Explanation
-     --help	              Print detailed help.
-     --man	              Print man page.
+     --help                   Print detailed help.
+     --level            all   If specified, only do dumps in this range.
+     --man                    Print man page.
      --prefix           '*'   Partition prefix on files; wildcarded.
+     --since                  If specified, only do dumps since this date.
      --slices                 If specified, print only slice file names.
      --usage                  Print this synopsis.
 
@@ -134,13 +146,6 @@ two words (e.g. C<--prefix '*'>) or in one word separated by an "="
 
 Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
 
-=item B<--host>
-
-Specifies the host name to use for constructing the full directory
-pathname in file listings.  This is useful for distinguishing
-duplicate copies after merging listings from different systems.  The
-default is whatever the C<hostname> command prints.
-
 =item B<--level>
 
 If specified as an integer from 0 to 9, prints only dumps at that
@@ -156,6 +161,13 @@ Prints the full documentation in the Unix `manpage' style.
 
 Specifies the dump file prefix.  This can be a glob-style wildcard;
 the default is '*', which includes all dump files.
+
+=item B<--since>
+
+If specified, then treat only dumps made on or after this date.  Date
+formats acceptable to C<Date::Parse> may be used.  Note that this is
+checked against the date encoded in the file name, and not the file
+modification time.
 
 =item B<--slices>
 
