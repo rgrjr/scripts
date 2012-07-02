@@ -151,7 +151,7 @@ sub ensure_mount {
 # set up for DVD writing, if requested.
 my $growisofs_p = 0;
 if ($dvd_p) {
-    if (! -x $binary_name) {
+    if (! -x $cdrecord_command) {
 	for my $command_name (qw(wodim growisofs cdrecord-dvd)) {
 	    my $binary_name = "/usr/bin/$command_name";
 	    $cdrecord_command = $binary_name, last
