@@ -26,12 +26,16 @@ my $usage = 0;
 my $help = 0;
 my $man = 0;
 my ($min_level, $max_level);
-my $since_date;
+my ($before_date, $since_date);
 my $slices_p = 0;
 my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
+	   'before=s' => sub {
+	       $before_date = str2time($_[1])
+		   or die "$0:  Can't parse date '$_[1]'.\n";
+	   },
 	   'since=s' => sub {
 	       $since_date = str2time($_[1])
 		   or die "$0:  Can't parse date '$_[1]'.\n";
@@ -77,8 +81,13 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     $set->mark_current_dumps();
     my $first_slice_p = 1;
     for my $dump (@{$set->dumps}) {
-	last
-	    if $since_date && $since_date > str2time($dump->date);
+	if ($before_date || $since_date) {
+	    my $dump_date = str2time($dump->date);
+	    next
+		if $before_date && $before_date <= $dump_date;
+	    last
+		if $since_date && $since_date > $dump_date;
+	}
 	next
 	    if (defined($min_level)
 		&& ! ($min_level <= $dump->level
@@ -141,6 +150,13 @@ two words (e.g. C<--prefix '*'>) or in one word separated by an "="
 (e.g. C<--prefix='*'>), and "-" can be used instead of "--".
 
 =over 4
+
+=item B<--before>
+
+If specified, then treat only dumps made before this date.  Date
+formats acceptable to C<Date::Parse> may be used.  Note that this is
+checked against the date encoded in the file name, and not the file
+modification time.
 
 =item B<--help>
 
