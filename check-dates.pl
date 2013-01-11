@@ -1,8 +1,7 @@
 #!/usr/bin/perl -w
 #
-# Find the next ten daylight/standard time switches, assuming that the first is
-# within the next 15 weeks, and relying on the time2str "%Z" directive to
-# define whether a given absolute time is daylight savings or not.
+# Find the next ten daylight/standard time switches, relying on the time2str
+# "%Z" directive to define whether a given absolute time is DST or not.
 #
 # [created.  -- rgr, 25-Feb-07.]
 # [revised to search.  -- rgr, 23-Feb-12.]
@@ -20,25 +19,22 @@ sub binary_search {
     my ($start, $end) = @_;
 
     # Check for termination (or failure).
-    my $start_str = time2str($date_format_string, $start);
-    my $start_zone = substr($start_str, -3);
-    my $end_str = time2str($date_format_string, $end);
-    my $end_zone = substr($end_str, -3);
+    my $start_zone = time2str('%Z', $start);
+    my $end_zone = time2str('%Z', $end);
     if ($start_zone eq $end_zone) {
-	die "lost between $start_str and $end_str";
+	# warn "lost between $start and $end";
+	return;
     }
     elsif (abs($start - $end) <= 1) {
 	# Because we insist that $start and $end be in different zones, they
 	# can never be exactly equal.
-	print "$start_str\t$end_str\n";
 	return ($start, $end);
     }
 
     # Interpolate.
     my $mid = int(($start + $end) / 2);
-    my $mid_str = time2str($date_format_string, $mid);
-    my $mid_zone = substr($mid_str, -3);
-    # print "$mid_str ($mid, from $start and $end)\n";
+    my $mid_zone = time2str('%Z', $mid);
+    # print "$mid_zone ($mid, from $start and $end)\n";
     if ($start_zone eq $mid_zone) {
 	binary_search($mid, $end);
     }
@@ -49,8 +45,27 @@ sub binary_search {
 
 use constant SECONDS_PER_WEEK => 7*24*60*60;
 
+# Find the first DST change.
 my $start = time;
-for my $switch (1 .. 10) {
-    ($start) = binary_search($start, $start + 20 * SECONDS_PER_WEEK);
-    $start += 15 * SECONDS_PER_WEEK;
+my $interval = 3600;
+my ($change_start, $change_end);
+while (! defined($change_start)) {
+    die "oops"
+	if $interval > 50 * SECONDS_PER_WEEK;
+    ($change_start, $change_end) = binary_search($start, $start + $interval);
+    # Increase the interval by 50%.
+    $interval += int($interval/2);
+}
+
+# Print the current change dates, and find subsequent changes based on the
+# previous one.
+for my $counter (1 .. 10) {
+    print(join("\t", time2str($date_format_string, $change_start),
+	       time2str($date_format_string, $change_end)),
+	  "\n");
+    $change_start += 15 * SECONDS_PER_WEEK;
+    $change_end += 45 * SECONDS_PER_WEEK;
+    ($change_start, $change_end) = binary_search($change_start, $change_end);
+    last
+	unless $change_start;
 }
