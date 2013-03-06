@@ -36,7 +36,7 @@ log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 		email/forged-local-address.pl
 # installation of various things, including these guys.
-install-scripts = install.pl install-rpms.pl copy-tree
+install-scripts = install.pl install-rpms.pl copy-tree substitute-config.pl
 # utility scripts for version control systems.
 vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
