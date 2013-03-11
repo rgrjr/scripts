@@ -57,7 +57,8 @@ if (! @search_roots) {
     for my $base ('', '/alt', '/old', '/new') {
 	next
 	    if $base && ! -d $base;
-	for my $root (qw(scratch scratch2 scratch3 scratch4 scratch.old)) {
+	for my $root (qw(scratch scratch1 scratch2 scratch3 scratch4
+			 scratch5 scratch.old)) {
 	    my $dir = "$base/$root/backups";
 	    push (@search_roots, $dir)
 		if -d $dir;
