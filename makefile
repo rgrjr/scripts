@@ -183,6 +183,10 @@ test-show-backups:
 	cmp $@-1.text $@.tmp
 	./show-backups.pl --prefix shared > $@.tmp
 	cmp $@-2.text $@.tmp
+	./show-backups.pl --prefix home --sl > $@.tmp
+	cmp $@-3.text $@.tmp
+	./show-backups.pl --date > $@.tmp
+	cmp $@-4.text $@.tmp
 	rm $@.tmp
 
 install:	install-base
