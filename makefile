@@ -50,7 +50,7 @@ perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm rpm.pm
 firewall-scripts = paranoid firewall
 # qmail-scripts and afpd-scripts are not installed by default.
 qmail-scripts = qmail-restart qmail-redeliver qifq.pl
-afpd-scripts = afpd-stat.pl atwho.pl cp-if-newer.pl rename-into-tree.pl
+afpd-scripts = rename-into-tree.pl
 
 all:
 	@echo Nobody here but us scripts.
@@ -206,8 +206,6 @@ install-backup:
 	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
-install-afpd:
-	${INSTALL} -m 555 ${afpd-scripts} ${bin-directory}
 install-squid:
 	${INSTALL} -m 555 ${squid-scripts} /usr/sbin
 	squid -k reconfigure
@@ -218,7 +216,7 @@ install-upsd:
 
 uninstall-root-bin:
 	for file in ${perl-modules} ${base-scripts} ${qmail-scripts} \
-			${afpd-scripts} ${squid-scripts}; do \
+			${squid-scripts}; do \
 	    if [ -r /root/bin/$$file ]; then \
 		echo Removing /root/bin/$$file; \
 		rm -f /root/bin/$$file; \

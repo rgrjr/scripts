@@ -94,9 +94,6 @@ message via the "sendmail -f" interface.
 
 Other stuff:
 
-   * cp-if-newer.pl -- copies changed files, treating .AppleDouble
-directories specially.
-
    * rename-into-tree.pl -- hack for merging directory trees.
 
    * rgr-dehex.el -- hacks for looking at tcpdump output.
