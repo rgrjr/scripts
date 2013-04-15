@@ -28,10 +28,12 @@ my $man = 0;
 my ($min_level, $max_level);
 my ($before_date, $since_date);
 my $slices_p = 0;
+my $sort_by_date_p = 0;
 my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
+	   'date!' => \$sort_by_date_p,
 	   'before=s' => sub {
 	       $before_date = str2time($_[1])
 		   or die "$0:  Can't parse date '$_[1]'.\n";
@@ -72,15 +74,10 @@ if (! @search_roots) {
 my $dump_set_from_prefix
     = Backup::DumpSet->find_dumps(prefix => $prefix,
 				  root => \@search_roots);
-
-# For each prefix, generate output sorted with the most recent at the top, and a
-# '*' marking each of the current backup files.  (Of course, we only know which
-# files are "current" in local terms.)
-my $n_prefixes = 0;
+my @selected_dumps;
 for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     my $set = $dump_set_from_prefix->{$pfx};
     $set->mark_current_dumps();
-    my $first_slice_p = 1;
     for my $dump (@{$set->dumps}) {
 	if ($before_date || $since_date) {
 	    my $dump_date = str2time($dump->date);
@@ -93,24 +90,40 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
 	    if (defined($min_level)
 		&& ! ($min_level <= $dump->level
 		      && $dump->level <= $max_level));
-	print "\n"
-	    # If not showing slice files, we want a blank line between the last
-	    # slice of one set and the first slice of the next set.
-	    if $n_prefixes && ! $slices_p && $first_slice_p;
-	$first_slice_p = 0;
-	for my $slice (sort { $a->entry_cmp($b); } @{$dump->slices}) {
-	    if ($slices_p) {
-		print $slice->file, "\n";
-	    }
-	    else {
-		my $listing = $slice->listing;
-		substr($listing, 1, 1) = '*'
-		    if $dump->current_p;
-		print $listing, "\n";
-	    }
+	push(@selected_dumps, $dump);
+    }
+}
+
+# Generate output.
+my $last_prefix = '';
+for my $dump ($sort_by_date_p
+	      ? sort {
+		  # This is like entry_cmp, but forward by date.
+		  $a->date cmp $b->date
+		      || $b->level <=> $a->level
+		      || $a->prefix cmp $b->prefix;
+	      } @selected_dumps
+	      : @selected_dumps) {
+    my $prefix = $dump->prefix;
+    print "\n"
+	# If not showing slice files, we want a blank line between the last
+	# slice of one set and the first slice of the next set.
+	if (! ($slices_p || $sort_by_date_p)
+	    && $last_prefix && $prefix ne $last_prefix);
+    $last_prefix = $prefix;
+    for my $slice (sort { $a->entry_cmp($b); } @{$dump->slices}) {
+	if ($slices_p) {
+	    print $slice->file, "\n";
+	}
+	else {
+	    # Put a '*' by each of the current backup files.  (Of course, we
+	    # only know which files are "current" in local terms.)
+	    my $listing = $slice->listing;
+	    substr($listing, 1, 1) = '*'
+		if $dump->current_p;
+	    print $listing, "\n";
 	}
     }
-    $n_prefixes++;
 }
 
 __END__
@@ -122,12 +135,15 @@ show-backups.pl -- generate a sorted list of backup dump files.
 =head1 SYNOPSIS
 
     show-backups.pl [ --help ] [ --man ] [ --usage ]
-                    [ --slices ] [ --since=<date> ] [ --prefix=<pattern> ]
+                    [ --slices ] [ --date ] [ --prefix=<pattern> ]
+                    [ --before=<date> ] [ --since=<date> ]
                     [ --level=<level> | --level=<min>:<max> ]
 
 where:
 
     Parameter Name     Deflt  Explanation
+     --before                 If specified, only dumps on or before this date.
+     --date              no   Whether to sort by date first.
      --help                   Print detailed help.
      --level            all   If specified, only do dumps in this range.
      --man                    Print man page.
@@ -158,6 +174,11 @@ If specified, then treat only dumps made before this date.  Date
 formats acceptable to C<Date::Parse> may be used.  Note that this is
 checked against the date encoded in the file name, and not the file
 modification time.
+
+=item B<--date>
+
+If specified, then dumps are sorted by ascending date, rather than
+ascending prefix and descending date.
 
 =item B<--help>
 
