@@ -28,12 +28,13 @@ my $man = 0;
 my ($min_level, $max_level);
 my ($before_date, $since_date);
 my $slices_p = 0;
-my $sort_by_date_p = 0;
+my $sort_order = 'prefix';
 my $prefix = '*';
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
-	   'date!' => \$sort_by_date_p,
+	   'date!' => sub { $sort_order = 'date'; },
+	   'sort=s' => \$sort_order,
 	   'before=s' => sub {
 	       $before_date = str2time($_[1])
 		   or die "$0:  Can't parse date '$_[1]'.\n";
@@ -96,19 +97,28 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
 
 # Generate output.
 my $last_prefix = '';
-for my $dump ($sort_by_date_p
-	      ? sort {
-		  # This is like entry_cmp, but forward by date.
-		  $a->date cmp $b->date
-		      || $b->level <=> $a->level
-		      || $a->prefix cmp $b->prefix;
-	      } @selected_dumps
-	      : @selected_dumps) {
+for my $dump ($sort_order eq 'date'
+		? sort {
+		    # This is like entry_cmp, but forward by date.
+		    $a->date cmp $b->date
+			|| $b->level <=> $a->level
+			|| $a->prefix cmp $b->prefix;
+		  } @selected_dumps
+	      : $sort_order eq 'dvd'
+		? map { $_->[1];
+		  } sort { $a->[0] cmp $b->[0];
+		  } map { my $name = $_->file_stem;
+			  $name =~ s@.*/@@;
+			  [ $name, $_ ];
+		  } @selected_dumps
+	      : $sort_order eq 'prefix'
+		? @selected_dumps
+	      : die "$0:  Unknown --sort order '$sort_order'\n") {
     my $prefix = $dump->prefix;
     print "\n"
 	# If not showing slice files, we want a blank line between the last
 	# slice of one set and the first slice of the next set.
-	if (! ($slices_p || $sort_by_date_p)
+	if (! $slices_p && $sort_order eq 'prefix'
 	    && $last_prefix && $prefix ne $last_prefix);
     $last_prefix = $prefix;
     for my $slice (sort { $a->entry_cmp($b); } @{$dump->slices}) {
@@ -134,8 +144,8 @@ show-backups.pl -- generate a sorted list of backup dump files.
 
 =head1 SYNOPSIS
 
-    show-backups.pl [ --help ] [ --man ] [ --usage ]
-                    [ --slices ] [ --date ] [ --prefix=<pattern> ]
+    show-backups.pl [ --help ] [ --man ] [ --usage ] [ --prefix=<pattern> ]
+                    [ --[no]slices ] [ --[no]date | --sort=(date|prefix|dvd) ]
                     [ --before=<date> ] [ --since=<date> ]
                     [ --level=<level> | --level=<min>:<max> ]
 
@@ -143,13 +153,14 @@ where:
 
     Parameter Name     Deflt  Explanation
      --before                 If specified, only dumps on or before this date.
-     --date              no   Whether to sort by date first.
+     --date              no   Equivalent to --sort=date.
      --help                   Print detailed help.
      --level            all   If specified, only do dumps in this range.
      --man                    Print man page.
      --prefix           '*'   Partition prefix on files; wildcarded.
      --since                  If specified, only do dumps since this date.
      --slices                 If specified, print only slice file names.
+     --sort           prefix  Sort by prefix, date, or dvd order.
      --usage                  Print this synopsis.
 
 =head1 DESCRIPTION
@@ -177,8 +188,7 @@ modification time.
 
 =item B<--date>
 
-If specified, then dumps are sorted by ascending date, rather than
-ascending prefix and descending date.
+Synonym for C<--sort=date>.
 
 =item B<--help>
 
@@ -211,6 +221,16 @@ modification time.
 
 If specified, print only the file name of each selected slice, one per
 line.  This is useful for piping to other commands via C<xargs>.
+
+=item B<--sort>
+
+Specifies the sort order; legal values are "prefix" (the default,
+groups by ascending prefix and then by descending date), "dvd" (by
+ascending file name without the directory, as they would appear in a
+DVD listing), and "date" (ascending date, descending level, and
+ascending prefix).  If "prefix" sorting is used, and the C<--slices>
+option was not specified, then blank lines are inserted to separate
+each prefix.
 
 =item B<--usage>
 
