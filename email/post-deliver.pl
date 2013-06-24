@@ -74,14 +74,29 @@ while (<STDIN>) {
     }
 }
 
+### Check for forgery.
+my $spsm_maildir = $maildir_from_prefix{spam};
+if ($spsm_maildir) {
+    # Get forged-local-address.pl from the same place we are running.
+    my $fla = $0;
+    $fla =~ s@[^/]*$@forged-local-address.pl@;
+    open(my $out, "| $fla --add-local rgrjr.dyndns.org --add-local rgrjr.com")
+	or die "could not open $fla";
+    print $out $header, "\n";
+    my $result = close($out) && $?;
+    # warn "got result $result";
+    if (! $result) {
+	# Found spam; redirect it.
+	$maildir = $spsm_maildir;
+    }
+}
+
 ### Deliver the message.
 
 # Default the maildir.
 $maildir ||= $maildir_from_prefix{default} || './Maildir/';
-die "$tag:  invalid maildir"
-    unless $maildir =~ m@/$@;
-die "$tag:  no maildir"
-    unless -d $maildir;
+die "$tag:  invalid maildir '$maildir'"
+    unless $maildir =~ m@/$@ && -d $maildir;
 
 # Write to a temp file.
 chomp(my $host = `hostname`);
