@@ -203,6 +203,9 @@ if (-r $local_domain_file) {
     }
     close(IN);
 }
+# Default default.
+%match_domains = map { ($_ => 1); } qw(rgrjr.com rgrjr.dyndns.org)
+    unless %match_domains || @suffix_domains;
 
 # Check the envelope sender against all of the match domains.  If we find a
 # match, we lose.
