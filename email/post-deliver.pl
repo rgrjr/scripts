@@ -75,8 +75,8 @@ while (<STDIN>) {
 }
 
 ### Check for forgery.
-my $spsm_maildir = $maildir_from_prefix{spam};
-if ($spsm_maildir) {
+my $spam_maildir = $maildir_from_prefix{spam};
+if ($spam_maildir) {
     # Get forged-local-address.pl from the same place we are running.
     my $fla = $0;
     $fla =~ s@[^/]*$@forged-local-address.pl@;
@@ -87,7 +87,7 @@ if ($spsm_maildir) {
     # warn "got result $result";
     if (! $result) {
 	# Found spam; redirect it.
-	$maildir = $spsm_maildir;
+	$maildir = $spam_maildir;
     }
 }
 
