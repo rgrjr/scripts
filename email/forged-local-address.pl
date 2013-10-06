@@ -20,7 +20,7 @@ my $verbose_p = 0;
 my $not_p = 0;		# to reverse the sense of the test.
 my $local_domain_file = '/var/qmail/control/locals';
 my $local_network_prefix;
-my $vps = '216.146.47.5';	# fixed IP for rgrjr.com.
+my $vps = '23.92.21.122';	# fixed IP for rgrjr.com.
 my @sender_regexps;
 
 GetOptions('verbose+' => \$verbose_p,
