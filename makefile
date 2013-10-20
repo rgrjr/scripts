@@ -121,7 +121,8 @@ test-compare-languages:	vc-chrono-log.exe
 test-email:	test-forged-address
 test-forged-address:	test-rgrjr-forged-address \
 		test-nonforged-addresses \
-		test-new-forged-address test-postfix-forged-address
+		test-new-forged-address test-postfix-forged-address \
+		test-postfix-forged-2
 rgrjr-config-options = --locals email/rgrjr-locals.text \
 		--network-prefix 192.168.57
 test-rgrjr-forged-address:
@@ -158,6 +159,8 @@ test-nonforged-addresses:
 		${rgrjr-config-options} < email/perl6-non-spam.text
 	SENDER=jan@rgrjr.dyndns.org email/forged-local-address.pl --not \
 		${rgrjr-config-options} < email/from-jan-2.text
+	SENDER=root@rgrjr.com email/forged-local-address.pl --not \
+		${rgrjr-config-options} < email/rgrjr-non-spam-1.text
 modgen-config-options = --add-local modulargenetics.com \
 		--network-prefix 192.168.23
 test-postfix-forged-address:
@@ -169,6 +172,11 @@ test-postfix-forged-address:
 		${modgen-config-options} --not < email/modgen-external.msg
 	SENDER=spammer@modulargenetics.com email/forged-local-address.pl \
 		${modgen-config-options} < email/modgen-external.msg
+test-postfix-forged-2:
+	SENDER=rogers@somewhere.org email/forged-local-address.pl \
+		${rgrjr-config-options} < email/rgrjr-forged-1.text
+	SENDER=somebody@someewhere.org email/forged-local-address.pl \
+		${rgrjr-config-options} < email/rgrjr-forged-2.text
 
 test-backup:	test-backup-classes
 test-backup-classes:

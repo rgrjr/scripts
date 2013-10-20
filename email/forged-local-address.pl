@@ -117,7 +117,7 @@ sub local_header_p {
 	# qmail format for receipt from a LAN host.
 	'lan';
     }
-    elsif ($hdr =~ /^from rgrjr.com \(localhost \[127.0.0.1\]\)/) {
+    elsif ($hdr =~ /^from \S+ \(localhost \[127.0.0.1\]\)/) {
 	# Postfix format for the loopback re-receipt of SpamAssassin results.
 	return;
     }
@@ -129,6 +129,10 @@ sub local_header_p {
     elsif ($hdr !~ /Postfix/) {
 	# Assume qmail, which adds two headers for SMTP mail; we need to check
 	# the second one.
+	return;
+    }
+    elsif ($hdr =~ /^from \S+ \(\S+ \[$vps\]\)/) {
+	# Postfix format for receipt from the rgrjr.com VPS.
 	return;
     }
     # Postfix only adds a single header, so we need to make a definite

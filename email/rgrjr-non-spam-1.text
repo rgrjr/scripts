@@ -1,0 +1,31 @@
+From root@rgrjr.com  Sun Oct 13 06:25:20 2013
+X-Delivered-By: post-deliver.pl v0.1
+Return-Path: <root@rgrjr.com>
+X-Original-To: root@rgrjr.com
+Delivered-To: root@rgrjr.com
+Received: from lhasa.rgrjr.com (localhost [127.0.0.1])
+	by lhasa.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 2742B6600C
+	for <root@rgrjr.com>; Sun, 13 Oct 2013 06:25:11 -0400 (EDT)
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on lhasa.rgrjr.com
+X-Spam-Level: ***
+X-Spam-Status: No, score=3.4 required=5.0 tests=RCVD_ILLEGAL_IP autolearn=no
+	version=3.3.1
+Received: from rgrjr.com (li652-122.members.linode.com [23.92.21.122])
+	by lhasa.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 07E1665FD4
+	for <root@rgrjr.com>; Sun, 13 Oct 2013 06:25:11 -0400 (EDT)
+Received: by rgrjr.com (Postfix on Debian, from userid 0)
+	id B0E48FF5B; Sun, 13 Oct 2013 06:25:10 -0400 (EDT)
+Content-Type: text/plain; charset=UTF-8
+X-Cron-Env: <SHELL=/bin/sh>
+X-Cron-Env: <PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin>
+X-Cron-Env: <HOME=/root>
+X-Cron-Env: <LOGNAME=root>
+Message-Id: <20131013102510.B0E48FF5B@rgrjr.com>
+From: root@rgrjr.com (Cron Daemon)
+To: root@rgrjr.com
+Subject: Cron <root@rgrjr> test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+Date: Sun, 13 Oct 2013 06:25:10 -0400 (EDT)
+
+/etc/cron.daily/logrotate:
+[Sun Oct 13 06:25:06 2013] [warn] The Alias directive in /etc/apache2/conf.d/cmucl-mirror.conf at line 5 will probably never match because it overlaps an earlier Alias.
+[Sun Oct 13 06:25:06 2013] [warn] NameVirtualHost *:80 has no VirtualHosts
