@@ -16,6 +16,7 @@ use Date::Format;
 # Command-line option variables.
 my $verbose_p = 0;
 my $overwrite_ok = 0;
+my $time_format_string;
 my @prefixes;
 my $backup_dir;
 
@@ -24,6 +25,7 @@ my $backup_dir;
 GetOptions('verbose+' => \$verbose_p,
 	   'prefix=s' => \@prefixes,
 	   'overwrite!' => \$overwrite_ok,
+	   'time-format=s' => \$time_format_string,
 	   'backup-dir=s' => \$backup_dir)
     or pod2usage(2);
 
@@ -31,9 +33,6 @@ GetOptions('verbose+' => \$verbose_p,
 umask(127);
 
 ### Subroutines.
-
-my $timestamp = time2str('%R', time);
-$timestamp =~ s/://;
 
 sub read_config_file {
     my ($file_name) = @_;
@@ -101,6 +100,11 @@ sub backup_config {
     $pfx = pop(@prefixes)
 	if @prefixes;
     $pfx ||= $db;
+
+    # Create the timestamp.
+    my $time_format = $config->{db_dump_time_format} || $time_format_string;
+    my $timestamp = time2str($time_format || '%R', time);
+    $timestamp =~ s/://;
 
     # Make the backup file name, and check that it is unique.
     my $backup_name = "$pfx-$timestamp.dump";
