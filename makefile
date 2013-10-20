@@ -183,6 +183,16 @@ test-backup-classes:
 	perl -MTest::Harness -e 'runtests(@ARGV);' \
 		test/test-backup-classes.pl \
 		test/test-config.pl
+# This is too ephemeral to add as a test-backup dependency.
+test-vacuum:
+	perl -Mlib=. ./vacuum.pl --test --prefix shared \
+		--min-free 100 /scratch/backups rgr:/scratch2 > $@.tmp
+	cmp $@.text $@.tmp
+	perl -Mlib=. ./vacuum.pl --config /dev/null --test > $@.tmp
+	test -z "`cat $@.tmp`"
+	perl -Mlib=. ./vacuum.pl --config backup.conf --test > $@.tmp
+	cmp $@.text $@.tmp
+	rm -f $@.tmp
 
 # This can't be put on the "test" target because it's too hard to make test
 # cases that last more than a day.
