@@ -15,6 +15,7 @@ use Date::Format;
 
 # Command-line option variables.
 my $verbose_p = 0;
+my $overwrite_ok = 0;
 my @prefixes;
 my $backup_dir;
 
@@ -22,6 +23,7 @@ my $backup_dir;
 
 GetOptions('verbose+' => \$verbose_p,
 	   'prefix=s' => \@prefixes,
+	   'overwrite!' => \$overwrite_ok,
 	   'backup-dir=s' => \$backup_dir)
     or pod2usage(2);
 
@@ -106,8 +108,9 @@ sub backup_config {
     die("$0:  Duplicate file name '$backup_file' for ",
 	$config->config_file_name, ".\n")
 	if $file_written_p{$backup_file}++;
-    if (-e $backup_file) {
-	warn "$0:  File '$backup_file' already exists; skipping.\n";
+    if (! $overwrite_ok && -e $backup_file) {
+	warn "$0:  File '$backup_file' already exists; skipping.\n"
+	    if $verbose_p;
 	return;
     }
 
