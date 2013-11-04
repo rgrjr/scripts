@@ -140,7 +140,8 @@ sub local_header_p {
     elsif ($hdr =~ /from userid \d+/) {
 	'local';
     }
-    elsif ($hdr =~ /\[([\d.]+)\.\d+\]/ && $1 eq $local_network_prefix) {
+    elsif ($hdr =~ /^from \S+ \(\S+ \[([\d.]+)\.\d+\]\)/
+	   && $1 eq $local_network_prefix) {
 	'lan';
     }
     else {

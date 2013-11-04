@@ -159,6 +159,8 @@ test-nonforged-addresses:
 		${rgrjr-config-options} < email/perl6-non-spam.text
 	SENDER=jan@rgrjr.dyndns.org email/forged-local-address.pl --not \
 		${rgrjr-config-options} < email/from-jan-2.text
+	SENDER=jan@rgrjr.dyndns.org email/forged-local-address.pl --not \
+		${rgrjr-config-options} < email/from-jan-3.text
 	SENDER=root@rgrjr.com email/forged-local-address.pl --not \
 		${rgrjr-config-options} < email/rgrjr-non-spam-1.text
 modgen-config-options = --add-local modulargenetics.com \
