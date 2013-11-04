@@ -17,7 +17,7 @@ use warnings;
 # debugging
 # open(STDERR, ">>post-deliver.log") or die;
 
-my $program_name = "$0 v0.1";
+my $program_name = "$0 v0.2";
 $program_name =~ s@.*/@@;	# drop the directory name.
 chomp(my $date = `date`);
 $date = substr($date, 4, -9);	# drop the DOW, TZ, and year.
@@ -83,8 +83,18 @@ if ($spam_maildir) {
     open(my $out, "| $fla --add-local rgrjr.dyndns.org --add-local rgrjr.com")
 	or die "could not open $fla";
     print $out $header, "\n";
-    my $result = close($out) && $?;
-    # warn "got result $result";
+    my $result;
+    # If "close" got an error, then it returns false and $! is the error code,
+    # else $? is the process return code.  Only if both are false do we want to
+    # treat the message as forged.
+    if (close($out)) {
+	# Success.
+	$result = $?;
+    }
+    else {
+	warn "$0:  got error '$!' (", $!+0, ") and result $? from $fla\n";
+	$result = 1;
+    }
     if (! $result) {
 	# Found spam; redirect it.
 	$maildir = $spam_maildir;
