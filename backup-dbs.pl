@@ -76,7 +76,7 @@ sub _redundant_backup_p {
     return
 	unless $most_recent_backup;
     # warn "most recent ($most_recent_backup, $most_recent_time)";
-    return 0 == system("cmp $most_recent_backup $backup_file 2>/dev/null");
+    return 0 == system("cmp $most_recent_backup $backup_file >/dev/null");
 }
 
 my %file_written_p;
