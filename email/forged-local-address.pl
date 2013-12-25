@@ -169,7 +169,7 @@ do {
     # for higher indices if no such header exists.  -- rgr, 17-Mar-09.]
     my $header = $message->get('Received', $rcvd_idx);
     $local_p = local_header_p($header);
-    warn("header $rcvd_idx:  $header",
+    warn("header $rcvd_idx:  ", $header || "\n",
 	 "header $rcvd_idx:  result is ",
 	 (defined($local_p) ? "'$local_p'" : '(undef)'), ".\n")
 	if $verbose_p > 1;
