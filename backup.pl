@@ -109,7 +109,7 @@ sub maybe_find_prog {
 
 ### Parse options.
 
-my @dar_options;
+my (@dar_options, @dar_verify_options);
 my %dar_option_p;
 sub push_dar_compression_opt {
     # Add an option string to @dar_options, checking for duplicates.
@@ -131,16 +131,17 @@ sub push_dar_compression_opt {
 }
 
 sub push_dar_value_opt {
-    # Add an option string to @dar_options, insisting on a value but allowing
-    # duplicates.
-    my ($option, $value) = @_;
+    # Add an option string to @dar_options, and maybe also @dar_verify_options,
+    # insisting on a value but allowing duplicates.
+    my ($option, $value, $both_p) = @_;
 
     if (! defined($value)) {
-	# [this should really be an error.  -- rgr, 23-May-09.]
-	warn("$0:  Option '--$option' requires a value; ignored.\n");
+	pod2usage("$0:  Option '--$option' requires a value; ignored.\n");
     }
     else {
 	push(@dar_options, "--$option=$value");
+	push(@dar_verify_options, "--$option=$value")
+	    if $both_p;
     }
 }
 
@@ -159,6 +160,7 @@ GetOptions('date=s' => \$file_date,
 	   'dar!' => \$dar_p,
 	   'gzip|z:i' => \&push_dar_compression_opt,
 	   'bzip2|y:i' => \&push_dar_compression_opt,
+	   'alter=s' => sub { push_dar_value_opt(@_, 1); },
 	   'fs-root|R=s' => \&push_dar_value_opt,
 	   'exclude|X=s' => \&push_dar_value_opt,
 	   'include|I=s' => \&push_dar_value_opt,
@@ -401,7 +403,8 @@ if ($dar_p) {
     # Since this just means that those files will still need saving in the next
     # backup, that is not a problem.
     do_or_die(ignore_code => 5,
-	      $dump_program, '-d', $dump_file, '-R', $mount_point);
+	      $dump_program, '-d', $dump_file, @dar_verify_options,
+	      '-R', $mount_point);
 }
 else {
     # [getting restore to deal with multivolume dump files is more of a pain; it
@@ -622,6 +625,15 @@ Specifies the bzip2 or gzip compression level; the default is no
 compression.  The optional integer values are for the compression
 level, from 1 to 9; if omitted, a value of 9 (maximum compresssion) is
 used.  Note that these options are only available for DAR.
+
+=item B<--alter=what>
+
+The value of "what" can be "ctime" (the default) to specify that the
+inode times are to be modified in order to preserve the "atime" at the
+expense of altering the "ctime", or "atime" to specify that the inode
+times are to be left alone at the cost of keeping the modified
+"atime".  See the "dar" man page for a more detailed explanation of
+why this tradeoff is necessary.
 
 =item B<--dest-dir>
 
