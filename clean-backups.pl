@@ -47,8 +47,11 @@ $config->test_p($test_p);
 
 # Find partitions that want cleaning.
 my $partitions_to_clean = $config->find_partitions_to_clean();
-exit(0)
-    unless @$partitions_to_clean;
+if (! @$partitions_to_clean) {
+    warn "$0:  No partitions to clean.\n"
+	if $verbose_p;
+    exit(0);
+}
 
 # We need to find all dumps at once, because we don't know how they fall across
 # the various partitions, we don't know which prefixes we're going to need, and
