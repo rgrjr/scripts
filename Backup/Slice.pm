@@ -72,7 +72,7 @@ my $host_name;	# Cache.  [Really, this is an ugly kludge; how would we
 sub listing {
     my ($self) = @_;
 
-    my $size = $self->size;
+    my $size = $self->size || 0;
     my $base_name = $self->base_name;
     my $file = $self->file;
     my $dir_name = $file =~ m@^(.*/)@ ? $1 : '';
