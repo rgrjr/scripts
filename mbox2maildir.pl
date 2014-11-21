@@ -94,6 +94,7 @@ sub convert ($$;$) {
 
     my $host = hostname;
     my $i = 0;
+    my $last_line_empty_p = 1;	# the start of the file counts.
 
     my $write_message = sub {
 	# Write the passed message content as a maildir message, extracting the
@@ -101,6 +102,10 @@ sub convert ($$;$) {
 	# but it works better for Outlook in combination with Courier IMAP;
 	# otherwise, Outlook uses the wrong date until you look at the message.
 	my $contents = shift;
+
+	chomp($contents)
+	    # This effectively swallows the newline before the "^From " tag.
+	    unless $last_line_empty_p;
 
 	# First, figure out the time from the message.
 	my $time;
@@ -131,13 +136,14 @@ sub convert ($$;$) {
     open(my $mbox, $mbox_file_name)
 	or die "open($mbox_file_name): $!\n";
     my $current_message = '';
-    my $last_line_empty_p = 1;	# the start of the file counts.
     while (<$mbox>) {
 	if ($_ eq "\n") {
+	    $current_message .= "\n"
+		if $last_line_empty_p;
 	    # If this comes before a "From " line, we will swallow it.
 	    $last_line_empty_p = 1;
 	}
-	elsif ($last_line_empty_p && m/^From /) {
+	elsif (m/^From /) {
 	    # Start of a new message.
 	    $write_message->($current_message)
 		if $current_message;
