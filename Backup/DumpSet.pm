@@ -138,7 +138,7 @@ sub find_dumps {
     $find_glob_pattern = join('-', $prefix, $find_glob_pattern)
 	if $prefix ne '*';
     my $command = join(' ', 'find', @search_roots,
-		       '-name', "'$find_glob_pattern'");
+		       '-name', "'$find_glob_pattern'", '-type', 'f');
     return $class->_find_dumps_from_command($command);
 }
 
