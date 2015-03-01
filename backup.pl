@@ -116,17 +116,30 @@ sub push_dar_compression_opt {
     my ($option, $value) = @_;
     $value ||= 9;	# zero does not make sense.
 
-    my $option_string = "--$option=$value";
-    if (! $dar_option_p{$option}) {
-	push(@dar_options, $option_string);
-	$dar_option_p{$option} = $option_string;
+    my ($compression_type, $compression_level);
+    if ($value =~ /^(.+):(\d*)$/) {
+	($compression_type, $compression_level) = $value =~ //;
     }
-    elsif ($dar_option_p{$option} eq $option_string) {
+    elsif ($value =~ /^(\d+)$/) {
+	$compression_level = $value;
+    }
+    else {
+	$compression_type = $value;
+    }
+    $compression_level ||= 9;
+    $compression_type
+	||= $option eq 'y' || $option eq 'bzip2' ? 'bzip2' : 'gzip';
+    my $option_string = "--compression=$compression_type:$compression_level";
+    my $old_option = $dar_option_p{'--compression'};
+    if (! $old_option) {
+	push(@dar_options, $option_string);
+	$dar_option_p{'--compression'} = $option_string;
+    }
+    elsif ($old_option eq $option_string) {
 	# Duplication is OK, as long as they are consistent.
     }
     else {
-	die("$0:  Conflict between '$dar_option_p{$option}' ",
-	    "and '$option_string'.\n");
+	die("$0:  Conflict between '$old_option' and '$option_string'.\n");
     }
 }
 
@@ -158,6 +171,7 @@ GetOptions('date=s' => \$file_date,
 	   'dump-program=s' => \$dump_program,
 	   'restore-program=s' => \$restore_program,
 	   'dar!' => \$dar_p,
+	   'compression=s' => \&push_dar_compression_opt,
 	   'gzip|z:i' => \&push_dar_compression_opt,
 	   'bzip2|y:i' => \&push_dar_compression_opt,
 	   'alter=s' => sub { push_dar_value_opt(@_, 1); },
@@ -469,7 +483,7 @@ backup.pl -- Automated interface to create `dump/restore' or `dar' backups.
               [--file-name=<name>]
 	      [--dump-program=<dump-prog>] [--[no]dar]
 	      [--restore-program=<restore-prog>]
-	      [--gzip | -z] [--bzip2 | -y]
+	      [--gzip | -z] [--bzip2 | -y] [ --compression[=[algo:]level] ]
 	      [--dest-dir=<destination-dir>] [--dump-dir=<dest-dir>]
               [--volsize=<max-vol-size>]
 	      [--partition=<block-special-device> | <partition> ]
@@ -634,6 +648,20 @@ expense of altering the "ctime", or "atime" to specify that the inode
 times are to be left alone at the cost of keeping the modified
 "atime".  See the "dar" man page for a more detailed explanation of
 why this tradeoff is necessary.
+
+=item B<--compression[=[algo:]level]>
+
+Specifies the level of compression desired; the default is none.  The
+value can specify an algorithm from the set C<gzip>, C<bzip2>, or
+C<lzo>, a compression level of 1 to 9, or both separated by a colon.
+If no value is supplied, then C<gzip> is the default algorithm, and 9
+(the maximum) is the default level.  This option is only available for
+DAR.
+
+Note that this is a synonym for the C<-y> and C<-z> options.
+Regardless of how the compression is specified, it is always passed on
+to the C<dar> command using its C<--compression> option, so this will
+not work with older versions of DAR.
 
 =item B<--dest-dir>
 
