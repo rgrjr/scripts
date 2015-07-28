@@ -285,7 +285,7 @@ sub parse_svn_xml {
 }
 
 sub parse_git {
-    my ($self, $source) = @_;
+    my ($self, $source, $first_line) = @_;
     $source ||= *STDIN;
 
     $self->vcs_name('Git');
@@ -293,7 +293,7 @@ sub parse_git {
     my $entry_from_rev = $self->entry_from_revision;
     $entry_from_rev = { }, $self->entry_from_revision($entry_from_rev)
 	unless $entry_from_rev;
-    my $line = <$source>;
+    my $line = $first_line || <$source>;
     while ($line) {
 	chomp($line);
 	my ($commit_id) = $line =~ /^commit ([a-f0-9]{40})$/;
@@ -500,8 +500,7 @@ sub parse {
 	$self->parse_svn_xml($stream);
     }
     elsif ($first_line =~ /^commit [a-f0-9]{40}$/) {
-	seek($stream, 0, 0);
-	$self->parse_git($stream);
+	$self->parse_git($stream, $first_line);
     }
     else {
 	$self->parse_cvs($stream);
