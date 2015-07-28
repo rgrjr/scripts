@@ -1,0 +1,88 @@
+commit 6ae7fc3a5ee7f3ac0e53469f2d824544717014e2
+Author: rogers <rogers@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 02:41:05 2015 +0000
+
+    * rgr-new-vc-hacks.el:
+       + (vc-root-dir):  Oops; this steps on an emacs fn that is supposed to
+       return the root directory for the current VC tree.  Removed.
+    * rgr-hacks.el:
+       + (rgr-install-global-editing-hacks):  Remove vc-root-dir binding.
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@695 e03adc71-3023-0410-be83-de118f9f4c1e
+
+commit bcd28050ea6b24f2a72537fe1e0139716a80e68b
+Author: rogers <rogers@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 02:36:02 2015 +0000
+
+    * rgr-x11-hacks.el:
+       + (rgr-install-frame-properties):  Consider 24.4, 24.5, and 25.0 as
+         current Emacs versions.
+       + (rgr-x11-install-nondefault-fontset):  Tweak the logic a bit.
+       + (rgr-install-x11-hacks):  Add a separate recipe for Emacs 25.0 and
+         later that just installs "Efont Fixed 10".
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@694 e03adc71-3023-0410-be83-de118f9f4c1e
+
+commit 1daeadecd28332d4321816f38c87e0ce76ee7ea1
+Author: rgr <rgr@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 02:07:55 2015 +0000
+
+    * rgr-random-hacks.el:
+       + (rgr-annotation-display-diffs):  Add a have-delimiter-p parameter
+         to shut off printing of the "@@", instead of tracking it ourself.
+       + (rgr-diff-annotation):  Bug fix:  Squirt out diffs at the end of a
+         difference within a hunk.  This avoids running attributes for
+         different seqs together.  Also print the "@@" line at the end.
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@693 e03adc71-3023-0410-be83-de118f9f4c1e
+
+commit a0561e220411b67a478c9968b16a28437b9833ae
+Author: rgr <rgr@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 02:02:51 2015 +0000
+
+    * rgr-perl-hacks.el:
+       + (rgr-perl-sub-names-to-ignore):  Add creation_time_field and
+         type_pretty_name, and remove insert.
+       + (rgr-perl-update-method-documentation):  Bug fix:  Check the
+         interned match string against rgr-perl-sub-names-to-ignore.
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@692 e03adc71-3023-0410-be83-de118f9f4c1e
+
+commit 7c66edc7270bdcf066034622f6aa40f043db3172
+Author: rgr <rgr@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 02:01:07 2015 +0000
+
+    * rgr-html-hacks.el:
+       + (rgr-html-tag-rules):  Correct some of these, particularly "pre"
+         and "form", and add comments to help keep track of the fields.
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@691 e03adc71-3023-0410-be83-de118f9f4c1e
+
+commit aa5059522322c21988feda9f633196ec981561ba
+Author: rgr <rgr@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 01:59:51 2015 +0000
+
+    * rgr-cvs-hacks.el:
+       + (rgr-vc-log-join-consecutive-file-headings):  Bug fix:  Correct the
+         new-end-col computation, which had been too short.
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@690 e03adc71-3023-0410-be83-de118f9f4c1e
+
+commit 1fed2787ed7e20ae74c4a5339dccaa51df3e902b
+Author: rogers <rogers@e03adc71-3023-0410-be83-de118f9f4c1e>
+Date:   Mon Jul 27 00:58:30 2015 +0000
+
+    * emacs-init.el:
+       + For ssh-per-host-option-alist, change port 8083 forwarding from
+         cordoba to persepolis.
+       + Add the emacs-vm RPM location to load-path.
+       + Also, use add-to-list in a few places.
+    
+    
+    git-svn-id: https://rgrjr.dyndns.org/svn/rgr-hacks/trunk@689 e03adc71-3023-0410-be83-de118f9f4c1e

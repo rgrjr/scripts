@@ -284,6 +284,61 @@ sub parse_svn_xml {
     $entries;
 }
 
+sub parse_git {
+    my ($self, $source) = @_;
+    $source ||= *STDIN;
+
+    $self->vcs_name('Git');
+    my $entries = [ ];
+    my $entry_from_rev = $self->entry_from_revision;
+    $entry_from_rev = { }, $self->entry_from_revision($entry_from_rev)
+	unless $entry_from_rev;
+    my $line = <$source>;
+    while ($line) {
+	chomp($line);
+	my ($commit_id) = $line =~ /^commit ([a-f0-9]{40})$/;
+	die "Unexpected line '$line'.\n"
+	    unless $commit_id;
+
+	# Parse RFC822-style keywords.
+	my %info;
+	$line = <$source>;
+	chomp($line);
+	while ($line =~ /^([^:]+): *(.*)/) {
+	    $info{$1} = $2;
+	    $line = <$source>;
+	    chomp($line);
+	}
+
+	# Read the commit comment.
+	warn "nonblank line '$line' before comment?"
+	    if $line;
+	my $message = '';
+	$line = <$source>;
+	while ($line && $line ne "\n") {
+	    $line =~ s/^    //;	# Undo "git log" indentation.
+	    $message .= $line;
+	    $line = <$source>;
+	}
+	$message =~ s/\s*git-svn-id:.*//;
+
+	# Create the entry.
+	my $encoded_date = str2time($info{Date}, 'UTC');
+	my $entry = ChronoLog::Entry->new
+	    (revision => substr($commit_id, 0, 7),
+	     msg => $message,
+	     author => $info{Author} || '?',
+	     encoded_date => $encoded_date);
+	push(@$entries, $entry);
+	$entry_from_rev->{$commit_id} = $entry;
+	$line = <$source>;
+    }
+
+    # Produce the sorted set of entries.
+    $self->log_entries($entries);
+    return $entry_from_rev;
+}
+
 sub parse_cvs {
     my ($self, $stream, %options) = @_;
     my $date_fuzz = $options{date_fuzz};
@@ -443,6 +498,10 @@ sub parse {
 	# Must be XML.
 	seek($stream, 0, 0);
 	$self->parse_svn_xml($stream);
+    }
+    elsif ($first_line =~ /^commit [a-f0-9]{40}$/) {
+	seek($stream, 0, 0);
+	$self->parse_git($stream);
     }
     else {
 	$self->parse_cvs($stream);
