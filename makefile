@@ -29,9 +29,7 @@ backup-scripts = backup.pl backup-dbs.pl clean-backups.pl cd-dump.pl \
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
 # rgr, 5-Dec-04.]
 root-scripts = xauth-local-host
-log-scripts = check-logs.pl daily-status.pl extract-subnet.pl squid-log.pl \
-		squid2std.pl
-log-files = nominal-random.text nominal-shutdown.text nominal-startup.text
+log-scripts = extract-subnet.pl squid-log.pl squid2std.pl
 # mail manipulation scripts.
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 		email/forged-local-address.pl
@@ -219,15 +217,15 @@ install-base:
 	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
 	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
 	${INSTALL} -m 555 ${root-scripts} /root/bin
-	${INSTALL} -m 444 ${log-files} /root/bin
-	# install burn-backups only if not already there; usually it gets
-	# customized per host.
+# install burn-backups only if not already there; usually it gets
+# customized per host.
 	if [ ! -r /root/bin/burn-backups ]; then \
 	    ${INSTALL} -m 555 burn-backups /root/bin; \
 	fi
-install-backup:
+install-backup:		install-backup-scripts
 	mkdir -p ${pm-directory}/Backup
 	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
+install-backup-scripts:
 	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
