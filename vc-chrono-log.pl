@@ -14,8 +14,14 @@ use warnings;
 
 my $parser = ChronoLog::Parser->new();
 $parser->parse(*STDIN);
-for my $entry (@{$parser->log_entries}) {
-    $entry->report;
+my $entries = $parser->log_entries;
+if ($entries && @$entries) {
+    for my $entry (@$entries) {
+	$entry->report;
+    }
+}
+else {
+    print "No log output.\n";
 }
 
 ### Class definitions.
@@ -494,7 +500,9 @@ sub parse {
     my ($self, $stream) = @_;
 
     my $first_line = <$stream>;
-    if ($first_line =~ /^</) {
+    if (! $first_line) {
+    }
+    elsif ($first_line =~ /^</) {
 	# Must be XML.
 	seek($stream, 0, 0);
 	$self->parse_svn_xml($stream);
