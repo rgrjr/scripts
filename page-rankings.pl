@@ -11,7 +11,6 @@ use warnings;
 
 use Getopt::Long;
 
-my $squid_format_p = 0;
 my $html_format_p = 1;
 my $verbose_p = 0;
 my $robots_p = 0;
@@ -30,11 +29,9 @@ my $public_address = '66.30.196.77';
 GetOptions(# 'help' => \$help, 'man' => \$man, 
 	   'verbose+' => \$verbose_p,
 	   'top=i' => \$n_top_hits,
-	   'squid!' => \$squid_format_p,
 	   'html!' => \$html_format_p,
 	   'robots!' => \$robots_p)
-    or die("usage:  $0 [ --[no]squid ] [ --[no]html ] ",
-	   "[ --[no]robots ] log_file_name ...\n");
+    or die("usage:  $0 [ --[no]html ] [ --[no]robots ] log_file_name ...\n");
 
 # the first file is the one that generates the rankings.
 my $log_index = 0;
@@ -53,7 +50,6 @@ for my $log_name (@ARGV) {
 		: "cat $log_name"),
 	       "fgrep -v 192.168.57.",
 	       "fgrep -v $public_address",
-	       ($squid_format_p ? "fgrep -v 66.31.124.111 | squid2std.pl" : ()),
 	       "page-hits.pl -page-totals -no-summary");
     warn "[got log pipe '$log_pipe']\n"
 	if $verbose_p;

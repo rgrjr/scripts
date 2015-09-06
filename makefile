@@ -29,7 +29,7 @@ backup-scripts = backup.pl backup-dbs.pl clean-backups.pl cd-dump.pl \
 # [we call xauth-local-host a script, but really it needs to be sourced.  --
 # rgr, 5-Dec-04.]
 root-scripts = xauth-local-host
-log-scripts = extract-subnet.pl squid-log.pl squid2std.pl
+log-scripts = extract-subnet.pl
 # mail manipulation scripts.
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 		email/forged-local-address.pl

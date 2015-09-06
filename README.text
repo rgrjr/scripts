@@ -48,14 +48,6 @@ format), summarize the ten most popular pages.
    * page-hits.pl -- given a Web log (standard format), summarize the
 hits in various ways.
 
-   * squid2std.pl -- convert Squid log to standard format.
-
-   * squint.pl -- look for evidence of unauthorized proxying in a Squid
-log.
-
-   * squid-log.pl -- convert dates into human-readable form (perl
-one-liner cribbed from squid FAQ 6.6).
-
    * redirect.pl -- Squid redirector.  Very site-specific.
 
    * page-rankings.pl -- given a series of log files, generates a
