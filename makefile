@@ -34,7 +34,7 @@ log-scripts = extract-subnet.pl
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 		email/forged-local-address.pl
 # installation of various things, including these guys.
-install-scripts = install.pl install-rpms.pl copy-tree substitute-config.pl
+install-scripts = install.pl.pl copy-tree substitute-config.pl
 # utility scripts for version control systems.
 vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
@@ -42,8 +42,7 @@ vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 misc-scripts =	sdiff.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
-# Note that tar-backup.pm is not used by anything at the moment.
-perl-modules = parse-logs.pm rename-into-tree.pm tar-backup.pm rpm.pm
+perl-modules = parse-logs.pm rename-into-tree.pm
 # firewall-scripts must go into /etc/init.d to be useful.
 firewall-scripts = paranoid firewall
 # qmail-scripts and afpd-scripts are not installed by default.
