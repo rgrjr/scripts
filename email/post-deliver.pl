@@ -80,7 +80,7 @@ if ($spam_maildir) {
     # Get forged-local-address.pl from the same place we are running.
     my $fla = $0;
     $fla =~ s@[^/]*$@forged-local-address.pl@;
-    open(my $out, "| $fla --add-local rgrjr.dyndns.org --add-local rgrjr.com")
+    open(my $out, "| $fla --network-prefix 10.0.0 --add-local rgrjr.dyndns.org --add-local rgrjr.com")
 	or die "could not open $fla";
     print $out $header, "\n";
     my $result;
@@ -91,7 +91,13 @@ if ($spam_maildir) {
 	# Success.
 	$result = $?;
     }
+    elsif (! $!) {
+	# Nonzero exit, which (in shell land) means false (not a forgery).
+	$result = 1;
+    }
     else {
+	# Some other error must have happened when running the piped command;
+	# pretend like everything's OK so we don't lose mail.
 	warn "$0:  got error '$!' (", $!+0, ") and result $? from $fla\n";
 	$result = 1;
     }

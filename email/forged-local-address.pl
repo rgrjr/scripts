@@ -38,7 +38,7 @@ if (! $local_network_prefix) {
 	or fail("Could not open pipe from ifconfig:  $!");
     while (defined(my $line = <$in>)) {
 	$local_network_prefix = $1, last
-	    if $line =~ /inet addr:(192\.168\.\d+)./;
+	    if $line =~ /inet addr:(192\.168\.\d+|10\.\d+\.\d+)\./;
     }
     fail("Couldn't find default IP address from ifconfig")
 	unless $local_network_prefix;
@@ -101,20 +101,16 @@ sub local_header_p {
 	# Can't make a determination.
 	return;
     }
-    elsif ($hdr =~ /qmail \d+ invoked by uid (\d+)/) {
-	# qmail locally originated.  [Except that user 89 is vpopmail, at least
-	# on my home system, which doesn't count.  This indicates an internal
-	# redirection, but I'm not sure why it happens.  -- rgr, 29-Jun-08.]
-	return
-	    if $1 == 89;
-	return 'local';
-    }
     elsif ($hdr =~ /by $local_network_prefix\.\d+ with SMTP/) {
 	# qmail format for delivery to our LAN address.
 	'lan';
     }
     elsif ($hdr =~ /^from \S+ \(HELO \S+\) \((\S+\@)?$local_network_prefix\.\d+\)/) {
 	# qmail format for receipt from a LAN host.
+	'lan';
+    }
+    elsif ($hdr =~ /^from \S+ \(\S+ \[$local_network_prefix\.\d+\]\)/) {
+	# Postfix format for receipt from a LAN host.
 	'lan';
     }
     elsif ($hdr =~ /^from \S+ \(localhost \[127.0.0.1\]\)/) {
