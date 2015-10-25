@@ -95,6 +95,7 @@ Defined slots:
     files
     msg
     revision
+    tags
 
 =cut
 
@@ -105,7 +106,7 @@ use base (qw(ChronoLog::Base));
 # define instance accessors.
 sub BEGIN {
     ChronoLog::Entry->define_instance_accessors
-	(qw(revision commitid author encoded_date msg files));
+	(qw(revision commitid author encoded_date msg tags files));
 }
 
 sub report {
@@ -120,6 +121,9 @@ sub report {
     my $files = $self->files;
     print("$formatted_date:\n",
 	  "  ", $self->join_fields($per_entry_fields), "\n");
+    my $tags = $self->tags;
+    print("  Tags: ", join(', ', @$tags), "\n")
+	if $tags && @$tags;
     for my $line (split("\n", $self->msg)) {
 	# indent by two, skipping empty lines.
 	unless ($line =~ /^\s*$/) {
@@ -299,9 +303,21 @@ sub parse_git {
     my $entry_from_rev = $self->entry_from_revision;
     $entry_from_rev = { }, $self->entry_from_revision($entry_from_rev)
 	unless $entry_from_rev;
+    my %tags_from_commit;
+
     my $line = $first_line || <$source>;
     while ($line) {
 	chomp($line);
+	if ($line =~ /^([a-f0-9]{40}) (\S+)$/) {
+	    # Must be prefixed with "git show-ref" output.
+	    my ($commit_id, $tag) = $line =~ //;
+	    $tag =~ s@^refs/(heads|remotes)/@@;	# to match log style.
+	    push(@{$tags_from_commit{$commit_id}}, $tag);
+	    $line = <$source>;
+	    next;
+	}
+
+	# Must have the start of a commit.
 	my ($commit_id) = $line =~ /^commit ([a-f0-9]{40})$/;
 	die "Unexpected line '$line'.\n"
 	    unless $commit_id;
@@ -333,6 +349,7 @@ sub parse_git {
 	my $entry = ChronoLog::Entry->new
 	    (revision => substr($commit_id, 0, 7),
 	     msg => $message,
+	     tags => $tags_from_commit{$commit_id},
 	     author => $info{Author} || '?',
 	     encoded_date => $encoded_date);
 	push(@$entries, $entry);
@@ -507,7 +524,7 @@ sub parse {
 	seek($stream, 0, 0);
 	$self->parse_svn_xml($stream);
     }
-    elsif ($first_line =~ /^commit [a-f0-9]{40}$/) {
+    elsif ($first_line =~ /^(commit )?[a-f0-9]{40}/) {
 	$self->parse_git($stream, $first_line);
     }
     else {
