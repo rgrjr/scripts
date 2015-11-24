@@ -101,6 +101,10 @@ sub local_header_p {
 	# Can't make a determination.
 	return;
     }
+    elsif ($hdr =~ /qmail \d+ invoked by uid (\d+)/) {
+	# qmail locally originated.
+	return 'local';
+    }
     elsif ($hdr =~ /by $local_network_prefix\.\d+ with SMTP/) {
 	# qmail format for delivery to our LAN address.
 	'lan';

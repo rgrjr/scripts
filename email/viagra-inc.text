@@ -1,6 +1,5 @@
 Return-Path: <rogerryals@hcsmail.com>
 Delivered-To: rogers-perl6@rgrjr.dyndns.org
-Received: (qmail 3926 invoked by uid 89); 29 Jun 2008 19:25:05 -0000
 Received: from unknown (HELO alexandria.modulargenetics.com) (68.236.112.17)
   by home with SMTP; 29 Jun 2008 19:25:05 -0000
 Received-SPF: none (home: domain at hcsmail.com does not designate permitted sender hosts)

@@ -1,6 +1,5 @@
 Return-Path: <nilkg@200-140-164-200.bsace706.dsl.brasiltelecom.net.br>
 Delivered-To: rogers-perl6@rgrjr.dyndns.org
-Received: (qmail 29744 invoked by uid 89); 5 Jun 2011 20:11:27 -0000
 Received: from unknown (HELO rgrjr.com) (216.146.47.5)
   by home with SMTP; 5 Jun 2011 20:11:27 -0000
 Received: from rgrjr.com (localhost [127.0.0.1])
