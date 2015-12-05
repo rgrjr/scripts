@@ -34,7 +34,7 @@ log-scripts = extract-subnet.pl
 mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
 		email/forged-local-address.pl
 # installation of various things, including these guys.
-install-scripts = install.pl.pl copy-tree substitute-config.pl
+install-scripts = install.pl copy-tree substitute-config.pl
 # utility scripts for version control systems.
 vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
