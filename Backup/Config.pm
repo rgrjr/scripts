@@ -34,11 +34,11 @@ sub new {
 	if (! @ARGV) {
 	    # No options.
 	}
-	elsif ($ARGV[0] =~ /^--conf=(.+)$/) {
+	elsif ($ARGV[0] =~ /^--config=(.+)$/) {
 	    $config_file = $1;
 	    shift(@ARGV);
 	}
-	elsif ($ARGV[0] =~ /^--conf$/) {
+	elsif ($ARGV[0] =~ /^--config$/) {
 	    shift(@ARGV);
 	    $config_file = shift(@ARGV);
 	}
@@ -122,11 +122,13 @@ sub find_option {
     # Try the "host:".
     $host_colon ||= ($stanza =~ m/^(.+:)/ && $1);
     if ($host_colon) {
-	$result = $self->{_stanza_hashes}{$host_colon}{$option_name};
+	my $hash = ($self->{_stanza_hashes}{$host_colon}
+		    || $self->{_stanza_hashes}{"$host_colon/"});
+	$result = $hash && $hash->{$option_name};
 	return $result
 	    if defined($result);
     }
-    $self->find_option($option_name, 'default', $default);
+    return $self->find_option($option_name, 'default', $default);
 }
 
 sub find_prefix {
@@ -204,6 +206,20 @@ sub local_partition_p {
     my ($self, $partition) = @_;
 
     return $partition->host_name eq $self->host_name;
+}
+
+sub local_file_p {
+    my ($self, $file_name) = @_;
+
+    if ($file_name =~ /^([^:]+):([^:]+)$/) {
+	my ($host, $local_part) = $file_name =~ //;
+	return $local_part
+	    if $host eq $self->host_name;
+    }
+    else {
+	# An unqualified file name is always local.
+	return $file_name;
+    }
 }
 
 ### Backup operations.

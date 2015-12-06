@@ -18,8 +18,8 @@ BEGIN {
 use Getopt::Long;
 use Pod::Usage;
 
+use Backup::Config;
 use Backup::DumpSet;
-use Backup::Slice;
 use Backup::Partition;
 
 my $warn = $0;
@@ -31,38 +31,37 @@ my $to = '';		# destination directory; required arg.
 my @prefixes;		# file name prefix, to limit file choices.
 my $since;		# date string, e.g. 200611 or 20061203.
 my $mode = 'cp';	# 'mv' or 'cp'.
-my $min_free_left = 1024;	# min. disk space in MB to leave after copy.
+my $minimum_free_left;	# min. disk space in MB to leave after copying.
 my $test_p = 0;
 my $verbose_p = 0;
 my $usage = 0;
 my $help = 0;
+my $config = Backup::Config->new();
 GetOptions('test+' => \$test_p, 'verbose+' => \$verbose_p,
+	   'config=s' => sub {
+	       die "$0:  The --config option must be first.\n";
+	   },
 	   'usage|?' => \$usage, 'help' => \$help,
 	   'from=s' => \$from, 'to=s' => \$to,
 	   'mode=s' => \$mode, 'prefix=s' => \@prefixes,
 	   'since=s' => \$since,
-	   'min-free-left=i' => \$min_free_left)
+	   'min-free-left=i' => \$minimum_free_left)
     or pod2usage(-verbose => 0);
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
 
 $verbose_p++ if $test_p;
+$config->verbose_p($verbose_p);
+$config->test_p($test_p);
 $from = shift(@ARGV)
     if @ARGV && ! $from;
-pod2usage("$warn:  Missing --from arg.\n")
-    unless $from;
 $to = shift(@ARGV)
     if @ARGV && ! $to;
-pod2usage("$warn:  Missing --to arg.\n")
-    unless $to;
+pod2usage("$warn:  --to without --from.\n")
+    if $to && ! $from;
 pod2usage("$warn:  --since must be a date in the form '2006' or '200611' "
 	  ."or '20061203'.\n")
     if $since && $since !~ /^\d{4,8}$/;
-pod2usage("$warn:  '".shift(@ARGV)."' is an extraneous positional arg.\n")
-    if @ARGV;
-pod2usage("$warn:  Either --from or --to must be a local directory.\n")
-    unless -d $from || -d $to;
-my $local_to_local_p = -d $from && -d $to;
 
 ### Subroutines.
 
@@ -89,17 +88,6 @@ sub print_items {
 
     printf("      %-25s  %s  level %d\n",
 	   $entry->file, display_mb($entry->size_in_mb, 8), $entry->level);
-}
-
-sub free_disk_space {
-    my ($dir) = @_;
-
-    my ($partition, @others)
-	= Backup::Partition->find_partitions(partition => $dir);
-    return
-	if @others || ! $partition;
-    # divide by 1024.
-    return $partition->avail_blocks >> 10;
 }
 
 sub site_file_delete {
@@ -197,8 +185,8 @@ sub find_files_to_copy {
 }
 
 sub copy_one_file {
-    my ($from, $to) = @_;
-    
+    my ($local_to_local_p, $from, $to) = @_;
+
     my @command
 	= ((! $local_to_local_p
 	    ? ($scp_program_name, '-Bq')
@@ -239,16 +227,43 @@ sub copy_one_file {
 }
 
 sub copy_backup_files {
-    my ($from, $to) = @_;
+    my ($from_partition, $from, $to, $prefixes) = @_;
+    undef($prefixes)
+	unless $prefixes && @$prefixes && $prefixes->[0] ne '*';
 
-    my ($total_space, @need_copying)
-	= find_files_to_copy($from, $to, @prefixes ? \@prefixes : '');
+    # Find what needs to be copied.
+    my $to_partition = find_partition($to);
+    my $from_local_p = $config->local_partition_p($from_partition);
+    my $to_local_p = $config->local_partition_p($to_partition);
+    pod2usage("$warn:  Either --from or --to must be a local directory.\n")
+	unless $from_local_p || $to_local_p;
+    my $local_to_local_p = $from_local_p && $to_local_p;
+    my ($total_space, @need_copying);
+    if ($prefixes) {
+	for my $prefix (@$prefixes) {
+	    my ($pfx_space, @pfx_files)
+		= find_files_to_copy($from, $to, $prefix);
+	    $total_space += $pfx_space;
+	    push(@need_copying, @pfx_files);
+	}
+    }
+    else {
+	# If we want them all, list them all at once.
+	($total_space, @need_copying) = find_files_to_copy($from, $to, '');
+    }
     if (@need_copying == 0) {
 	warn "$0:  Nothing to copy.\n"
 	    if $verbose_p;
 	return 1;
     }
-    my $free_space = free_disk_space($to);
+
+    # See if we have enough room on the destination.
+    my $free_space
+	# divide by 1024.
+	= $to_partition->avail_blocks >> 10;
+    my $min_free_left
+	= $config->find_option('vacuum-min-free-left', $to_partition,
+			       $minimum_free_left || 1024);
     my ($enough_space_p, $pretty_free_space, $pretty_free_left, $message)
 	= (defined($free_space)
 	   ? ($free_space-$total_space >= $min_free_left,
@@ -266,15 +281,112 @@ sub copy_backup_files {
 	print "   Min free left:  ", display_mb($min_free_left), "\n";
 	print "   Free left:      $pretty_free_left\n";
     }
-    die
-	if ! $enough_space_p;
+    if (! $enough_space_p) {
+	$config->fail_p(1);
+	return;
+    }
+
     # OK, green to go.
     map { my $name = $_->file;
-	  copy_one_file("$from/$name", "$to/$name");
+	  copy_one_file($local_to_local_p, "$from/$name", "$to/$name");
       } @need_copying;
 }
 
-copy_backup_files($from, $to);
+sub find_partition {
+    my $file_name = shift;
+
+    my ($partition)
+	= Backup::Partition->find_partitions(partition => $file_name);
+    die 'bug'
+	unless $partition;
+    return $partition;
+}
+
+### Main code.
+
+if ($from && $to) {
+    # Traditional command-line use.
+    copy_backup_files(find_partition($from), $from, $to, \@prefixes);
+}
+elsif ($from) {
+    # Vacuum one partition to its standard destination.
+    my $from_partition = find_partition($from);
+    my $to = $config->find_option('vacuum-to', $from_partition, '');
+    if ($to) {
+	copy_backup_files($from_partition, $from, $to, \@prefixes);
+    }
+    elsif (! $config->config_file) {
+	pod2usage("$warn:  Missing --to arg.\n");
+    }
+    else {
+	pod2usage(join('', "$warn:  '", $from_partition->host_colon_mount,
+		       " has no 'vacuum-to' destination in ",
+		       $config->config_file, ".\n"));
+    }
+}
+else {
+    # Vacuum all local partitions.
+    my @local_partitions = Backup::Partition->find_partitions();
+
+    my $find_part = sub {
+	# [it would probably be better just to have a caching
+	# Backup::Partition->find_partition method.  -- rgr, 27-Mar-11.]
+	my $file = shift;
+
+	my $local_part = $config->local_file_p($file);
+	if ($local_part) {
+	    for my $partition (@local_partitions) {
+		return $partition
+		    if $partition->contains_file_p($local_part);
+	    }
+	}
+	else {
+	    return find_partition($file);
+	}
+    };
+
+    for my $partition (@local_partitions) {
+	next
+	    unless $config->local_partition_p($partition);
+	my $name = $partition->host_colon_mount;
+	my $from = $config->find_option('vacuum-from', $partition, '');
+	my $to = $config->find_option('vacuum-to', $partition, '');
+	next
+	    unless $from || $to;
+	my $from_partition = $from && $find_part->($from);
+	my $to_partition = $to && $find_part->($to);
+	if ($from_partition && $to_partition) {
+	    my $prefixes
+		= [ split(/\s*,\s*/,
+			  $config->find_option('vacuum-prefix',
+					       $partition, '*')) ];
+	    if ($from_partition->host_colon_mount eq $name
+		|| $to_partition->host_colon_mount eq $name) {
+		copy_backup_files($from_partition, $from, $to, $prefixes);
+	    }
+	    else {
+		warn("$warn:  Neither 'vacuum-from' nor 'vacuum-to' ",
+		     "belong to '$name'.\n");
+	    }
+	}
+	else {
+	    if (! $to) {
+		warn "$warn:  '$name' has 'vacuum-from' but no 'vacuum-to'.\n";
+	    }
+	    elsif (! $to_partition) {
+		warn("$warn:  'vacuum-to' partition for '$name' ",
+		     "does not exist.\n");
+	    }
+	    if (! $from) {
+		warn "$warn:  '$name' has 'vacuum-to' but no 'vacuum-from'.\n";
+	    }
+	    elsif (! $from_partition) {
+		warn("$warn:  'vacuum-from' partition for '$name' ",
+		     "does not exist.\n");
+	    }
+	}
+    }
+}
 
 __END__
 

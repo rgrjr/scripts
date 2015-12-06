@@ -25,6 +25,19 @@ sub host_colon_mount {
     join(':', $self->host_name, $self->mount_point);
 }
 
+sub contains_file_p {
+    # Must have a file name without a "host:" prefix.
+    my ($self, $file_name) = @_;
+
+    my $mount_point = $self->mount_point;
+    return 1
+	if $file_name eq $mount_point;
+    my $len = length($mount_point);
+    return
+	unless length($file_name) > $len+1;
+    return substr($file_name, 0, $len+1) eq "$mount_point/";
+}
+
 sub find_partitions {
     my ($class, %options) = @_;
     my $max_free_blocks = $options{max_free_blocks};
