@@ -110,7 +110,7 @@ test-csharp-chrono-log:	vc-chrono-log.exe
 # This assumes we are in a Subversion working copy, and checks that the Perl,
 # Ruby, Python, and C# versions get the same thing for the same *current* log.
 test-compare-languages:	vc-chrono-log.exe
-	svn log --xml --verbose > $@.tmp.xml
+	(cd ../scripts.svn && svn log --xml --verbose) > $@.tmp.xml
 	./vc-chrono-log.pl < $@.tmp.xml > $@.tmp.pl.text
 	mono $^ < $@.tmp.xml > $@.tmp.cs.text
 	cmp $@.tmp.pl.text $@.tmp.cs.text
@@ -189,8 +189,8 @@ test-backup-classes:
 		test/test-config.pl
 # This is too ephemeral to add as a test-backup dependency.
 test-vacuum:
-	perl -Mlib=. ./vacuum.pl --test --prefix shared \
-		--min-free 100 /scratch/backups rgr:/scratch2 > $@.tmp
+	perl -Mlib=. ./vacuum.pl --test --prefix home --min-free 100 \
+		/scratch3/backups orion:/scratch2/backups > $@.tmp
 	cmp $@.text $@.tmp
 	perl -Mlib=. ./vacuum.pl --config /dev/null --test > $@.tmp
 	test -z "`cat $@.tmp`"
