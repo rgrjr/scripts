@@ -317,6 +317,28 @@ sub parse_git {
 	    next;
 	}
 
+	# Look for --stat output, which gives us file names and lines changed.
+	my $files;
+	if ($line =~ /^ (\S.*\S)\s+\|/) {
+	    while ($line && $line =~ /^ (\S.*\S)\s+\|\s+(\d+) /) {
+		my ($file_name, $lines) = $line =~ //;
+		my $rev = RGR::CVS::FileRevision->new
+		    (file_name => $file_name,
+		     lines => $lines);
+		push(@$files, $rev);
+		$line = <$source>;
+	    }
+	    if ($line && $line =~ /^ (\d+) files? changed/) {
+		# We don't really have any place to put these.
+		$line = <$source>;
+	    }
+	    $line = <$source>
+		if $line && $line eq "\n";
+	    last
+		unless $line;
+	    chomp($line);
+	}
+
 	# Must have the start of a commit.
 	my ($commit_id) = $line =~ /^commit ([a-f0-9]{40})$/;
 	die "Unexpected line '$line'.\n"
@@ -351,7 +373,8 @@ sub parse_git {
 	     msg => $message,
 	     tags => $tags_from_commit{$commit_id},
 	     author => $info{Author} || '?',
-	     encoded_date => $encoded_date);
+	     encoded_date => $encoded_date,
+	     files => $files);
 	push(@$entries, $entry);
 	$entry_from_rev->{$commit_id} = $entry;
 	$line = <$source>;
