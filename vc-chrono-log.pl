@@ -317,31 +317,9 @@ sub parse_git {
 	    next;
 	}
 
-	# Look for --stat output, which gives us file names and lines changed.
-	my $files;
-	if ($line =~ /^ (\S.*\S)\s+\|/) {
-	    while ($line && $line =~ /^ (\S.*\S)\s+\|\s+(\d+) /) {
-		my ($file_name, $lines) = $line =~ //;
-		my $rev = RGR::CVS::FileRevision->new
-		    (file_name => $file_name,
-		     lines => $lines);
-		push(@$files, $rev);
-		$line = <$source>;
-	    }
-	    if ($line && $line =~ /^ (\d+) files? changed/) {
-		# We don't really have any place to put these.
-		$line = <$source>;
-	    }
-	    $line = <$source>
-		if $line && $line eq "\n";
-	    last
-		unless $line;
-	    chomp($line);
-	}
-
 	# Must have the start of a commit.
 	my ($commit_id) = $line =~ /^commit ([a-f0-9]{40})$/;
-	die "Unexpected line '$line'.\n"
+	die "$source:$.:  Unexpected line '$line'.\n"
 	    unless $commit_id;
 
 	# Parse RFC822-style keywords.
@@ -365,6 +343,26 @@ sub parse_git {
 	    $line = <$source>;
 	}
 	$message =~ s/\s*git-svn-id:.*//;
+	$line = <$source>;
+
+	# Look for --stat output, which gives us file names and lines changed.
+	my $files;
+	if ($line && $line =~ /^ (\S.*\S)\s+\|/) {
+	    while ($line && $line =~ /^ (\S.*\S)\s+\|\s+(\d+) /) {
+		my ($file_name, $lines) = $line =~ //;
+		my $rev = RGR::CVS::FileRevision->new
+		    (file_name => $file_name,
+		     lines => $lines);
+		push(@$files, $rev);
+		$line = <$source>;
+	    }
+	    if ($line && $line =~ /^ (\d+) files? changed/) {
+		# We don't really have any place to put these.
+		$line = <$source>;
+	    }
+	    $line = <$source>
+		if $line && $line eq "\n";
+	}
 
 	# Create the entry.
 	my $encoded_date = str2time($info{Date}, 'UTC');
@@ -377,7 +375,6 @@ sub parse_git {
 	     files => $files);
 	push(@$entries, $entry);
 	$entry_from_rev->{$commit_id} = $entry;
-	$line = <$source>;
     }
 
     # Produce the sorted set of entries.
