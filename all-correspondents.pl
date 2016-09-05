@@ -20,7 +20,7 @@ my %addresses;
 sub process_header_lines {
     for (@_) {
 	next
-	    unless /^From: */i;
+	    unless /^(Sender|From|Reply-To): */i;
 	s///i;
 	my $address = (/<([^>]+)>/ ? $1 : $_);
 	$address =~ s/\(.*\)//g;
@@ -35,18 +35,20 @@ sub search_one_file {
     # Process the given file, looking for hits, and generating the appropriate
     # output.  Returns the number of matches in the file, and updates the global
     # $matching_line_count appropriately.
-    my $file_name = shift;
-    my $last_line_empty_p = 1;		# start of file is good enough.
-    my ($message, $line_number, $in_header_p) = (0, 0, 0);
-    my ($line, $rmail_p, @header_lines);
+    my ($file_name) = @_;
 
     if (! open(IN, $file_name)) {
 	warn "$0:  Can't open '$file_name':  $!\n";
 	return 0;
     }
     # Do lookahead in order to recognize mbox type.
-    $line = <IN>;
-    $rmail_p = ($line =~ /^BABYL OPTIONS/);
+    my $line = <IN>;
+    return
+	unless $line;
+    my $rmail_p = ($line =~ /^BABYL OPTIONS/);
+    my $last_line_empty_p = 1;		# start of file is good enough.
+    my ($message, $line_number, $in_header_p) = (0, 0, ! $rmail_p);
+    my @header_lines;
     while (defined($line)) {
 	# Look for new messages.
 	if ($rmail_p
@@ -105,7 +107,7 @@ sub search_one_file {
 
 ### Main loop
 if (@ARGV) {
-    map {search_one_file($_)} @ARGV;
+    map { search_one_file($_); } @ARGV;
 }
 else {
     search_one_file('-');
