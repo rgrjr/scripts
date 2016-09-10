@@ -122,7 +122,9 @@ test-compare-languages:	vc-chrono-log.exe
 	cmp $@.tmp.pl.text $@.tmp.py.text
 	rm -f $@.tmp.*
 
-test-email:	test-forged-address
+test-email:	test-forged-address test-deliver
+test-deliver:
+	perl email/test-qmail-deliver.pl
 test-forged-address:	test-rgrjr-forged-address \
 		test-nonforged-addresses \
 		test-new-forged-address test-postfix-forged-address \
