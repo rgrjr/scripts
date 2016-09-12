@@ -9,9 +9,6 @@ use warnings;
 
 use Getopt::Long;
 
-# debugging
-# open(STDERR, ">>post-deliver.log") or die;
-
 my $tag = "$0 ($$)";
 my $verbose_p = 0;
 my ($whitelist, $blacklist);
@@ -21,6 +18,10 @@ my ($whitelist, $blacklist);
 GetOptions('verbose+' => \$verbose_p,
 	   'whitelist=s' => \$whitelist,
 	   'blacklist=s' => \$blacklist);
+if ($verbose_p) {
+    # debugging.
+    open(STDERR, ">>post-deliver.log") or die;
+}
 
 ### Subroutines.
 
@@ -48,6 +49,8 @@ sub write_maildir_message {
     my $file_name = ($maildir . 'new/'
 		     . join('.', time(), "I${inode}P$$", $host));
     rename($temp_file_name, $file_name);
+    warn "Delivered message to $maildir\n"
+	if $verbose_p;
 }
 
 sub process_qmail_file {
