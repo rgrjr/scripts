@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 26;
+use Test::More tests => 28;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -39,16 +39,18 @@ sub count_new_messages {
 
 sub deliver_one {
     my ($message_file, $maildir, $expected_messages, %options) = @_;
-
+    my $exit_code = ($options{exit_code} || 0) << 8;
     local $ENV{SENDER} = $options{sender} || 'rogers@rgrjr.dyndns.org';
     local $ENV{LOCAL} = $options{localpart} || 'rogers';
+
     my $command = q{perl -Mlib=.. qmail-deliver.pl};
     $command .= " --blacklist=$options{blacklist}"
 	if $options{blacklist};
     $command .= " --whitelist=$options{whitelist}"
 	if $options{whitelist};
-    ok(0 == system(qq{$command < $message_file}),
-       "deliver $message_file");
+    my $exit = system(qq{$command < $message_file 2>/dev/null});
+    ok($exit_code == $exit, "deliver $message_file")
+	or warn "actually got exit code $exit";
     ok($expected_messages == count_new_messages($maildir),
        "have $expected_messages messages in $maildir");
 }
@@ -63,8 +65,12 @@ deliver_one('rgrjr-forged-2.text', 'Maildir', 3,
 	    localpart => 'rogers-emacs');
 
 ## Test extension delivery.
-ok(0 == system('maildirmake emacs'), "created emacs maildir");
 system('echo emacs/ > .qmail-emacs');
+deliver_one('rgrjr-forged-1.text', 'Maildir', 3,
+	    localpart => 'rogers-emacs',
+	    # This tests invalid maildir delivery.
+	    exit_code => 75);
+ok(0 == system('maildirmake emacs'), "created emacs maildir");
 deliver_one('rgrjr-forged-1.text', 'emacs', 1,
 	    localpart => 'rogers-emacs');
 deliver_one('rgrjr-forged-2.text', 'emacs', 2,

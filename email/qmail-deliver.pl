@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 #
+# Deliver a message the way that qmail-local does.
+#
 # [created (post-deliver.pl, based on postfix-sort.pl).  -- rgr, 28-Apr-08.]
 # [created (based on post-deliver.pl).  -- rgr, 9-Sep-16.]
 #
@@ -12,6 +14,10 @@ use Getopt::Long;
 my $tag = "$0 ($$)";
 my $verbose_p = 0;
 my ($whitelist, $blacklist);
+
+# Selection of /usr/include/sysexits.h constants.
+use constant EX_OK => 0;
+use constant EX_TEMPFAIL => 75;
 
 ### Process command-line arguments.
 
@@ -29,15 +35,19 @@ sub write_maildir_message {
     my ($maildir, $headers) = @_;
 
     # Validate maildir.
-    die "$tag:  invalid maildir '$maildir'"
-	unless $maildir =~ m@/$@ && -d $maildir;
+    unless ($maildir =~ m@/$@ && -d $maildir) {
+	warn "$tag:  invalid maildir '$maildir'.\n";
+	exit(EX_TEMPFAIL);
+    }
 
     # Write to a temp file.
     chomp(my $host = `hostname`);
     my $temp_file_name = $maildir . 'tmp/' . join('.', time(), "P$$", $host);
     # warn "$tag:  Writing to $temp_file_name.\n";
-    open(my $out, '>', $temp_file_name)
-	or die "$tag:  can't write temp file '$temp_file_name':  $!";
+    open(my $out, '>', $temp_file_name) or do {
+	warn "$tag:  can't write temp file '$temp_file_name':  $!";
+	exit(EX_TEMPFAIL);
+    };
     print $out ($headers);
     while (<STDIN>) {
 	print $out $_;
@@ -57,8 +67,10 @@ sub process_qmail_file {
     # [this will fail in the case of multiple delivery.  -- rgr, 9-Sep-16.]
     my ($qmail_file, $message_headers) = @_;
 
-    open(my $in, '<', $qmail_file)
-	or die "$tag:  Can't open '$qmail_file':  $!";
+    open(my $in, '<', $qmail_file) or do {
+	warn "$tag:  Can't open '$qmail_file':  $!";
+	exit(EX_TEMPFAIL);
+    };
     while (<$in>) {
 	chomp;
 	if (/^(\s*#|$)/) {
@@ -211,4 +223,4 @@ elsif ($extension && -r ".qmail-$extension") {
 else {
     write_maildir_message('Maildir/', $message_headers);
 }
-exit(0);
+exit(EX_OK);
