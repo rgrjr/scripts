@@ -10,6 +10,8 @@ use strict;
 use warnings;
 
 use Getopt::Long;
+use Mail::Header;
+use IO::String;
 
 my $tag = "$0 ($$)";
 my $verbose_p = 0;
@@ -73,7 +75,7 @@ sub process_qmail_file {
     };
     while (<$in>) {
 	chomp;
-	if (/^(\s*#|$)/) {
+	if (/^\s*(#|$)/) {
 	    # Ignore comments and blank lines.
 	}
 	elsif (substr($_, 0, 1) eq '|') {
@@ -87,21 +89,45 @@ sub process_qmail_file {
 	    write_maildir_message($_, $message_headers);
 	}
 	else {
-	    die "$tag:  Unsupported directive '$_'.\n";
+	    die "$tag:  In $qmail_file:  Unsupported directive '$_'.\n";
 	}
     }
+}
+
+sub find_localpart {
+    # Pull a localpart from a Delivered-To or X-Original-To header.
+    my ($head) = @_;
+
+    for my $header_name (qw(delivered-to x-original-to)) {
+	for my $header_value ($head->get($header_name)) {
+	    $header_value =~ s/@.*//g;
+	    $header_value =~ s/\s+//g;
+	    return lc($header_value);
+	}
+    }
+}
+
+sub find_extension {
+    # Find the extension from $ENV{EXTENSION}, or the localpart if we can find
+    # one, or assume it is "".
+    my ($head) = @_;
+
+    my $extension = $ENV{EXTENSION};
+    return $extension
+	if $extension;
+    my $localpart = find_localpart($head) || $ENV{LOCAL};
+    return $1
+	if $localpart && $localpart =~ /^[^-]+-(.+)$/;
+    return '';
 }
 
 ### Main code.
 
 ## Read the headers to find where this message was originally addressed.
 
-# Look for "X-Original-To:" instead of "To:" since different mail clients will
-# format the latter differently, and we're too lazy to use an RFC822-compliant
-# parser.  -- rgr, 25-Apr-08.
 my $mbox_from_line = '';
 my $header = '';
-my ($qmail_file, $maildir, $localpart);
+my $qmail_file;
 while (<STDIN>) {
     if (! $header && /^From / && ! $mbox_from_line) {
 	$mbox_from_line = $_;
@@ -109,18 +135,15 @@ while (<STDIN>) {
 	next;
     }
     $header .= $_;
-    if (/^$/) {
+    last
 	# end of headers.
-	last;
-    }
-    elsif (/^X-Original-To: (\S+)@/i) {
-	$localpart = $1;
-    }
+	if /^$/;
 }
-$localpart ||= $ENV{LOCAL} || die "bug";
-my $extension = $ENV{EXTENSION};
-$extension = $1
-    if ! $extension && $localpart =~ /^[^-]+-(.+)$/;
+# Parse headers.
+my $header_stream = IO::String->new($header);
+# Note that supplying a non-file stream to "new" does not work.
+my $head = Mail::Header->new();
+$head->read($header_stream);
 
 ## Check for forgery.
 
@@ -159,15 +182,6 @@ if (-r '.qmail-spam') {
 
 my $message_headers = $mbox_from_line . "X-Delivered-By: $0 ($$)\n" . $header;
 if (! $qmail_file && ($whitelist || $blacklist)) {
-
-    # Parse headers.
-    require Mail::Header;
-    require IO::String;
-    my $header_stream = IO::String->new($header);
-    # Note that supplying a non-file stream to "new" does not work.
-    my $head = Mail::Header->new();
-    $head->read($header_stream);
-
     # Find all source addresses.
     my %addresses;
     for my $header_name (qw(sender from reply-to)) {
@@ -177,15 +191,17 @@ if (! $qmail_file && ($whitelist || $blacklist)) {
 	    while ($header =~ s/\(([^()]*)\)//g) {
 	    }
 	    $header =~ s/\"[^""]*\"//g;
+	    # Process each address.
 	    for my $address (split(/\s*,\s*/, $header)) {
-		if ($address =~ /(.*)<([^<>]+)>(.*)/) {
-		    my ($before, $addr, $after) = $address =~ //;
+		if ($address =~ /<([^<>]+)>/) {
+		    my $addr = $1;
 		    $addr =~ s/\s+//g;
 		    $addresses{lc($addr)}++;
 		}
 		else {
 		    $address =~ s/\s+//g;
-		    $addresses{lc($address)}++;
+		    $addresses{lc($address)}++
+			if $address;
 		}
 	    }
 	}
@@ -216,10 +232,12 @@ if (! $qmail_file && ($whitelist || $blacklist)) {
 
 ## Deliver the message.
 
+my $extension;
 if ($qmail_file) {
     process_qmail_file($qmail_file, $message_headers);
 }
-elsif ($extension && -r ".qmail-$extension") {
+elsif ($extension = find_extension($head)
+       and -r ".qmail-$extension") {
     process_qmail_file(".qmail-$extension", $message_headers);
 }
 else {

@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 28;
+use Test::More tests => 30;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -41,7 +41,7 @@ sub deliver_one {
     my ($message_file, $maildir, $expected_messages, %options) = @_;
     my $exit_code = ($options{exit_code} || 0) << 8;
     local $ENV{SENDER} = $options{sender} || 'rogers@rgrjr.dyndns.org';
-    local $ENV{LOCAL} = $options{localpart} || 'rogers';
+    local $ENV{LOCAL} = $options{localpart};
 
     my $command = q{perl -Mlib=.. qmail-deliver.pl};
     $command .= " --blacklist=$options{blacklist}"
@@ -59,29 +59,23 @@ sub deliver_one {
 
 ## Simple default deliveries.
 deliver_one('from-bob.text', 'Maildir', 1);
-deliver_one('rgrjr-forged-1.text', 'Maildir', 2,
-	    localpart => 'rogers-emacs');
-deliver_one('rgrjr-forged-2.text', 'Maildir', 3,
-	    localpart => 'rogers-emacs');
+deliver_one('rgrjr-forged-1.text', 'Maildir', 2);
+deliver_one('rgrjr-forged-2.text', 'Maildir', 3);
 
 ## Test extension delivery.
 system('echo emacs/ > .qmail-emacs');
 deliver_one('rgrjr-forged-1.text', 'Maildir', 3,
-	    localpart => 'rogers-emacs',
 	    # This tests invalid maildir delivery.
 	    exit_code => 75);
 ok(0 == system('maildirmake emacs'), "created emacs maildir");
-deliver_one('rgrjr-forged-1.text', 'emacs', 1,
-	    localpart => 'rogers-emacs');
-deliver_one('rgrjr-forged-2.text', 'emacs', 2,
-	    localpart => 'rogers-emacs');
+deliver_one('rgrjr-forged-1.text', 'emacs', 1);
+deliver_one('rgrjr-forged-2.text', 'emacs', 2);
 ok(3 == count_new_messages(), "new emacs stuff not delivered to Maildir");
 
 ## Test forgery.
 ok(0 == system('maildirmake spam'), "created spam maildir");
 system('echo spam/ > .qmail-spam');
-deliver_one('rgrjr-forged-1.text', 'spam', 1,
-	    localpart => 'rogers-emacs');
+deliver_one('rgrjr-forged-1.text', 'spam', 1);
 ok(3 == count_new_messages(), "spam not delivered to Maildir");
 
 ## Test blacklisting and whitelisting.
@@ -101,3 +95,7 @@ deliver_one('from-jan.text', 'spam', 3,
 ok(4 == count_new_messages(),
    "non-whitelisted sender not delivered to Maildir");
 unlink('list.tmp');
+
+## Another forgery test.
+deliver_one('viagra-inc.text', 'spam', 4,
+	    sender => 'rogerryals@hcsmail.com');
