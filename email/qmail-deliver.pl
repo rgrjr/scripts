@@ -92,7 +92,9 @@ sub process_qmail_file {
     }
 }
 
-### Read the headers to find where this message was originally addressed.
+### Main code.
+
+## Read the headers to find where this message was originally addressed.
 
 # Look for "X-Original-To:" instead of "To:" since different mail clients will
 # format the latter differently, and we're too lazy to use an RFC822-compliant
@@ -120,7 +122,7 @@ my $extension = $ENV{EXTENSION};
 $extension = $1
     if ! $extension && $localpart =~ /^[^-]+-(.+)$/;
 
-### Check for forgery.
+## Check for forgery.
 
 if (-r '.qmail-spam') {
     # Get forged-local-address.pl from the same place we are running.
@@ -153,7 +155,7 @@ if (-r '.qmail-spam') {
     }
 }
 
-### Check for whitelisting.
+## Check for whitelisting.
 
 my $message_headers = $mbox_from_line . "X-Delivered-By: $0 ($$)\n" . $header;
 if (! $qmail_file && ($whitelist || $blacklist)) {
@@ -212,7 +214,7 @@ if (! $qmail_file && ($whitelist || $blacklist)) {
     }
 }
 
-### Deliver the message.
+## Deliver the message.
 
 if ($qmail_file) {
     process_qmail_file($qmail_file, $message_headers);
