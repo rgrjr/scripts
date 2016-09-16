@@ -14,6 +14,7 @@ use Mail::Header;
 use IO::String;
 
 my $tag = "$0 ($$)";
+my $test_p = 0;
 my $verbose_p = 0;
 my ($whitelist, $blacklist);
 
@@ -23,7 +24,8 @@ use constant EX_TEMPFAIL => 75;
 
 ### Process command-line arguments.
 
-GetOptions('verbose+' => \$verbose_p,
+GetOptions('test!' => \$test_p,
+	   'verbose+' => \$verbose_p,
 	   'whitelist=s' => \$whitelist,
 	   'blacklist=s' => \$blacklist);
 if ($verbose_p) {
@@ -82,6 +84,13 @@ sub write_maildir_message {
     }
     my $inode = (stat($temp_file_name))[1];
     close($out);
+
+    # Punt if just testing.
+    if ($test_p) {
+	warn "Delivered message to $maildir [not]\n";
+	unlink($temp_file_name);
+	return;
+    }
 
     # Rename uniquely.
     my $file_name = ($maildir . 'new/'

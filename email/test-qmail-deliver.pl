@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 30;
+use Test::More tests => 32;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -44,6 +44,8 @@ sub deliver_one {
     local $ENV{LOCAL} = $options{localpart};
 
     my $command = q{perl -Mlib=.. qmail-deliver.pl};
+    $command .= " --test"
+	if $options{test_p};
     $command .= " --blacklist=$options{blacklist}"
 	if $options{blacklist};
     $command .= " --whitelist=$options{whitelist}"
@@ -60,6 +62,8 @@ sub deliver_one {
 ## Simple default deliveries.
 deliver_one('from-bob.text', 'Maildir', 1);
 deliver_one('rgrjr-forged-1.text', 'Maildir', 2);
+deliver_one('rgrjr-forged-2.text', 'Maildir', 2,
+	    test_p => 1);
 deliver_one('rgrjr-forged-2.text', 'Maildir', 3);
 
 ## Test extension delivery.
