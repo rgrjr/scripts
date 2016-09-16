@@ -33,8 +33,34 @@ if ($verbose_p) {
 
 ### Subroutines.
 
+sub parse_headers {
+    my ($message_stream) = @_;
+
+    # Read headers into a string.
+    my $mbox_from_line = '';
+    my $header = '';
+    while (<$message_stream>) {
+	if (! $header && /^From / && ! $mbox_from_line) {
+	    $mbox_from_line = $_;
+	    # Don't put this in $header.
+	    next;
+	}
+	$header .= $_;
+	last
+	    # end of headers.
+	    if /^$/;
+    }
+
+    # Parse headers into a Mail::Header object.
+    my $header_stream = IO::String->new($header);
+    # Note that supplying a non-file stream to "new" does not work.
+    my $head = Mail::Header->new();
+    $head->read($header_stream);
+    return ($head, $mbox_from_line, $header);
+}
+
 sub write_maildir_message {
-    my ($maildir, $headers) = @_;
+    my ($maildir, $headers, $message_stream) = @_;
 
     # Validate maildir.
     unless ($maildir =~ m@/$@ && -d $maildir) {
@@ -50,8 +76,8 @@ sub write_maildir_message {
 	warn "$tag:  can't write temp file '$temp_file_name':  $!";
 	exit(EX_TEMPFAIL);
     };
-    print $out ($headers);
-    while (<STDIN>) {
+    print $out ("X-Delivered-By: $0 ($$)\n", $headers);
+    while (<$message_stream>) {
 	print $out $_;
     }
     my $inode = (stat($temp_file_name))[1];
@@ -67,7 +93,7 @@ sub write_maildir_message {
 
 sub process_qmail_file {
     # [this will fail in the case of multiple delivery.  -- rgr, 9-Sep-16.]
-    my ($qmail_file, $message_headers) = @_;
+    my ($qmail_file, $message_headers, $message_stream) = @_;
 
     open(my $in, '<', $qmail_file) or do {
 	warn "$tag:  Can't open '$qmail_file':  $!";
@@ -86,7 +112,7 @@ sub process_qmail_file {
 	}
 	elsif (m@^\S+/$@) {
 	    # Maildir delivery.
-	    write_maildir_message($_, $message_headers);
+	    write_maildir_message($_, $message_headers, $message_stream);
 	}
 	else {
 	    die "$tag:  In $qmail_file:  Unsupported directive '$_'.\n";
@@ -121,33 +147,11 @@ sub find_extension {
     return '';
 }
 
-### Main code.
+sub address_forged_p {
+    # Returns true if forged-local-address.pl says it claims to be local but
+    # came from somewhere else..
+    my ($header) = @_;
 
-## Read the headers to find where this message was originally addressed.
-
-my $mbox_from_line = '';
-my $header = '';
-my $qmail_file;
-while (<STDIN>) {
-    if (! $header && /^From / && ! $mbox_from_line) {
-	$mbox_from_line = $_;
-	# Don't put this in $header.
-	next;
-    }
-    $header .= $_;
-    last
-	# end of headers.
-	if /^$/;
-}
-# Parse headers.
-my $header_stream = IO::String->new($header);
-# Note that supplying a non-file stream to "new" does not work.
-my $head = Mail::Header->new();
-$head->read($header_stream);
-
-## Check for forgery.
-
-if (-r '.qmail-spam') {
     # Get forged-local-address.pl from the same place we are running.
     my $fla = $0;
     $fla =~ s@[^/]*$@forged-local-address.pl@;
@@ -160,28 +164,22 @@ if (-r '.qmail-spam') {
     # treat the message as forged.
     if (close($out)) {
 	# Success.
-	$result = $?;
+	$result = ! $?;
     }
     elsif (! $!) {
 	# Nonzero exit, which (in shell land) means false (not a forgery).
-	$result = 1;
     }
     else {
 	# Some other error must have happened when running the piped command;
 	# pretend like everything's OK so we don't lose mail.
-	warn "$0:  got error '$!' (", $!+0, ") and result $? from $fla\n";
-	$result = 1;
+	warn "$tag:  got error '$!' (", $!+0, ") and result $? from $fla\n";
     }
-    if (! $result) {
-	# Found spam; redirect it.
-	$qmail_file = '.qmail-spam';
-    }
+    return $result;
 }
 
-## Check for whitelisting.
+sub check_lists {
+    my ($head) = @_;
 
-my $message_headers = $mbox_from_line . "X-Delivered-By: $0 ($$)\n" . $header;
-if (! $qmail_file && ($whitelist || $blacklist)) {
     # Find all source addresses.
     my %addresses;
     for my $header_name (qw(sender from reply-to)) {
@@ -221,26 +219,51 @@ if (! $qmail_file && ($whitelist || $blacklist)) {
     };
 
     if ($blacklist && $address_match_p->($blacklist)) {
-	$qmail_file = '.qmail-spam';
+	return '.qmail-spam';
     }
     elsif ($whitelist && ! $address_match_p->($whitelist)) {
-	$qmail_file = '.qmail-spam';
+	my $qmail_file = '.qmail-spam';
 	$qmail_file = '.qmail-grey'
 	    if -r '.qmail-grey';
+	return $qmail_file;
     }
 }
 
-## Deliver the message.
+sub deliver_message {
+    my ($message_stream) = @_;
 
-my $extension;
-if ($qmail_file) {
-    process_qmail_file($qmail_file, $message_headers);
+    # Read the headers to find where this message was originally addressed.
+    my ($head, $mbox_from_line, $header) = parse_headers($message_stream);
+
+    # Check for forgery, whitelisting, and/or blacklisting.
+    my $qmail_file;
+    if (-r '.qmail-spam') {
+	my $file;
+	if (address_forged_p($header)) {
+	    # Found spam; redirect it.
+	    $qmail_file = '.qmail-spam';
+	}
+	elsif ($whitelist || $blacklist
+	       and $file = check_lists($head)) {
+	    $qmail_file = $file;
+	}
+    }
+
+    # Deliver the message.
+    my $extension;
+    if ($qmail_file) {
+	process_qmail_file($qmail_file, $header, $message_stream);
+    }
+    elsif ($extension = find_extension($head)
+	   and -r ".qmail-$extension") {
+	process_qmail_file(".qmail-$extension", $header, $message_stream);
+    }
+    else {
+	write_maildir_message('Maildir/', $header, $message_stream);
+    }
 }
-elsif ($extension = find_extension($head)
-       and -r ".qmail-$extension") {
-    process_qmail_file(".qmail-$extension", $message_headers);
-}
-else {
-    write_maildir_message('Maildir/', $message_headers);
-}
+
+### Main code.
+
+deliver_message(*STDIN);
 exit(EX_OK);
