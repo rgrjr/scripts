@@ -16,6 +16,7 @@ use IO::String;
 my $tag = "$0 ($$)";
 my $test_p = 0;
 my $verbose_p = 0;
+my $redeliver_p = 0;
 my ($whitelist, $blacklist);
 
 # Selection of /usr/include/sysexits.h constants.
@@ -26,6 +27,7 @@ use constant EX_TEMPFAIL => 75;
 
 GetOptions('test!' => \$test_p,
 	   'verbose+' => \$verbose_p,
+	   'redeliver!' => \$redeliver_p,
 	   'whitelist=s' => \$whitelist,
 	   'blacklist=s' => \$blacklist);
 if ($verbose_p) {
@@ -36,12 +38,18 @@ if ($verbose_p) {
 ### Subroutines.
 
 sub parse_headers {
-    my ($message_stream) = @_;
+    my ($message_source) = @_;
+
+    if (! ref($message_source)) {
+	open(my $message_stream, '<', $message_source)
+	    || die "$0:  Can't open '$message_source':  $!";
+	return parse_headers($message_stream);
+    }
 
     # Read headers into a string.
     my $mbox_from_line = '';
     my $header = '';
-    while (<$message_stream>) {
+    while (<$message_source>) {
 	if (! $header && /^From / && ! $mbox_from_line) {
 	    $mbox_from_line = $_;
 	    # Don't put this in $header.
@@ -62,7 +70,7 @@ sub parse_headers {
 }
 
 sub write_maildir_message {
-    my ($maildir, $headers, $message_stream) = @_;
+    my ($maildir, $headers, $message_source) = @_;
 
     # Validate maildir.
     unless ($maildir =~ m@/$@ && -d $maildir) {
@@ -74,16 +82,34 @@ sub write_maildir_message {
     chomp(my $host = `hostname`);
     my $temp_file_name = $maildir . 'tmp/' . join('.', time(), "P$$", $host);
     # warn "$tag:  Writing to $temp_file_name.\n";
-    open(my $out, '>', $temp_file_name) or do {
-	warn "$tag:  can't write temp file '$temp_file_name':  $!";
-	exit(EX_TEMPFAIL);
-    };
-    print $out ("X-Delivered-By: $0 ($$)\n", $headers);
-    while (<$message_stream>) {
-	print $out $_;
+    my $inode;
+    if (ref($message_source)) {
+	# Copy from the stream.
+	open(my $out, '>', $temp_file_name) or do {
+	    warn "$tag:  can't write temp file '$temp_file_name':  $!";
+	    exit(EX_TEMPFAIL);
+	};
+	print $out ("X-Delivered-By: $0 ($$)\n", $headers);
+	while (<$message_source>) {
+	    print $out $_;
+	}
+	$inode = (stat($temp_file_name))[1];
+	close($out);
     }
-    my $inode = (stat($temp_file_name))[1];
-    close($out);
+    elsif ($redeliver_p) {
+	# Move the file.
+	my $result = system('mv', $message_source, $temp_file_name);
+	die("$0:  Move of '$message_source' to '$temp_file_name' failed:  $!")
+	    if $result;
+	$inode = (stat($temp_file_name))[1];
+    }
+    else {
+	# Copy the file.
+	my $result = system('cp', $message_source, $temp_file_name);
+	die("$0:  Copy of '$message_source' to '$temp_file_name' failed:  $!")
+	    if $result;
+	$inode = (stat($temp_file_name))[1];
+    }
 
     # Punt if just testing.
     if ($test_p) {
@@ -102,7 +128,7 @@ sub write_maildir_message {
 
 sub process_qmail_file {
     # [this will fail in the case of multiple delivery.  -- rgr, 9-Sep-16.]
-    my ($qmail_file, $message_headers, $message_stream) = @_;
+    my ($qmail_file, $message_headers, $message_source) = @_;
 
     open(my $in, '<', $qmail_file) or do {
 	warn "$tag:  Can't open '$qmail_file':  $!";
@@ -121,7 +147,7 @@ sub process_qmail_file {
 	}
 	elsif (m@^\S+/$@) {
 	    # Maildir delivery.
-	    write_maildir_message($_, $message_headers, $message_stream);
+	    write_maildir_message($_, $message_headers, $message_source);
 	}
 	else {
 	    die "$tag:  In $qmail_file:  Unsupported directive '$_'.\n";
@@ -239,10 +265,10 @@ sub check_lists {
 }
 
 sub deliver_message {
-    my ($message_stream) = @_;
+    my ($message_source) = @_;
 
     # Read the headers to find where this message was originally addressed.
-    my ($head, $mbox_from_line, $header) = parse_headers($message_stream);
+    my ($head, $mbox_from_line, $header) = parse_headers($message_source);
 
     # Check for forgery, whitelisting, and/or blacklisting.
     my $qmail_file;
@@ -261,18 +287,27 @@ sub deliver_message {
     # Deliver the message.
     my $extension;
     if ($qmail_file) {
-	process_qmail_file($qmail_file, $header, $message_stream);
+	process_qmail_file($qmail_file, $header, $message_source);
     }
     elsif ($extension = find_extension($head)
 	   and -r ".qmail-$extension") {
-	process_qmail_file(".qmail-$extension", $header, $message_stream);
+	process_qmail_file(".qmail-$extension", $header, $message_source);
     }
     else {
-	write_maildir_message('Maildir/', $header, $message_stream);
+	write_maildir_message('Maildir/', $header, $message_source);
     }
 }
 
 ### Main code.
 
-deliver_message(*STDIN);
+if (@ARGV) {
+    # Deliver each listed file as a message.
+    for my $file_name (@ARGV) {
+	deliver_message($file_name);
+    }
+}
+else {
+    # Normal delivery of a message on STDIN.
+    deliver_message(\*STDIN);
+}
 exit(EX_OK);

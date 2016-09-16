@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 32;
+use Test::More tests => 39;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -46,10 +46,16 @@ sub deliver_one {
     my $command = q{perl -Mlib=.. qmail-deliver.pl};
     $command .= " --test"
 	if $options{test_p};
+    $command .= " --redeliver"
+	if $options{redeliver_p};
     $command .= " --blacklist=$options{blacklist}"
 	if $options{blacklist};
     $command .= " --whitelist=$options{whitelist}"
 	if $options{whitelist};
+    for my $opt (qw(file file1 file2 file3)) {
+	$command .= " $options{$opt}"
+	    if $options{$opt};
+    }
     my $exit = system(qq{$command < $message_file 2>/dev/null});
     ok($exit_code == $exit, "deliver $message_file")
 	or warn "actually got exit code $exit";
@@ -103,3 +109,33 @@ unlink('list.tmp');
 ## Another forgery test.
 deliver_one('viagra-inc.text', 'spam', 4,
 	    sender => 'rogerryals@hcsmail.com');
+
+## Test redelivery.
+{
+    # We have to awkwardly scan through Maildir/new to find the actual file
+    # names used.
+    my @files;
+    opendir(my $new_files, 'Maildir/new') or die;
+    while (readdir($new_files)) {
+	my $file = "Maildir/new/$_";
+	open(my $in, '<', $file) or die;
+	while (<$in>) {
+	    if (/^$/) {
+		last;
+	    }
+	    elsif (/^Return-Path:/) {
+		push(@files, $file);
+		last;
+	    }
+	}
+    }
+    ok(@files == 2, q{have two files with "Return-Path:" in them});
+    deliver_one('/dev/null', 'spam', 5,
+		file => $files[0]);
+    ok(4 == count_new_messages(), "Maildir left untouched");
+    deliver_one('/dev/null', 'spam', 7,
+		redeliver_p => 1,
+		file1 => pop(@files),
+		file2 => pop(@files));
+    ok(2 == count_new_messages(), "redelivered messages moved out of Maildir");
+}
