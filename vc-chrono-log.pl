@@ -348,8 +348,9 @@ sub parse_git {
 	# Look for --stat output, which gives us file names and lines changed.
 	my $files;
 	if ($line && $line =~ /^ (\S.*\S)\s+\|/) {
-	    while ($line && $line =~ /^ (\S.*\S)\s+\|\s+(\d+) /) {
+	    while ($line && $line =~ /^ (\S.*\S)\s+\|\s+((Bin )?\d+.*)/) {
 		my ($file_name, $lines) = $line =~ //;
+		$lines =~ s/[-+\s]+$//;
 		my $rev = RGR::CVS::FileRevision->new
 		    (file_name => $file_name,
 		     lines => $lines);
