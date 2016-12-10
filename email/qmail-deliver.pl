@@ -17,7 +17,7 @@ my $tag = "$0 ($$)";
 my $test_p = 0;
 my $verbose_p = 0;
 my $redeliver_p = 0;
-my ($whitelist, $blacklist);
+my (@whitelists, @blacklists);
 
 # Selection of /usr/include/sysexits.h constants.
 use constant EX_OK => 0;
@@ -28,8 +28,8 @@ use constant EX_TEMPFAIL => 75;
 GetOptions('test!' => \$test_p,
 	   'verbose+' => \$verbose_p,
 	   'redeliver!' => \$redeliver_p,
-	   'whitelist=s' => \$whitelist,
-	   'blacklist=s' => \$blacklist);
+	   'whitelist=s' => \@whitelists,
+	   'blacklist=s' => \@blacklists);
 if ($verbose_p) {
     # debugging.
     open(STDERR, ">>post-deliver.log") or die;
@@ -241,7 +241,7 @@ sub check_lists {
     }
 
     my $address_match_p = sub {
-	my ($list_name) = @_;
+	for my $list_name (@_) {
 
 	open(my $in, '<', $list_name)
 	    or die "$tag:  Can't open list '$list_name':  $!";
@@ -250,13 +250,14 @@ sub check_lists {
 	    return 1
 		if $addresses{$_};
 	}
+	}
 	return;
     };
 
-    if ($blacklist && $address_match_p->($blacklist)) {
+    if (@blacklists && $address_match_p->(@blacklists)) {
 	return '.qmail-spam';
     }
-    elsif ($whitelist && ! $address_match_p->($whitelist)) {
+    elsif (@whitelists && ! $address_match_p->(@whitelists)) {
 	my $qmail_file = '.qmail-spam';
 	$qmail_file = '.qmail-grey'
 	    if -r '.qmail-grey';
@@ -278,7 +279,7 @@ sub deliver_message {
 	    # Found spam; redirect it.
 	    $qmail_file = '.qmail-spam';
 	}
-	elsif ($whitelist || $blacklist
+	elsif (@whitelists || @blacklists
 	       and $file = check_lists($head)) {
 	    $qmail_file = $file;
 	}
