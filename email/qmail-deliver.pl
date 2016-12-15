@@ -241,15 +241,15 @@ sub check_lists {
     }
 
     my $address_match_p = sub {
-	for my $list_name (@_) {
 
-	open(my $in, '<', $list_name)
-	    or die "$tag:  Can't open list '$list_name':  $!";
-	while (<$in>) {
-	    chomp;
-	    return 1
-		if $addresses{$_};
-	}
+	for my $list_name (@_) {
+	    open(my $in, '<', $list_name)
+		or die "$tag:  Can't open list '$list_name':  $!";
+	    while (<$in>) {
+		chomp;
+		return 1
+		    if $addresses{lc($_)};
+	    }
 	}
 	return;
     };
