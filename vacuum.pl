@@ -297,7 +297,7 @@ sub find_partition {
 
     my ($partition)
 	= Backup::Partition->find_partitions(partition => $file_name);
-    die 'bug'
+    die "bug:  no partitions for '$file_name'"
 	unless $partition;
     return $partition;
 }
