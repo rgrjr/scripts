@@ -45,6 +45,8 @@ sub find_partitions {
 
     # Figure out how to get the df listing.
     my $command = 'df';
+    # [this must be the same as Backup::Config::new.  -- rgr, 24-Mar-11.]
+    chomp(my $local_host = `hostname`);
     my $host;
     if ($partition) {
 	my $spec;
@@ -59,8 +61,7 @@ sub find_partitions {
 	}
     }
     if (! $host) {
-	# [this must be the same as Backup::Config::new.  -- rgr, 24-Mar-11.]
-	chomp($host = `hostname`);
+	$host = $local_host;
     }
     open(my $in, "$command |")
 	or die("Bug:  Can't open pipe from '$command':  $!");
@@ -82,20 +83,23 @@ sub find_partitions {
 	next
 	    # Don't include NFS mounts.
 	    if $device =~ /:/;
-	my ($dev, $inode, $mode, $nlink, $uid, $gid, $rdev, $size,
-	    $atime, $mtime, $ctime, $blksize, $blocks) = stat($mount_point);
-	if ($dev && (! $max_free_blocks
-		     || $avail_blocks < $max_free_blocks)) {
-	    push(@partitions,
-		 $class->new(device_name => $device,
-			     device_number => $dev,
-			     host_name => $host,
-			     mount_point => $mount_point,
-			     total_blocks => $total_blocks,
-			     used_blocks => $used_blocks,
-			     avail_blocks => $avail_blocks,
-			     use_pct => $use_pct));
-	    warn($mount_point, " dev $dev has ", $avail_blocks,
+	if ($device && $mount_point
+	        && (! $max_free_blocks || $avail_blocks < $max_free_blocks)) {
+	    my $new_partition
+		= $class->new(device_name => $device,
+			      host_name => $host,
+			      mount_point => $mount_point,
+			      total_blocks => $total_blocks,
+			      used_blocks => $used_blocks,
+			      avail_blocks => $avail_blocks,
+			      use_pct => $use_pct);
+	    push(@partitions, $new_partition);
+	    if ($host eq $local_host) {
+		# Fill in the device number for a local host.
+		my ($dev) = stat($mount_point);
+		$new_partition->device_number($dev);
+	    }
+	    warn($mount_point, " device $device has ", $avail_blocks,
 		 " out of ", $total_blocks, " available ($use_pct).\n")
 		if 0;
 	}

@@ -225,8 +225,8 @@ sub local_file_p {
 ### Backup operations.
 
 sub sort_dumps_by_partition {
-    # Given a hashref of dumps and an arrayref of partitions, file each dump
-    # under its corresponding partition and even/odd level.
+    # Given a hashref of dumps and an arrayref of local partitions, file each
+    # dump under its corresponding partition and even/odd level.
     my ($self, $dump_set_from_prefix, $partitions) = @_;
 
     my %partition_from_dev = map { $_->device_number => $_; } @$partitions;
@@ -235,6 +235,12 @@ sub sort_dumps_by_partition {
 	my $prefixes = $partition->prefixes;
 	if ($prefixes) {
 	    my $dev = $partition->device_number;
+	    if (! $dev) {
+		# This matters for cleaning old backups.
+		my $dev_name = $partition->device_name;
+		my $mount_point = $partition->mount_point;
+		die "Partition $mount_point ($dev_name) is not local";
+	    }
 	    for my $prefix (@$prefixes) {
 		$partition_wants_prefix_p{$dev}{$prefix}++;
 	    }
