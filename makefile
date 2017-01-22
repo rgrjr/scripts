@@ -225,10 +225,9 @@ install-base:
 	if [ ! -r /root/bin/burn-backups ]; then \
 	    ${INSTALL} -m 555 burn-backups /root/bin; \
 	fi
-install-backup:		install-backup-scripts
+install-backup:
 	mkdir -p ${pm-directory}/Backup
 	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
-install-backup-scripts:
 	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
 install-qmail:
 	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
