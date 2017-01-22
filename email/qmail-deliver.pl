@@ -266,18 +266,20 @@ sub check_lists {
 }
 
 sub deliver_message {
-    my ($message_source) = @_;
+    my ($message_source, $use_environment_p) = @_;
 
     # Read the headers to find where this message was originally addressed.
     my ($head, $mbox_from_line, $header) = parse_headers($message_source);
+    my $sender
+	= $use_environment_p && exists($ENV{SENDER}) ? $ENV{SENDER} : 'none';
 
     # Check for forgery, whitelisting, and/or blacklisting.
     my $qmail_file;
-    if (-r '.qmail-spam') {
+    if ($sender && -r '.qmail-spam') {
 	my $file;
 	if (address_forged_p($header)) {
 	    # Found spam; redirect it.
-	    $qmail_file = '.qmail-spam';
+	    $qmail_file = -r '.qmail-forged' ? '.qmail-forged' : '.qmail-spam';
 	}
 	elsif (@whitelists || @blacklists
 	       and $file = check_lists($head)) {
@@ -309,6 +311,6 @@ if (@ARGV) {
 }
 else {
     # Normal delivery of a message on STDIN.
-    deliver_message(\*STDIN);
+    deliver_message(\*STDIN, 1);
 }
 exit(EX_OK);
