@@ -17,7 +17,7 @@ my $tag = "$0 ($$)";
 my $test_p = 0;
 my $verbose_p = 0;
 my $redeliver_p = 0;
-my (@whitelists, @blacklists);
+my (@whitelists, @blacklists, @deadlists);
 
 # Selection of /usr/include/sysexits.h constants.
 use constant EX_OK => 0;
@@ -28,6 +28,7 @@ use constant EX_TEMPFAIL => 75;
 GetOptions('test!' => \$test_p,
 	   'verbose+' => \$verbose_p,
 	   'redeliver!' => \$redeliver_p,
+	   'deadlist=s' => \@deadlists,
 	   'whitelist=s' => \@whitelists,
 	   'blacklist=s' => \@blacklists);
 if ($verbose_p) {
@@ -142,7 +143,7 @@ sub process_qmail_file {
 	elsif (substr($_, 0, 1) eq '|') {
 	    # Silently ignore piped commands.
 	}
-	elsif (/^&?dev-null$/) {
+	elsif (m@^(&?dev-null|/dev/null)$@) {
 	    # Explicitly ignored.
 	}
 	elsif (m@^\S+/$@) {
@@ -215,49 +216,62 @@ sub address_forged_p {
 sub check_lists {
     my ($head) = @_;
 
-    # Find all source addresses.
-    my %addresses;
-    for my $header_name (qw(sender from reply-to)) {
-	for my $header ($head->get($header_name)) {
-	    # Get rid of RFC822 comments first, so we are not confused by
-	    # commas in comments.  Parentheses nest.
-	    while ($header =~ s/\(([^()]*)\)//g) {
-	    }
-	    $header =~ s/\"[^""]*\"//g;
-	    # Process each address.
-	    for my $address (split(/\s*,\s*/, $header)) {
-		if ($address =~ /<([^<>]+)>/) {
-		    my $addr = $1;
-		    $addr =~ s/\s+//g;
-		    $addresses{lc($addr)}++;
+    my $find_addresses = sub {
+	# Extract a hashref of all addresses present in all passed headers.
+	my $addresses = { };
+	for my $header_name (@_) {
+	    for my $header ($head->get($header_name)) {
+		# Get rid of RFC822 comments first, so we are not confused by
+		# commas in comments.  Parentheses nest.
+		while ($header =~ s/\(([^()]*)\)//g) {
 		}
-		else {
-		    $address =~ s/\s+//g;
-		    $addresses{lc($address)}++
-			if $address;
+		$header =~ s/\"[^""]*\"//g;
+		# Process each address.
+		for my $address (split(/\s*,\s*/, $header)) {
+		    if ($address =~ /<([^<>]+)>/) {
+			my $addr = $1;
+			$addr =~ s/\s+//g;
+			$addresses->{lc($addr)}++;
+		    }
+		    else {
+			$address =~ s/\s+//g;
+			$addresses->{lc($address)}++
+			    if $address;
+		    }
 		}
 	    }
 	}
-    }
+	return $addresses;
+    };
 
     my $address_match_p = sub {
+	my ($addresses, @list_names) = @_;
 
-	for my $list_name (@_) {
+	for my $list_name (@list_names) {
 	    open(my $in, '<', $list_name)
 		or die "$tag:  Can't open list '$list_name':  $!";
 	    while (<$in>) {
 		chomp;
 		return 1
-		    if $addresses{lc($_)};
+		    if $addresses->{lc($_)};
 	    }
 	}
 	return;
     };
 
-    if (@blacklists && $address_match_p->(@blacklists)) {
+    # Check for dead destination addresses first.
+    if (@deadlists) {
+	my $to_addresses = $find_addresses->(qw(to cc));
+	return -r '.qmail-dead' ? '.qmail-dead' : '.qmail-spam'
+	    if $address_match_p->($to_addresses, @deadlists);
+    }
+
+    # Now check the sender address(es).
+    my $from_addresses = $find_addresses->(qw(sender from reply-to));
+    if (@blacklists && $address_match_p->($from_addresses, @blacklists)) {
 	return '.qmail-spam';
     }
-    elsif (@whitelists && ! $address_match_p->(@whitelists)) {
+    elsif (@whitelists && ! $address_match_p->($from_addresses, @whitelists)) {
 	my $qmail_file = '.qmail-spam';
 	$qmail_file = '.qmail-grey'
 	    if -r '.qmail-grey';
@@ -281,7 +295,7 @@ sub deliver_message {
 	    # Found spam; redirect it.
 	    $qmail_file = -r '.qmail-forged' ? '.qmail-forged' : '.qmail-spam';
 	}
-	elsif (@whitelists || @blacklists
+	elsif (@whitelists || @blacklists || @deadlists
 	       and $file = check_lists($head)) {
 	    $qmail_file = $file;
 	}

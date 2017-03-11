@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 39;
+use Test::More tests => 41;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -52,6 +52,8 @@ sub deliver_one {
 	if $options{blacklist};
     $command .= " --whitelist=$options{whitelist}"
 	if $options{whitelist};
+    $command .= " --deadlist=$options{deadlist}"
+	if $options{deadlist};
     for my $opt (qw(file file1 file2 file3)) {
 	$command .= " $options{$opt}"
 	    if $options{$opt};
@@ -105,6 +107,13 @@ deliver_one('from-jan.text', 'spam', 3,
 ok(4 == count_new_messages(),
    "non-whitelisted sender not delivered to Maildir");
 unlink('list.tmp');
+
+## Test deadlisting.
+system('echo rogers-ilisp@rgrjr.dyndns.org > list.tmp');
+system('echo /dev/null > .qmail-dead');
+deliver_one('dead-1.text', 'Maildir', 4,
+	    deadlist => 'list.tmp',
+	    sender => 'debra@somewhere.com');
 
 ## Another forgery test.
 deliver_one('viagra-inc.text', 'spam', 4,
