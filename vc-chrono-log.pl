@@ -209,7 +209,6 @@ Instance slots are:
 =cut
 
 use Date::Parse;
-use XML::Parser;
 
 use base (qw(ChronoLog::Base));
 
@@ -231,6 +230,7 @@ sub extract_subfield_string {
 sub parse_svn_xml {
     my ($self, $source) = @_;
     $source ||= *STDIN;
+    require XML::Parser;
 
     $self->vcs_name('SVN');
     my $parser = XML::Parser->new(Style => 'Tree');
