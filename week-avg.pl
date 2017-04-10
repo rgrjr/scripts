@@ -4,11 +4,10 @@
 #
 # POD documentation at the bottom.
 #
-# Copyright (C) 2015 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+# Copyright (C) 2015..2017 by Bob Rogers <rogers@rgrjr.dyndns.org>.
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id$
 
 use strict;
 use warnings;
@@ -27,13 +26,11 @@ use Date::Format;
 ### Parse command-line options.
 
 my $verbose_p = 0;
-my $test_p = 0;
 my $usage = 0;
 my $help = 0;
 my $limit;
 my $discard = 4;
 GetOptions('verbose+' => \$verbose_p,
-	   'test!' => \$test_p,
 	   'limit=s' => \$limit,
 	   'discard=i' => \$discard,
 	   'usage|?' => \$usage, 'help' => \$help)
@@ -41,8 +38,6 @@ GetOptions('verbose+' => \$verbose_p,
 pod2usage(-verbose => 1) if $usage;
 pod2usage(-verbose => 2) if $help;
 
-$verbose_p ||= 1
-    if $test_p;
 if ($limit && $limit =~ /^\d+$/) {
     # Interpret an integer limit as N days in the past.
     $limit = time() - $limit * 24*3600;
@@ -95,7 +90,8 @@ week-avg.pl -- produce a plot of weekly averages
 
 =head1 SYNOPSIS
 
-        week-avg.pl [ --conf=<config-file> ] [ --[no]test ] [ --verbose ... ]
+        week-avg.pl [ --verbose ... ] [ --discard=<int> ]
+		[ --limit=<n-days-or-date> ]
 
         week-avg.pl [ --usage | --help ]
 
@@ -106,10 +102,6 @@ week-avg.pl -- produce a plot of weekly averages
 Copyright (C) 2011 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
-
-=head1 VERSION
-
- $Id$
 
 =head1 AUTHOR
 
