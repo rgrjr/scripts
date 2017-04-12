@@ -1,11 +1,10 @@
 #!/usr/bin/perl -w
 #
-# Convert "svn log -xml" output into a historical narrative, annotated with
-# files where possible, in reverse chronological order.
+# Convert "git log", "cvs log", or "svn log -xml" output into a historical
+# narrative, annotated with files where possible.
 #
 # [created.  -- rgr, 26-Nov-05.]
 #
-# $Id$
 
 use strict;
 use warnings;
@@ -321,7 +320,6 @@ sub parse_git {
 	my $id_length = length($commit_id);
 	if ($id_length < 40) {
 	    # Abbreviate all of the tags.
-	    warn "abbreviated to $id_length";
 	    %tags_from_commit = map {
 		my $tags = $tags_from_commit{$_};
 		(substr($_, 0, $id_length) => $tags);
