@@ -95,6 +95,8 @@ test-svn-chrono-log-1a:
 test-git-chrono-log-1:
 	./vc-chrono-log.pl < test/$@-in.text > $@.tmp
 	cmp test/$@.text $@.tmp
+	cat test/$@-tags.text test/$@-in.text | ./vc-chrono-log.pl > $@.tmp
+	cmp test/$@-tag-out.text $@.tmp
 	./vc-chrono-log.pl < test/$@-stat-in.text > $@.tmp
 	cmp test/$@-stat.text $@.tmp
 	rm -f $@.tmp
