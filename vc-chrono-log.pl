@@ -15,7 +15,6 @@ use Getopt::Long;
 
 my $commit_id_abbrev;
 GetOptions('abbrev=i' => \$commit_id_abbrev);
-$commit_id_abbrev //= 7;
 
 ### Main program.
 
@@ -389,9 +388,9 @@ sub parse_git {
 	# Create the entry.
 	my $encoded_date = str2time($info{Date}, 'UTC');
 	my $revision = $commit_id;
-	$revision = substr($revision, 0, $commit_id_abbrev)
-	    if ($commit_id_abbrev
-		&& length($revision) > $commit_id_abbrev);
+	my $rev_len = length($revision);
+	$revision = substr($revision, 0, $commit_id_abbrev || 7)
+	    if $commit_id_abbrev || $rev_len == 40;
 	my $entry = ChronoLog::Entry->new
 	    (revision => $revision,
 	     msg => $message,

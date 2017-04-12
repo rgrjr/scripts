@@ -102,7 +102,7 @@ test-git-chrono-log-1:
 	cmp test/$@-tag-out.text $@.tmp
 	cat test/$@-tags.text test/$@-in.text \
 		| perl -pe 's/.{30}$$// if /^commit /;' \
-		| ./vc-chrono-log.pl > $@.tmp
+		| ./vc-chrono-log.pl --abbrev 7 > $@.tmp
 	cmp test/$@-tag-out.text $@.tmp
 # Test commit ID abbreviation.
 	./vc-chrono-log.pl --abbrev 7 < test/$@-in.text > $@.tmp
