@@ -303,22 +303,37 @@ sub parse_git {
     my $entry_from_rev = $self->entry_from_revision;
     $entry_from_rev = { }, $self->entry_from_revision($entry_from_rev)
 	unless $entry_from_rev;
-    my %tags_from_commit;
 
+    # Check for a prefix of "git show-ref" output.
     my $line = $first_line || <$source>;
+    my %tags_from_commit;
+    while ($line && $line =~ /^([a-f0-9]{40}) (\S+)$/) {
+	chomp($line);
+	my ($commit_id, $tag) = $line =~ //;
+	$tag =~ s@^refs/(heads|remotes)/@@; # to match log style.
+	push(@{$tags_from_commit{$commit_id}}, $tag);
+	$line = <$source>;
+    }
+
+    # Check for use of abbreviations.
+    if ($line && %tags_from_commit && $line =~ /^commit ([a-f0-9]+)$/) {
+	my $commit_id = $1;
+	my $id_length = length($commit_id);
+	if ($id_length < 40) {
+	    # Abbreviate all of the tags.
+	    warn "abbreviated to $id_length";
+	    %tags_from_commit = map {
+		my $tags = $tags_from_commit{$_};
+		(substr($_, 0, $id_length) => $tags);
+	    } keys(%tags_from_commit);
+	}
+    }
+
+    # Read commits.
     while ($line) {
 	chomp($line);
-	if ($line =~ /^([a-f0-9]{40}) (\S+)$/) {
-	    # Must be prefixed with "git show-ref" output.
-	    my ($commit_id, $tag) = $line =~ //;
-	    $tag =~ s@^refs/(heads|remotes)/@@;	# to match log style.
-	    push(@{$tags_from_commit{$commit_id}}, $tag);
-	    $line = <$source>;
-	    next;
-	}
-
 	# Must have the start of a commit.
-	my ($commit_id) = $line =~ /^commit ([a-f0-9]{40})$/;
+	my ($commit_id) = $line =~ /^commit ([a-f0-9]+)$/;
 	die "$source:$.:  Unexpected line '$line'.\n"
 	    unless $commit_id;
 
