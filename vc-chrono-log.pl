@@ -9,6 +9,14 @@
 use strict;
 use warnings;
 
+use Getopt::Long;
+
+### Parse options.
+
+my $commit_id_abbrev;
+GetOptions('abbrev=i' => \$commit_id_abbrev);
+$commit_id_abbrev //= 7;
+
 ### Main program.
 
 my $parser = ChronoLog::Parser->new();
@@ -314,7 +322,7 @@ sub parse_git {
 	$line = <$source>;
     }
 
-    # Check for use of abbreviations.
+    # Check for use of commit ID abbreviations (the --abbrev option).
     if ($line && %tags_from_commit && $line =~ /^commit ([a-f0-9]+)$/) {
 	my $commit_id = $1;
 	my $id_length = length($commit_id);
@@ -380,8 +388,12 @@ sub parse_git {
 
 	# Create the entry.
 	my $encoded_date = str2time($info{Date}, 'UTC');
+	my $revision = $commit_id;
+	$revision = substr($revision, 0, $commit_id_abbrev)
+	    if ($commit_id_abbrev
+		&& length($revision) > $commit_id_abbrev);
 	my $entry = ChronoLog::Entry->new
-	    (revision => substr($commit_id, 0, 7),
+	    (revision => $revision,
 	     msg => $message,
 	     tags => $tags_from_commit{$commit_id},
 	     author => $info{Author} || '?',

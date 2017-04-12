@@ -104,6 +104,13 @@ test-git-chrono-log-1:
 		| perl -pe 's/.{30}$$// if /^commit /;' \
 		| ./vc-chrono-log.pl > $@.tmp
 	cmp test/$@-tag-out.text $@.tmp
+# Test commit ID abbreviation.
+	./vc-chrono-log.pl --abbrev 7 < test/$@-in.text > $@.tmp
+	cmp test/$@.text $@.tmp
+	cat test/$@-tags.text test/$@-in.text \
+		| perl -pe 's/.{20}$$// if /^commit /;' \
+		| ./vc-chrono-log.pl --abbrev 10 > $@.tmp
+	cmp test/$@-long-tag.text $@.tmp
 	rm -f $@.tmp
 # Test the C# version separately, since it may not be installed.
 vc-chrono-log.exe:		vc-chrono-log.cs
