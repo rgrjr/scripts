@@ -29,9 +29,6 @@ output into a chronological recounting of changes (Ruby implementation).
 
 General sysadmin hacks:
 
-   * extract-subnet.pl -- Given an interface name, e.g. "eth1", extract
-and print the netblock in CIDR format, e.g. "192.168.1.0/24".
-
    * install.pl -- Installation script that copies only if the file has
 been changed since the last installation (so that the file dates still
 mean something).  Also can create numbered backups, and do "diff -u"
