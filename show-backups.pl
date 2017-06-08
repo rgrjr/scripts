@@ -4,7 +4,6 @@
 #
 # [created.  -- rgr, 26-May-04.]
 #
-# $Id$
 
 use strict;
 use warnings;
@@ -56,20 +55,8 @@ pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # Figure out where to search for backups.
 my @search_roots = @ARGV;
-if (! @search_roots) {
-    for my $base ('', '/alt', '/old', '/new') {
-	next
-	    if $base && ! -d $base;
-	for my $root (qw(scratch scratch1 scratch2 scratch3 scratch4
-			 scratch5 scratch.old)) {
-	    my $dir = "$base/$root/backups";
-	    push (@search_roots, $dir)
-		if -d $dir;
-	}
-    }
-    die "$0:  No search roots.\n"
-	unless @search_roots;
-}
+@search_roots = '/scratch*/backups'
+    unless @search_roots;
 
 # Find backup dumps on disk.
 my $dump_set_from_prefix
@@ -148,6 +135,7 @@ show-backups.pl -- generate a sorted list of backup dump files.
                     [ --[no]slices ] [ --[no]date | --sort=(date|prefix|dvd) ]
                     [ --before=<date> ] [ --since=<date> ]
                     [ --level=<level> | --level=<min>:<max> ]
+		    [ <search-root> ... ]
 
 where:
 
@@ -165,9 +153,11 @@ where:
 
 =head1 DESCRIPTION
 
-C<show-backups.pl> looks in certain subdirectories for files that end
-in ".dump", and prints them sorted by prefix and date (i.e. what was
-backed up and when).
+C<show-backups.pl> looks for files that end in ".dar" or ".dump" and
+prints them sorted by prefix and date (i.e. what was backed up and
+when).  By default it searches in F</scratch*/backups> and
+subdirectories; this can be changed by specifying alternative search
+roots on the command line (but you'll need to escape any wildcards).
 
 =head1 OPTIONS
 
