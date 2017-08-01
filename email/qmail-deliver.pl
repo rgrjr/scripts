@@ -71,12 +71,35 @@ sub parse_headers {
 }
 
 sub write_maildir_message {
-    my ($maildir, $headers, $message_source) = @_;
+    my ($maildir, $head, $headers, $message_source) = @_;
 
     # Validate maildir.
     unless ($maildir =~ m@/$@ && -d $maildir) {
 	warn "$tag:  invalid maildir '$maildir'.\n";
 	exit(EX_TEMPFAIL);
+    }
+
+    # Check for a duplicate message ID.
+    my $msgid_dir = $maildir . 'msgid';
+    if (-d $msgid_dir && -w $msgid_dir) {
+	my $message_id = $head->get('message-id');
+	if ($message_id) {
+	    $message_id =~ s/[^-_\@\w\d.]//g;
+	    $message_id = lc($message_id);
+	    my $msgid_file = "$msgid_dir/$message_id";
+	    if (-e $msgid_file) {
+		# Already seen.
+		if (ref($message_source)) {
+		    while (<$message_source>) { }
+		}
+		else {
+		    unlink($message_source);
+		}
+		return;
+	    }
+	    # Touch the file.
+	    open(my $out, '>', $msgid_file);
+	}
     }
 
     # Write to a temp file.
@@ -129,7 +152,7 @@ sub write_maildir_message {
 
 sub process_qmail_file {
     # [this will fail in the case of multiple delivery.  -- rgr, 9-Sep-16.]
-    my ($qmail_file, $message_headers, $message_source) = @_;
+    my ($qmail_file, $head, $message_headers, $message_source) = @_;
 
     open(my $in, '<', $qmail_file) or do {
 	warn "$tag:  Can't open '$qmail_file':  $!";
@@ -148,7 +171,8 @@ sub process_qmail_file {
 	}
 	elsif (m@^\S+/$@) {
 	    # Maildir delivery.
-	    write_maildir_message($_, $message_headers, $message_source);
+	    write_maildir_message($_, $head, $message_headers,
+				  $message_source);
 	}
 	else {
 	    die "$tag:  In $qmail_file:  Unsupported directive '$_'.\n";
@@ -304,14 +328,15 @@ sub deliver_message {
     # Deliver the message.
     my $extension;
     if ($qmail_file) {
-	process_qmail_file($qmail_file, $header, $message_source);
+	process_qmail_file($qmail_file, $head, $header, $message_source);
     }
     elsif ($extension = find_extension($head)
 	   and -r ".qmail-$extension") {
-	process_qmail_file(".qmail-$extension", $header, $message_source);
+	process_qmail_file(".qmail-$extension", $head, $header,
+			   $message_source);
     }
     else {
-	write_maildir_message('Maildir/', $header, $message_source);
+	write_maildir_message('Maildir/', $head, $header, $message_source);
     }
 }
 

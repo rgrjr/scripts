@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 41;
+use Test::More tests => 46;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -148,3 +148,11 @@ deliver_one('viagra-inc.text', 'spam', 4,
 		file2 => pop(@files));
     ok(2 == count_new_messages(), "redelivered messages moved out of Maildir");
 }
+
+## Test message-id consolidation.
+ok(0 == system('mkdir spam/msgid'), "created spam/msgid")
+    or die "failed:  $!\n";
+deliver_one('viagra-inc.text', 'spam', 8,
+	    sender => 'rogerryals@hcsmail.com');
+deliver_one('viagra-inc.text', 'spam', 8,
+	    sender => 'rogerryals@hcsmail.com');
