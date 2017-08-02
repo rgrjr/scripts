@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 46;
+use Test::More tests => 48;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -22,11 +22,13 @@ ok(0 == system('maildirmake Maildir'), "created Maildir")
 
 ### Subroutines.
 
-sub count_new_messages {
-    my ($maildir) = @_;
+sub count_messages {
+    # Really, this just counts files.
+    my ($maildir, $subdir) = @_;
     $maildir ||= 'Maildir';
+    $subdir ||= 'new';
 
-    opendir(my $dir, "$maildir/new") or die "$0:  Bug:  $!";
+    opendir(my $dir, "$maildir/$subdir") or die "$0:  Bug:  $!";
     my $count = 0;
     while (my $file = readdir($dir)) {
 	next
@@ -43,7 +45,7 @@ sub deliver_one {
     local $ENV{SENDER} = $options{sender} || 'rogers@rgrjr.dyndns.org';
     local $ENV{LOCAL} = $options{localpart};
 
-    my $command = q{perl -Mlib=.. qmail-deliver.pl};
+    my $command = q{perl -Mlib=.. qmail-deliver2.pl};
     $command .= " --test"
 	if $options{test_p};
     $command .= " --redeliver"
@@ -61,7 +63,7 @@ sub deliver_one {
     my $exit = system(qq{$command < $message_file 2>/dev/null});
     ok($exit_code == $exit, "deliver $message_file")
 	or warn "actually got exit code $exit";
-    ok($expected_messages == count_new_messages($maildir),
+    ok($expected_messages == count_messages($maildir),
        "have $expected_messages messages in $maildir");
 }
 
@@ -82,29 +84,29 @@ deliver_one('rgrjr-forged-1.text', 'Maildir', 3,
 ok(0 == system('maildirmake emacs'), "created emacs maildir");
 deliver_one('rgrjr-forged-1.text', 'emacs', 1);
 deliver_one('rgrjr-forged-2.text', 'emacs', 2);
-ok(3 == count_new_messages(), "new emacs stuff not delivered to Maildir");
+ok(3 == count_messages(), "new emacs stuff not delivered to Maildir");
 
 ## Test forgery.
 ok(0 == system('maildirmake spam'), "created spam maildir");
 system('echo spam/ > .qmail-spam');
 deliver_one('rgrjr-forged-1.text', 'spam', 1);
-ok(3 == count_new_messages(), "spam not delivered to Maildir");
+ok(3 == count_messages(), "spam not delivered to Maildir");
 
 ## Test blacklisting and whitelisting.
 system('echo debra@hotmail.com > list.tmp');
 deliver_one('from-debra.text', 'spam', 2,
 	    blacklist => 'list.tmp',
 	    sender => 'debra@somewhere.com');
-ok(3 == count_new_messages(), "blacklisted sender not delivered to Maildir");
+ok(3 == count_messages(), "blacklisted sender not delivered to Maildir");
 deliver_one('from-debra.text', 'Maildir', 4,
 	    whitelist => 'list.tmp',
 	    sender => 'debra@somewhere.com');
-ok(2 == count_new_messages('spam'),
+ok(2 == count_messages('spam'),
    "whitelisted sender not delivered to spam");
 deliver_one('from-jan.text', 'spam', 3,
 	    whitelist => 'list.tmp',
 	    sender => 'jan@somewhere.com');
-ok(4 == count_new_messages(),
+ok(4 == count_messages(),
    "non-whitelisted sender not delivered to Maildir");
 unlink('list.tmp');
 
@@ -141,12 +143,12 @@ deliver_one('viagra-inc.text', 'spam', 4,
     ok(@files == 2, q{have two files with "Return-Path:" in them});
     deliver_one('/dev/null', 'spam', 5,
 		file => $files[0]);
-    ok(4 == count_new_messages(), "Maildir left untouched");
+    ok(4 == count_messages(), "Maildir left untouched");
     deliver_one('/dev/null', 'spam', 7,
 		redeliver_p => 1,
 		file1 => pop(@files),
 		file2 => pop(@files));
-    ok(2 == count_new_messages(), "redelivered messages moved out of Maildir");
+    ok(2 == count_messages(), "redelivered messages moved out of Maildir");
 }
 
 ## Test message-id consolidation.
@@ -154,5 +156,7 @@ ok(0 == system('mkdir spam/msgid'), "created spam/msgid")
     or die "failed:  $!\n";
 deliver_one('viagra-inc.text', 'spam', 8,
 	    sender => 'rogerryals@hcsmail.com');
+ok(1 == count_messages('spam', 'msgid'), "have one spam msgid");
 deliver_one('viagra-inc.text', 'spam', 8,
 	    sender => 'rogerryals@hcsmail.com');
+ok(1 == count_messages('spam', 'msgid'), "still have one spam msgid");
