@@ -81,11 +81,11 @@ sub write_maildir_message {
 
     # Check for a duplicate message ID.
     my $msgid_dir = $maildir . 'msgid';
-    if (-d $msgid_dir && -w $msgid_dir) {
-	my $message_id = $head->get('message-id');
-	if ($message_id) {
-	    $message_id =~ s/[^-_\@\w\d.]//g;
-	    $message_id = lc($message_id);
+    my $message_id = $head->get('message-id') || '';
+    if ($message_id && -d $msgid_dir && -w $msgid_dir) {
+	$message_id =~ s/[^-_\@\w\d.]//g;
+	$message_id = lc($message_id);
+	if (length($message_id) > 10) {
 	    my $msgid_file = "$msgid_dir/$message_id";
 	    if (-e $msgid_file) {
 		# Already seen.
