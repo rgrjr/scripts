@@ -3,7 +3,6 @@
 # [created (as Backup::Entry).  -- rgr, 3-Mar-08.]
 # [renamed to Backup::Slice.  -- rgr, 28-Jun-10.]
 #
-# $Id$
 
 package Backup::Slice;
 
@@ -15,7 +14,7 @@ use base qw(Backup::Thing);
 # define instance accessors.
 BEGIN {
     Backup::Slice->make_class_slots
-	(qw(prefix date level file base_name catalog_p index));
+	(qw(prefix date level host_name file base_name catalog_p index));
 }
 
 sub new {
@@ -66,8 +65,8 @@ sub size_in_mb {
     return $mb;
 }
 
-my $host_name;	# Cache.  [Really, this is an ugly kludge; how would we
-		# combine entries from multiple hosts?  -- rgr, 3-Mar-08.]
+my $local_host_name;	# Cache.  [Really, this is a kludge; how to combine
+			# entries from multiple hosts?  -- rgr, 3-Mar-08.]
 
 sub listing {
     my ($self) = @_;
@@ -76,11 +75,15 @@ sub listing {
     my $base_name = $self->base_name;
     my $file = $self->file;
     my $dir_name = $file =~ m@^(.*/)@ ? $1 : '';
-    chomp($host_name = `hostname`)
-	unless $host_name;
+    my $host = $self->host_name;
+    if (! $host) {
+	chomp($local_host_name = `hostname`)
+	    unless $local_host_name;
+	$host = $local_host_name;
+    }
     # [sprintf can't handle huge numbers.  -- rgr, 28-Jun-04.]
     # my $listing = sprintf('%14i %s', $size, $file);
-    return (' 'x(14-length($size)))."$size $base_name [$host_name:$dir_name]";
+    return (' 'x(14-length($size)))."$size $base_name [$host:$dir_name]";
 }
 
 sub entry_cmp {
