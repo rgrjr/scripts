@@ -17,7 +17,7 @@ my $tag = "$0 ($$)";
 my $test_p = 0;
 my $verbose_p = 0;
 my $redeliver_p = 0;
-my (@whitelists, @blacklists, @deadlists);
+my (@whitelists, @blacklists, @host_deadlists, @deadlists);
 
 # Selection of /usr/include/sysexits.h constants.
 use constant EX_OK => 0;
@@ -29,6 +29,7 @@ GetOptions('test!' => \$test_p,
 	   'verbose+' => \$verbose_p,
 	   'redeliver!' => \$redeliver_p,
 	   'deadlist=s' => \@deadlists,
+	   'host-deadlist=s' => \@host_deadlists,
 	   'whitelist=s' => \@whitelists,
 	   'blacklist=s' => \@blacklists);
 if ($verbose_p) {
@@ -283,17 +284,38 @@ sub check_lists {
 	return;
     };
 
+    my $host_match_p = sub {
+	# This is just an $address_match_p on the host part.
+	my ($addresses, @host_list_names) = @_;
+
+	$address_match_p->({ map { s/.*@//;
+				   ($_ => 1);
+			     } keys(%$addresses) },
+			   @host_list_names);
+    };
+
     # Check for dead destination addresses first.
+    my $dead_dest = -r '.qmail-dead' ? '.qmail-dead' : '.qmail-spam';
     if (@deadlists) {
 	my $to_addresses = $find_addresses->(qw(to cc));
-	return -r '.qmail-dead' ? '.qmail-dead' : '.qmail-spam'
+	return $dead_dest
 	    if $address_match_p->($to_addresses, @deadlists);
     }
 
     # Now check the sender address(es).
     my $from_addresses = $find_addresses->(qw(sender from reply-to));
-    if (@blacklists && $address_match_p->($from_addresses, @blacklists)) {
+    $from_addresses->{$ENV{SENDER}}++
+	if $ENV{SENDER};
+    if (grep { $_ =~ /^\d*@/; } keys(%$from_addresses)) {
+	# All-digit localpart; punt.
+	return $dead_dest;
+    }
+    elsif (@blacklists && $address_match_p->($from_addresses, @blacklists)) {
 	return '.qmail-spam';
+    }
+    elsif (@host_deadlists
+	   && $host_match_p->($from_addresses, @host_deadlists)) {
+	return $dead_dest;
     }
     elsif (@whitelists && ! $address_match_p->($from_addresses, @whitelists)) {
 	my $qmail_file = '.qmail-spam';
@@ -311,7 +333,7 @@ sub deliver_message {
     my $sender
 	= $use_environment_p && exists($ENV{SENDER}) ? $ENV{SENDER} : 'none';
 
-    # Check for forgery, whitelisting, and/or blacklisting.
+    # Check for forgery, whitelisting, blacklisting, and/or deadlisting.
     my $qmail_file;
     if ($sender && -r '.qmail-spam') {
 	my $file;
@@ -319,7 +341,7 @@ sub deliver_message {
 	    # Found spam; redirect it.
 	    $qmail_file = -r '.qmail-forged' ? '.qmail-forged' : '.qmail-spam';
 	}
-	elsif (@whitelists || @blacklists || @deadlists
+	elsif (@whitelists || @blacklists || @host_deadlists || @deadlists
 	       and $file = check_lists($head)) {
 	    $qmail_file = $file;
 	}

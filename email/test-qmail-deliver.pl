@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 48;
+use Test::More tests => 51;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -56,15 +56,18 @@ sub deliver_one {
 	if $options{whitelist};
     $command .= " --deadlist=$options{deadlist}"
 	if $options{deadlist};
+    $command .= " --host-deadlist=$options{host_deadlist}"
+	if $options{host_deadlist};
     for my $opt (qw(file file1 file2 file3)) {
 	$command .= " $options{$opt}"
 	    if $options{$opt};
     }
     my $exit = system(qq{$command < $message_file 2>/dev/null});
     ok($exit_code == $exit, "deliver $message_file")
-	or warn "actually got exit code $exit";
+	or warn "actually got exit code $exit for '$command < $message_file'";
     ok($expected_messages == count_messages($maildir),
-       "have $expected_messages messages in $maildir");
+       "have $expected_messages messages in $maildir")
+	or die "actually have ", count_messages($maildir);
 }
 
 ### Main code.
@@ -116,6 +119,14 @@ system('echo /dev/null > .qmail-dead');
 deliver_one('dead-1.text', 'Maildir', 4,
 	    deadlist => 'list.tmp',
 	    sender => 'debra@somewhere.com');
+
+## Test host deadlisting.
+system('echo qq.com > host-deadlist.tmp');
+deliver_one('from-debra.text', 'Maildir', 4,
+	    host_deadlist => 'host-deadlist.tmp',
+	    sender => 'bogus@qq.com');
+ok(3 == count_messages('spam'), "still have 3 spam messages");
+unlink('host-deadlist.tmp');
 
 ## Another forgery test.
 deliver_one('viagra-inc.text', 'spam', 4,
