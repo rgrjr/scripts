@@ -277,8 +277,20 @@ sub check_lists {
 		or die "$tag:  Can't open list '$list_name':  $!";
 	    while (<$in>) {
 		chomp;
-		return 1
-		    if $addresses->{lc($_)};
+		if (! /[*?]/) {
+		    return 1
+			if $addresses->{lc($_)};
+		}
+		else {
+		    # Use "glob" semantics for matching.
+		    my $regexp = $_;
+		    $regexp =~ s/[*]/.*/g;
+		    $regexp =~ s/[?]/./g;
+		    for my $address (keys(%$addresses)) {
+			return 1
+			    if $address =~ /^$regexp$/i;
+		    }
+		}
 	    }
 	}
 	return;
