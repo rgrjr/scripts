@@ -6,7 +6,6 @@
 # [created.  -- rgr, 25-Feb-07.]
 # [revised to search.  -- rgr, 23-Feb-12.]
 #
-# $Id$
 
 use strict;
 use warnings;
