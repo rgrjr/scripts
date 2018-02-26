@@ -4,7 +4,6 @@
 #
 # [created.  -- rgr, 23-Dec-02.]
 #
-# [$Id$]
 
 use strict;
 use warnings;
@@ -129,11 +128,9 @@ sub site_file_md5 {
 	= ($file =~ /:/
 	   ? "ssh '$`' \"md5sum '$''\""
 	   : "md5sum '$file'");
-    open(IN, "$command |") || die;
-    my @results = <IN>;
-    close(IN);
-    @results = split(' ', $results[0]);
-    $results[0];
+    open(my $in, "$command |") || die;
+    my @results = split(' ', `$command` || '');
+    return $results[0] || '';
 }
 
 sub find_files_to_copy {
