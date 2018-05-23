@@ -16,7 +16,6 @@
 # update for SuSE 8.1 (cdrecord in /usr/bin, /mnt => /media).  -- rgr, 4-May-03.
 # added to CVS, which now keeps the version history.  -- rgr, 16-Jun-03.
 #
-# $Id$
 
 BEGIN {
     # Prefer root versions of modules, if available.
@@ -497,10 +496,6 @@ If you find any more, please let me know.
 Copyright (C) 2002-2006 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
-
-=head1 VERSION
-
- $Id$
 
 =head1 AUTHOR
 

@@ -230,10 +230,6 @@ Prints just the L<"SYNOPSIS"> section of this documentation.
 
 =head1 EXAMPLES
 
-=head1 VERSION
-
- $Id$
-
 =head1 BUGS
 
 If you find any, please let me know.

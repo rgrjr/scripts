@@ -2,7 +2,6 @@
 #
 # [created.  -- rgr, 11-Mar-11.]
 #
-# $Id$
 
 package Backup::Config;
 

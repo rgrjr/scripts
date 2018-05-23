@@ -2,7 +2,6 @@
 #
 # [created.  -- rgr, 3-Mar-08.]
 #
-# $Id$
 
 package Backup::DumpSet;
 

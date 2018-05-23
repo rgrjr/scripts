@@ -8,7 +8,6 @@
 # This script is free software; you may redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id$
 
 use strict;
 use warnings;
@@ -327,10 +326,6 @@ If you find any others, please let me know.
 Copyright (C) 2011 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
-
-=head1 VERSION
-
- $Id$
 
 =head1 AUTHOR
 

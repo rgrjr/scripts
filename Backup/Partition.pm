@@ -2,7 +2,6 @@
 #
 # [created.  -- rgr, 14-Mar-11.]
 #
-# $Id$
 
 package Backup::Partition;
 

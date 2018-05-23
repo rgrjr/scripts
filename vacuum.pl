@@ -598,10 +598,6 @@ more than this, then no files will be copied.
 
 =back
 
-=head1 VERSION
-
- $Id$
-
 =head1 BUGS
 
 If you find any, please let me know.
