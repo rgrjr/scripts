@@ -159,8 +159,8 @@ sub find_search_roots {
 	for my $base ('', '/alt', '/old', '/new') {
 	    next
 		if $base && ! -d $base;
-	    for my $root (qw(scratch scratch2 scratch3 scratch4 scratch.old)) {
-		my $dir = "$base/$root/backups";
+	    for my $suffix ('', 0 .. 9, '.old') {
+		my $dir = "$base/scratch$suffix/backups";
 		push (@search_roots, $dir)
 		    if -d $dir;
 	    }
