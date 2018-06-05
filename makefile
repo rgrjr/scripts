@@ -2,7 +2,6 @@
 #
 # [created.  -- rgr, 27-Feb-03.]
 #
-# $Id$
 
 # make INSTALL_OPTS=--diff install
 
@@ -39,7 +38,7 @@ install-scripts = install.pl copy-tree substitute-config.pl
 vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
 # random stuff that doesn't belong anywhere else.
-misc-scripts =	sdiff.pl
+misc-scripts =	sdiff.pl html-diff.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
 perl-modules = parse-logs.pm rename-into-tree.pm
@@ -53,7 +52,7 @@ all:
 	@echo Nobody here but us scripts.
 	@echo So tell me what you really want to do, e.g. \"make publish\".
 
-test:	test-chrono-log test-email test-backup
+test:	test-diff test-chrono-log test-email test-backup
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 			test-cvs-chrono-log-3 test-svn-chrono-log-1a \
@@ -214,6 +213,29 @@ test-vacuum:
 	test -z "`cat $@.tmp`"
 	perl -Mlib=. ./vacuum.pl --config backup.conf --test > $@.tmp
 	cmp $@.text $@.tmp
+	rm -f $@.tmp
+
+## Testing the html-diff.pl script.
+test-diff:	test-diff-tok-1 test-diff-1 test-diff-2 test-diff-3 test-diff-4
+test-diff-tok-1:
+	./html-diff.pl --test-split test/html/$@-in.patch > $@.tmp
+	cmp test/html/$@.patch $@.tmp
+	rm -f $@.tmp
+test-diff-1:	test/html/test-diff-tok-1-in.patch
+	./html-diff.pl $^ > $@.tmp
+	cmp test/html/$@.patch $@.tmp
+	rm -f $@.tmp
+test-diff-2:
+	./html-diff.pl test/html/$@-in.patch > $@.tmp
+	cmp test/html/$@.patch $@.tmp
+	rm -f $@.tmp
+test-diff-3:
+	./html-diff.pl test/html/$@-in.patch > $@.tmp
+	cmp test/html/$@.patch $@.tmp
+	rm -f $@.tmp
+test-diff-4:
+	./html-diff.pl test/html/$@-in.patch > $@.tmp
+	cmp test/html/$@.patch $@.tmp
 	rm -f $@.tmp
 
 # This can't be put on the "test" target because it's too hard to make test

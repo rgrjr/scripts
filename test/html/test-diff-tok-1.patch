@@ -1,0 +1,50 @@
+--- test/test-script-1.html	2018-06-04 17:24:46.766421852 -0400
++++ output-29366-1.tmp.html	2018-06-05 10:58:51.558052976 -0400
+@@ -32,6 +32,6 @@
+ <th width="170"><font size="3" face="Arial, Helvetica, sans-serif">Coordinates A3-A6</font></th>
+ <th width="300" align="left"><font size="3" face="Arial, Helvetica, sans-serif">Residues in the Binding Pocket</font></th>
+ <th width="300" align="left"><font size="3" face="Arial, Helvetica, sans-serif">Prediction</font></th>
+-</table>
+-<table width="870" align="center" border="0">
+-<tr>
+-<td width="100" align="left">
+-A-domain 1
+-</td>
+-<td width="170" align="center">
+-134	346
+-</td>
+-<td width="300" align="left">
+-<font size="5" face="Courier New, Courier, mono">
+-  D    V    W    H    X    X    L    V
+-</font>
+-</td>
+-<td width="100" align="center">
+-</td>
+-<td width="200" align="right">
+- NO BLAST HIT
+-</td>
+-</tr>
+-</table>
+-<table width="870" align="center" border="0" height="25">
++</table>
++<table width="870" align="center" border="0">
++<tr>
++<td width="100" align="left">
++A-domain 1
++</td>
++<td width="170" align="center">
++134	346
++</td>
++<td width="300" align="left">
++<font size="5" face="Courier New, Courier, mono">
++  D    V    W    H    X    X    L    V
++</font>
++</td>
++<td width="200" align="right">
++ NO BLAST HIT
++</td>
++</tr>
++</table>
++<table width="870" align="center" border="0" height="25">
+ 	     <tr> <td bgcolor="#339999"> </td> </tr>
+ 	     </table>
