@@ -1,0 +1,6 @@
++++ Test pure deletion & insertion of complete lines.
+ <a>d<q>r</q></a><e> f<g><j>
+-<p>d</p>
+ <b>Yowza.</b>
++This is an added line.
+ <x>y<z>
