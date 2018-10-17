@@ -43,4 +43,15 @@ sub file_stem {
     return $stem;
 }
 
+sub age_in_days {
+    my ($self) = @_;
+    require Time::Local;
+
+    my $date = $self->date;
+    my ($year, $month, $dom) = unpack('A4A2A2', $date);
+    my $time = Time::Local::timelocal(0, 0, 0,
+				      $dom, $month-1, $year-1900);
+    return int((time()-$time)/(24*3600));
+}
+
 1;

@@ -185,6 +185,13 @@ sub find_partitions_to_clean {
 	$partition->prefixes([ split(/[, ]+/, $clean) ])
 	    unless $clean eq '*';
 
+	# Always include partitions with max-*-retention values.
+	if ($self->find_option('max-even-retention', $mp, 0)
+	    || $self->find_option('max-odd-retention', $mp, 0)) {
+	    push(@$partitions_to_clean, $partition);
+	    next;
+	}
+
 	# Find our minimum free space (in blocks, to avoid overflow).
 	my $min_free_gigabytes = $self->find_option('min-free-space', $mp, 10);
 	my $min_free_blocks = $min_free_gigabytes * 1024 * 1024;

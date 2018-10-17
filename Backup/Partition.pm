@@ -111,8 +111,8 @@ sub find_partitions {
 
 sub clean_partition {
     my ($self, $config) = @_;
-    require Time::Local;
 
+    # Get the daily dumps for our mount point.
     my $mount_point = $self->mount_point;
     my $verbose_p = $config->verbose_p;
     $verbose_p = $config->find_option('verbose', $mount_point, 0)
@@ -140,30 +140,97 @@ sub clean_partition {
 	= $config->find_option('min-even-retention', $mount_point, 90);
     undef($min_even_days)
 	if $min_even_days && $min_even_days !~ /^\d+$/;
+    my $max_odd_days
+	= $config->find_option('max-odd-retention', $mount_point, 0);
+    undef($max_odd_days)
+	if $max_odd_days && $max_odd_days !~ /^\d+$/;
+    my $max_even_days
+	= $config->find_option('max-even-retention', $mount_point, 0);
+    undef($max_even_days)
+	if $max_even_days && $max_even_days !~ /^\d+$/;
     return
 	# Infinite retention of everything means nothing to do.
-	unless $min_odd_days || $min_even_days;
-    my @min_days_from_level_class = ($min_odd_days, $min_even_days);
+	unless ($min_odd_days || $min_even_days
+		|| $max_odd_days || $max_even_days);
 
     # Find our minimum free space (in blocks, to avoid overflow).
-    my $min_free_gigabytes
+    my $min_free_GiB
 	= $config->find_option('min-free-space', $mount_point, 10);
-    my $min_free_blocks = $min_free_gigabytes * 1024 * 1024;
+    my $min_free_blocks = $min_free_GiB * 1024 * 1024;
 
-    # Perform deletions.
     my ($n_deletions, $n_slices) = (0, 0);
+    my $delete_dump = sub {
+	# Delete all slices of this dump on the current partition, generating
+	# verbose messages, updating $available blocks and other statistics.
+	my ($dump) = @_;
+
+	$n_deletions++;
+	warn "    delete dump ", $dump->base_name, "\n"
+	    if $verbose_p > 1;
+	for my $slice (@{$dump->slices}) {
+	    my $file = $slice->file;
+	    next
+		if (substr($file, 0, length($mount_point)+1)
+		    ne "$mount_point/");
+	    $n_slices++;
+	    warn "      delete slice $file\n"
+		if $verbose_p > 2;
+	    unlink($file)
+		unless $test_p;
+	    $available += int($slice->size / 1024);
+	}
+    };
+
+    # Perform deletions above the maximums.
+    my @max_days_from_level_class = ($max_odd_days, $max_even_days);
+    for my $level_class (0 .. @$dumps_from_level-1) {
+	my $max_days = $max_days_from_level_class[$level_class];
+	next
+	    unless $max_days;
+	my @dumps = sort { $a->date cmp $b->date;
+	} @{$dumps_from_level->[$level_class]};
+	next
+	    unless @dumps;
+	warn("  Partition $mount_point ", ($level_class ? 'even' : 'odd'),
+	     " dailies, ", scalar(@dumps),
+	     " total dumps, max days $max_days.\n")
+	    if $verbose_p > 1;
+	while (@dumps) {
+	    # Loop invariant:  The first element of @dumps is the current
+	    # candidate, so we must either shift it off if we delete it, or
+	    # exit the loop if we keep it.
+	    my $dump = $dumps[0];
+	    last
+		if $dump->current_p;
+
+	    # See whether we're too old.  If not, just quit, since the
+	    # remaining dumps in this level class will be even newer.
+	    last
+		if $dump->age_in_days() <= $max_days;
+	    shift(@dumps);
+	    $delete_dump->($dump);
+	}
+	# Update $dumps_from_level with the remainder.
+	$dumps_from_level->[$level_class] = [ @dumps ];
+    }
+
+    # Perform deletions on the remainder down to the minimums to make space.
+    my @min_days_from_level_class = ($min_odd_days, $min_even_days);
     for my $level_class (0 .. @$dumps_from_level-1) {
 	last
 	    if $available > $min_free_blocks;
+	my $min_days = $min_days_from_level_class[$level_class];
+	next
+	    unless $min_days;
 	my $dumps = $dumps_from_level->[$level_class];
 	next
 	    unless $dumps;
 	warn("  Partition $mount_point ", ($level_class ? 'even' : 'odd'),
 	     " dailies, ", scalar(@$dumps),
-	     " total dumps, $available blocks free.\n")
+	     " total dumps, min days $min_days, $available blocks free.\n")
 	    if $verbose_p > 1;
 	# Delete in chronological order, regardless of prefix.
-	for my $dump (sort { $a->date cmp $b->date; } @$dumps) {
+	for my $dump (@$dumps) {
 	    last
 		if $available > $min_free_blocks;
 	    next
@@ -171,34 +238,9 @@ sub clean_partition {
 
 	    # See whether we're still a keeper.  If so, just quit, since the
 	    # remaining dumps in this level class will be even newer.
-	    my $class_min_days = $min_days_from_level_class[$level_class];
-	    if ($class_min_days) {
-		my $date = $dump->date;
-		my ($year, $month, $dom) = unpack('A4A2A2', $date);
-		my $time = Time::Local::timelocal(0, 0, 0,
-						  $dom, $month-1, $year-1900);
-		my $days_old = int((time-$time)/(24*3600));
-		last
-		    if $days_old <= $class_min_days;
-	    }
-
-	    # It's a goner.
-	    $n_deletions++;
-	    warn "    delete dump ", $dump->base_name, "\n"
-		if $verbose_p > 1;
-	    for my $slice (@{$dump->slices}) {
-		# Delete only slices on this partition.
-		my $file = $slice->file;
-		next
-		    if (substr($file, 0, length($mount_point)+1)
-		        ne "$mount_point/");
-		$n_slices++;
-		warn "      delete slice $file\n"
-		    if $verbose_p > 2;
-		unlink($file)
-		    unless $test_p;
-		$available += int($slice->size / 1024);
-	    }
+	    last
+		if $dump->age_in_days() <= $min_days;
+	    $delete_dump->($dump);
 	}
     }
 
