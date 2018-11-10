@@ -73,13 +73,20 @@ while (<>) {
 }
 
 ## Produce output.
+my $skip_p = 0;
 for my $delta_week (0 .. @counts_by_week-1) {
     my $count = $counts_by_week[$delta_week];
-    next
-	unless $count && $count >= $discard;
+    if (! $count || $count < $discard) {
+	$skip_p++;
+	next;
+    }
     my $average = $sums_by_week[$delta_week] / $count;
     my $week_date = time2str('%d-%b-%y', 7*24*3600 * ($first_week-$delta_week));
+    print"\n"
+	# Reflect a gap in the data.
+	if $skip_p;
     printf("%s\t%.1f\n", $week_date, $average);
+    $skip_p = 0;
 }
 
 __END__
