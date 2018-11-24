@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 51;
+use Test::More tests => 54;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -171,3 +171,10 @@ ok(1 == count_messages('spam', 'msgid'), "have one spam msgid");
 deliver_one('viagra-inc.text', 'spam', 8,
 	    sender => 'rogerryals@hcsmail.com');
 ok(1 == count_messages('spam', 'msgid'), "still have one spam msgid");
+
+## Another blacklist test.
+system('echo baoguan@hotmail.com >> list.tmp');
+deliver_one('baoguan.text', 'spam', 9,
+	    blacklist => 'list.tmp',
+	    sender => 'baoguan@hotmail.com');
+ok(2 == count_messages(), "blacklisted sender not delivered to Maildir");
