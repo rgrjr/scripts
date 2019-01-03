@@ -60,8 +60,7 @@ $search_roots = [ map { $_->mount_point; } @$partitions_to_clean ]
     unless @$search_roots;
 warn 'Looking for dumps in ', join(' ', @$search_roots)
     if $verbose_p;
-my $dump_set_from_prefix
-    = Backup::DumpSet->find_dumps(prefix => '*', root => $search_roots);
+my $dump_set_from_prefix = Backup::DumpSet->find_dumps(root => $search_roots);
 
 # Clean dumps by partition.
 $config->sort_dumps_by_partition($dump_set_from_prefix, $partitions_to_clean);

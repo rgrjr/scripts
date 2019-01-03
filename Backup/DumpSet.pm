@@ -104,7 +104,10 @@ sub _parse_file_name {
 sub _find_dumps_from_command {
     # Given a command that generates a series of file names one line per name
     # (e.g. "ls" or "find"), return a hashref of prefix => Backup::DumpSet.
-    my ($class, $command, $ls_p) = @_;
+    # The $prefix_p parameter, if supplied, should be a hashref that maps
+    # prefixes to a boolean that specifies whether that prefix should be
+    # included in the result (wildcards are not supported).
+    my ($class, $command, $ls_p, $prefix_p) = @_;
 
     open(my $in, "$command |")
 	or die "Oops; could not open pipe from '$command':  $!";
@@ -117,6 +120,8 @@ sub _find_dumps_from_command {
 	    unless $prefix;
 	my $set = $dump_set_from_prefix->{$prefix};
 	if (! $set) {
+	    next
+		if $prefix_p && ! $prefix_p->{$prefix};
 	    $set = $class->new(prefix => $prefix);
 	    $dump_set_from_prefix->{$prefix} = $set;
 	}
@@ -129,16 +134,23 @@ sub _find_dumps_from_command {
 
 sub find_dumps {
     my ($class, %options) = @_;
-    my $prefix = $options{prefix} || 'home';
+    my $prefix = $options{prefix};
     my $root = $options{root} || '.';
-    my @search_roots = ref($root) eq 'ARRAY' ? @$root : ($root);
 
-    my $find_glob_pattern = '*.d*';
-    $find_glob_pattern = join('-', $prefix, $find_glob_pattern)
-	if $prefix ne '*';
-    my $command = join(' ', 'find', @search_roots,
-		       '-name', "'$find_glob_pattern'", '-type', 'f');
-    return $class->_find_dumps_from_command($command);
+    if (! $prefix) {
+	# This means "take everything".
+    }
+    elsif (ref($prefix) ne 'HASH') {
+	# Single prefix value.
+	$prefix = { $prefix => 1 };
+    }
+    elsif (! keys(%$prefix)) {
+	# An empty hash also means "take everything".
+	undef($prefix);
+    }
+    my @search_roots = ref($root) eq 'ARRAY' ? @$root : ($root);
+    my $command = join(' ', 'find', @search_roots, '-type', 'f');
+    return $class->_find_dumps_from_command($command, 0, $prefix);
 }
 
 ### Finding and extracting current entries.
@@ -244,13 +256,14 @@ object.
 
 =head3 find_dumps
 
-Given as keyword options a C<prefix> (which defaults to "home") and a set
-of C<search_roots> (which defaults to "."), find all backups
-
-C<prefix> can be "*", in which case all dumps are found.  The return
-value is a hash of prefix to a C<Backup::DumpSet> object that contains
-all backups that have that prefix.  This is normally invoked as a
-class method.
+Given as keyword options a set of C<search_roots> (which defaults to
+"."), and a C<prefix>, find all backups under the search roots which
+match the prefix.  C<prefix> can be omitted, in which case all dumps
+are included, or it can be a nonempty hashref, in which case all dumps
+for which the prefix maps to a true value are included (wildcards are
+not supported).  The return value is a hash of prefix to a
+C<Backup::DumpSet> object that contains all backups of that prefix.
+This is normally invoked as a class method.
 
 =head3 mark_current_dumps
 

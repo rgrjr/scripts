@@ -29,6 +29,7 @@ my ($before_date, $since_date);
 my $slices_p = 0;
 my $sort_order = 'prefix';
 my $prefix = '*';
+my %include_prefix_p;
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
@@ -47,7 +48,7 @@ GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	       $max_level = $min_level
 		   unless defined($max_level);
 	   },
-	   'prefix=s' => \$prefix)
+	   'prefix=s' => sub { $include_prefix_p{$_[1]}++; })
     or pod2usage(2);
 pod2usage(2) if $usage;
 pod2usage(1) if $help;
@@ -60,7 +61,7 @@ my @search_roots = @ARGV;
 
 # Find backup dumps on disk.
 my $dump_set_from_prefix
-    = Backup::DumpSet->find_dumps(prefix => $prefix,
+    = Backup::DumpSet->find_dumps(prefix => \%include_prefix_p,
 				  root => \@search_roots);
 my @selected_dumps;
 for my $pfx (sort(keys(%$dump_set_from_prefix))) {
@@ -131,7 +132,7 @@ show-backups.pl -- generate a sorted list of backup dump files.
 
 =head1 SYNOPSIS
 
-    show-backups.pl [ --help ] [ --man ] [ --usage ] [ --prefix=<pattern> ]
+    show-backups.pl [ --help ] [ --man ] [ --usage ] [ --prefix=<pattern> ... ]
                     [ --[no]slices ] [ --[no]date | --sort=(date|prefix|dvd) ]
                     [ --before=<date> ] [ --since=<date> ]
                     [ --level=<level> | --level=<min>:<max> ]
@@ -145,7 +146,7 @@ where:
      --help                   Print detailed help.
      --level            all   If specified, only do dumps in this range.
      --man                    Print man page.
-     --prefix           '*'   Partition prefix on files; wildcarded.
+     --prefix                 Partition prefix on files; may be repeated.
      --since                  If specified, only do dumps since this date.
      --slices                 If specified, print only slice file names.
      --sort           prefix  Sort by prefix, date, or dvd order.
@@ -164,8 +165,8 @@ roots on the command line (but you'll need to escape any wildcards).
 As with all other C<Getopt::Long> scripts, option names can be
 abbreviated to anything long enough to be unambiguous (e.g. C<--sli>
 or C<--sl> for C<--slices>), options with arguments can be given as
-two words (e.g. C<--prefix '*'>) or in one word separated by an "="
-(e.g. C<--prefix='*'>), and "-" can be used instead of "--".
+two words (e.g. C<--prefix home>) or in one word separated by an "="
+(e.g. C<--prefix=home>), and "-" can be used instead of "--".
 
 =over 4
 
@@ -197,8 +198,9 @@ Prints the full documentation in the Unix `manpage' style.
 
 =item B<--prefix>
 
-Specifies the dump file prefix.  This can be a glob-style wildcard;
-the default is '*', which includes all dump files.
+Specifies a dump file prefix; this option may be repeated.  The
+default is to include all backup files.  (Glob-style wildcards are no
+longer supported.)
 
 =item B<--since>
 
