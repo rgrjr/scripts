@@ -185,8 +185,11 @@ sub clean_partition {
     my @max_days_from_level_class = ($max_odd_days, $max_even_days);
     for my $level_class (0 .. @$dumps_from_level-1) {
 	my $max_days = $max_days_from_level_class[$level_class];
-	next
-	    unless $max_days;
+	if (! $max_days) {
+	    warn("  No max_days for $level_class.\n")
+		if $verbose_p > 2;
+	    next;
+	}
 	my @dumps = sort { $a->date cmp $b->date;
 	} @{$dumps_from_level->[$level_class]};
 	next
@@ -220,8 +223,11 @@ sub clean_partition {
 	last
 	    if $available > $min_free_blocks;
 	my $min_days = $min_days_from_level_class[$level_class];
-	next
-	    unless $min_days;
+	if (! $min_days) {
+	    warn("  No min_days for $level_class.\n")
+		if $verbose_p > 2;
+	    next;
+	}
 	my $dumps = $dumps_from_level->[$level_class];
 	next
 	    unless $dumps;
@@ -229,8 +235,13 @@ sub clean_partition {
 	     " dailies, ", scalar(@$dumps),
 	     " total dumps, min days $min_days, $available blocks free.\n")
 	    if $verbose_p > 1;
-	# Delete in chronological order, regardless of prefix.
-	for my $dump (@$dumps) {
+	# Delete in the reverse order used by show-backups, but regardless of
+	# prefix.
+	for my $dump (sort { $a->date cmp $b->date || $a->level <=> $b->level;
+		      } @$dumps) {
+	    warn("    Considering ", $dump->base_name, ', age ',
+		 $dump->age_in_days, ".\n")
+		if $verbose_p > 2;
 	    last
 		if $available > $min_free_blocks;
 	    next
