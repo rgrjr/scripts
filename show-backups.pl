@@ -24,16 +24,14 @@ use Backup::Slice;
 my $usage = 0;
 my $help = 0;
 my $man = 0;
-my ($min_level, $max_level);
-my ($before_date, $since_date);
-my $slices_p = 0;
-my $sort_order = 'prefix';
+my ($min_level, $max_level, $sort_order, $slices_p);
+my ($before_date, $since_date, $size_by_date_p);
 my $prefix = '*';
 my %include_prefix_p;
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
-	   'date!' => sub { $sort_order = 'date'; },
+	   'size-by-date!' => \$size_by_date_p,
 	   'sort=s' => \$sort_order,
 	   'before=s' => sub {
 	       $before_date = str2time($_[1])
@@ -53,6 +51,13 @@ GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 pod2usage(2) if $usage;
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+
+# Apply defaults.
+$sort_order ||= ($size_by_date_p ? 'date' : 'prefix');
+die "$0:  --size-by-date implies --sort=date.\n"
+    if $size_by_date_p && $sort_order ne 'date';
+die "$0:  --size-by-date is incompatible with the --slices option.\n"
+    if $size_by_date_p && $slices_p;
 
 # Figure out where to search for backups.
 my @search_roots = @ARGV;
@@ -83,25 +88,57 @@ for my $pfx (sort(keys(%$dump_set_from_prefix))) {
     }
 }
 
+# Sort the selected dumps.
+my @sorted_dumps
+    = ($sort_order eq 'date'
+	 ? sort {
+	     # This is like entry_cmp, but forward by date.
+	     $a->date cmp $b->date
+		 || $b->level <=> $a->level
+		 || $a->prefix cmp $b->prefix;
+	   } @selected_dumps
+       : $sort_order eq 'dvd'
+	 ? map { $_->[1];
+	   } sort { $a->[0] cmp $b->[0];
+	   } map { my $name = $_->file_stem;
+		   $name =~ s@.*/@@;
+		   [ $name, $_ ];
+	   } @selected_dumps
+       : $sort_order eq 'prefix'
+	 ? @selected_dumps
+       : die "$0:  Unknown --sort order '$sort_order'.\n");
+
+# Generate --size-by-date output if requested.
+if ($size_by_date_p) {
+    my $total_size = 0;
+    my $last_date = '';
+
+    my $do_date = sub {
+	# Flush any pending date information.
+	my ($next_date) = @_;
+
+	print(join("\t", $last_date, $total_size), "\n")
+	    if $last_date;
+	$last_date = $next_date;
+	$total_size = 0;
+    };
+
+    for my $dump (@sorted_dumps) {
+	my $date = $dump->date;
+	$do_date->($date)
+	    if $date ne $last_date;
+	# Accumulate.
+	for my $slice (@{$dump->slices}) {
+	    $total_size += $slice->size;
+	}
+    }
+    $do_date->('');
+    exit(0);
+}
+
 # Generate output.
 my $last_prefix = '';
-for my $dump ($sort_order eq 'date'
-		? sort {
-		    # This is like entry_cmp, but forward by date.
-		    $a->date cmp $b->date
-			|| $b->level <=> $a->level
-			|| $a->prefix cmp $b->prefix;
-		  } @selected_dumps
-	      : $sort_order eq 'dvd'
-		? map { $_->[1];
-		  } sort { $a->[0] cmp $b->[0];
-		  } map { my $name = $_->file_stem;
-			  $name =~ s@.*/@@;
-			  [ $name, $_ ];
-		  } @selected_dumps
-	      : $sort_order eq 'prefix'
-		? @selected_dumps
-	      : die "$0:  Unknown --sort order '$sort_order'\n") {
+for my $dump (@sorted_dumps) {
     my $prefix = $dump->prefix;
     print "\n"
 	# If not showing slice files, we want a blank line between the last
@@ -134,7 +171,7 @@ show-backups.pl -- generate a sorted list of backup dump files.
 
     show-backups.pl [ --help ] [ --man ] [ --usage ] [ --prefix=<pattern> ... ]
                     [ --[no]slices ] [ --[no]date | --sort=(date|prefix|dvd) ]
-                    [ --before=<date> ] [ --since=<date> ]
+                    [ --before=<date> ] [ --since=<date> ] [ --size-by-date ]
                     [ --level=<level> | --level=<min>:<max> ]
 		    [ <search-root> ... ]
 
@@ -142,12 +179,12 @@ where:
 
     Parameter Name     Deflt  Explanation
      --before                 If specified, only dumps on or before this date.
-     --date              no   Equivalent to --sort=date.
      --help                   Print detailed help.
      --level            all   If specified, only do dumps in this range.
      --man                    Print man page.
      --prefix                 Partition prefix on files; may be repeated.
      --since                  If specified, only do dumps since this date.
+     --size-by-date      no   Print a table of total size by dump date.
      --slices                 If specified, print only slice file names.
      --sort           prefix  Sort by prefix, date, or dvd order.
      --usage                  Print this synopsis.
@@ -177,10 +214,6 @@ formats acceptable to C<Date::Parse> may be used.  Note that this is
 checked against the date encoded in the file name, and not the file
 modification time.
 
-=item B<--date>
-
-Synonym for C<--sort=date>.
-
 =item B<--help>
 
 Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
@@ -209,6 +242,13 @@ formats acceptable to C<Date::Parse> may be used.  Note that this is
 checked against the date encoded in the file name, and not the file
 modification time.
 
+=item B<--size-by-date>
+
+If specified, print just a summary table of total dump size in bytes
+as a function of dump date.  This option implies "--sort=date"; it is
+an error to specify C<--size-by-date> along with any different sort
+option, or the C<--slices> option.
+
 =item B<--slices>
 
 If specified, print only the file name of each selected slice, one per
@@ -216,13 +256,16 @@ line.  This is useful for piping to other commands via C<xargs>.
 
 =item B<--sort>
 
-Specifies the sort order; legal values are "prefix" (the default,
-groups by ascending prefix and then by descending date), "dvd" (by
+Specifies the sort order; legal values are "prefix"
+(groups by ascending prefix and then by descending date), "dvd" (by
 ascending file name without the directory, as they would appear in a
 DVD listing), and "date" (ascending date, descending level, and
 ascending prefix).  If "prefix" sorting is used, and the C<--slices>
 option was not specified, then blank lines are inserted to separate
 each prefix.
+
+The default is to sort by date if the C<--size-by-date> option was
+specified, else to sort by prefix.
 
 =item B<--usage>
 

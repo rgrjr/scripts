@@ -255,8 +255,10 @@ test-show-backups:
 	cmp $@-2.text $@.tmp
 	./show-backups.pl --prefix home --sl > $@.tmp
 	cmp $@-3.text $@.tmp
-	./show-backups.pl --date > $@.tmp
+	./show-backups.pl --sort=date > $@.tmp
 	cmp $@-4.text $@.tmp
+	./show-backups.pl --level 1 --size-by-date > $@.tmp
+	cmp $@-5.text $@.tmp
 	rm $@.tmp
 
 install:	install-base
