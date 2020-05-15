@@ -28,7 +28,6 @@ use warnings;
 
 use Getopt::Long;
 use Pod::Usage;
-require 'rename-into-tree.pm';
 
 my $warn = 'cd-dump.pl';
 

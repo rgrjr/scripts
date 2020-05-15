@@ -17,7 +17,7 @@ pm-directory  = ${shell eval "`perl -V:installsitelib`"; \
 			pwd}
 public-html-directory = /srv/www/htdocs/linux
 published-scripts = backup.pl cd-dump.pl vacuum.pl
-published-modules = rename-into-tree.pm
+published-modules = 
 html-pages = ${published-scripts:.pl=.pl.html}
 
 # All but ${backup-scripts}.
@@ -41,12 +41,11 @@ vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 misc-scripts =	sdiff.pl html-diff.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
-perl-modules = parse-logs.pm rename-into-tree.pm
+perl-modules = 
 # firewall-scripts must go into /etc/init.d to be useful.
 firewall-scripts = paranoid firewall
-# qmail-scripts and afpd-scripts are not installed by default.
+# qmail-scripts are not installed by default.
 qmail-scripts = qmail-restart qmail-redeliver qifq.pl
-afpd-scripts = rename-into-tree.pl
 
 all:
 	@echo Nobody here but us scripts.
