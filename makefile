@@ -16,7 +16,7 @@ pm-directory  = ${shell eval "`perl -V:installsitelib`"; \
 			cd $$installsitelib; \
 			pwd}
 public-html-directory = /srv/www/htdocs/linux
-published-scripts = backup.pl cd-dump.pl vacuum.pl
+published-scripts = backup.pl cd-dump.pl vacuum.pl split-discord-html.pl
 published-modules = 
 html-pages = ${published-scripts:.pl=.pl.html}
 
@@ -38,7 +38,7 @@ install-scripts = install.pl copy-tree substitute-config.pl
 vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
 # random stuff that doesn't belong anywhere else.
-misc-scripts =	sdiff.pl html-diff.pl
+misc-scripts =	sdiff.pl html-diff.pl split-discord-html.pl
 # note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
 squid-scripts = redirect.pl
 perl-modules = 
