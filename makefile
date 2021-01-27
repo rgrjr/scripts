@@ -55,8 +55,7 @@ test:	test-diff test-chrono-log test-email test-backup
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 			test-cvs-chrono-log-3 test-svn-chrono-log-1a \
-			test-git-chrono-log-1 \
-			test-compare-languages test-csharp-chrono-log
+			test-git-chrono-log-1
 test-cvs-chrono-log-1:
 	./cvs-chrono-log.pl < test/test-cvs-chrono-log.text > $@.tmp
 	cmp test/test-cvs-chrono-log.out $@.tmp
@@ -110,7 +109,7 @@ test-git-chrono-log-1:
 		| ./vc-chrono-log.pl --abbrev 10 > $@.tmp
 	cmp test/$@-long-tag.text $@.tmp
 	rm -f $@.tmp
-# Test the C# version separately, since it may not be installed.
+# Test the C# version separately, since "mono" may not be installed.
 vc-chrono-log.exe:		vc-chrono-log.cs
 	gmcs $^
 test-csharp-chrono-log:	vc-chrono-log.exe
@@ -123,6 +122,8 @@ test-csharp-chrono-log:	vc-chrono-log.exe
 	rm -f $@.tmp
 # This assumes we are in a Subversion working copy, and checks that the Perl,
 # Ruby, Python, and C# versions get the same thing for the same *current* log.
+# [It is no longer on test-chrono-log because I no longer have a Subversion
+# repo for this project.  -- rgr, 26-Jan-21.]
 test-compare-languages:	vc-chrono-log.exe
 	(cd ../scripts.svn && svn log --xml --verbose) > $@.tmp.xml
 	./vc-chrono-log.pl < $@.tmp.xml > $@.tmp.pl.text
