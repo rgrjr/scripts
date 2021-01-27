@@ -2,7 +2,7 @@ X-Delivered-By: /home/rogers/projects/system/scripts/email/qmail-deliver.pl (246
 Return-Path: <baoguan@hotmail.com>
 X-Original-To: rogers-netatalk-devel@rgrjr.dyndns.org
 Delivered-To: rogers-netatalk-devel@rgrjr.dyndns.org
-Received: from rgrjr.com (rgrjr.com [23.92.21.122])
+Received: from rgrjr.com (rgrjr.com [69.164.211.47])
 	by rgr.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id D7D025FEAA
 	for <rogers-netatalk-devel@rgrjr.dyndns.org>; Mon, 19 Nov 2018 09:22:59 -0500 (EST)
 Received: from hotmail.com (unknown [183.166.136.72])

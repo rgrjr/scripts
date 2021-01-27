@@ -10,7 +10,7 @@ X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on lhasa.rgrjr.com
 X-Spam-Level: ***
 X-Spam-Status: No, score=3.4 required=5.0 tests=RCVD_ILLEGAL_IP autolearn=no
 	version=3.3.1
-Received: from rgrjr.com (li652-122.members.linode.com [23.92.21.122])
+Received: from rgrjr.com (li652-122.members.linode.com [69.164.211.47])
 	by lhasa.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 07E1665FD4
 	for <root@rgrjr.com>; Sun, 13 Oct 2013 06:25:11 -0400 (EDT)
 Received: by rgrjr.com (Postfix on Debian, from userid 0)
