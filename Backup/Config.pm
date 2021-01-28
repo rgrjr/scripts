@@ -165,8 +165,6 @@ sub find_search_roots {
 	    }
 	}
     }
-    die "$0:  No search roots.\n"
-	unless @search_roots;
     return @search_roots;
 }
 

@@ -18,6 +18,7 @@ use Getopt::Long;
 use Date::Parse;
 use Pod::Usage;
 
+use Backup::Config;
 use Backup::DumpSet;
 use Backup::Slice;
 
@@ -28,11 +29,13 @@ my ($min_level, $max_level, $sort_order, $slices_p);
 my ($before_date, $since_date, $size_by_date_p);
 my $prefix = '*';
 my %include_prefix_p;
+my $config = Backup::Config->new();
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'slices!' => \$slices_p,
 	   'size-by-date!' => \$size_by_date_p,
 	   'sort=s' => \$sort_order,
+	   'config=s' => sub { die "$0:  The --conf option must be first.\n" },
 	   'before=s' => sub {
 	       $before_date = str2time($_[1])
 		   or die "$0:  Can't parse date '$_[1]'.\n";
@@ -61,6 +64,8 @@ die "$0:  --size-by-date is incompatible with the --slices option.\n"
 
 # Figure out where to search for backups.
 my @search_roots = @ARGV;
+@search_roots = $config->find_search_roots()
+    unless @search_roots;
 @search_roots = '/scratch*/backups'
     unless @search_roots;
 
@@ -169,7 +174,8 @@ show-backups.pl -- generate a sorted list of backup dump files.
 
 =head1 SYNOPSIS
 
-    show-backups.pl [ --help ] [ --man ] [ --usage ] [ --prefix=<pattern> ... ]
+    show-backups.pl [ --help ] [ --man ] [ --usage ]
+                    [ --conf=<config-file-name> ] [ --prefix=<pattern> ... ]
                     [ --[no]slices ] [ --[no]date | --sort=(date|prefix|dvd) ]
                     [ --before=<date> ] [ --since=<date> ] [ --size-by-date ]
                     [ --level=<level> | --level=<min>:<max> ]
@@ -179,6 +185,7 @@ where:
 
     Parameter Name     Deflt  Explanation
      --before                 If specified, only dumps on or before this date.
+     --conf	              Config file, defaults to /etc/backup.conf
      --help                   Print detailed help.
      --level            all   If specified, only do dumps in this range.
      --man                    Print man page.
@@ -193,9 +200,11 @@ where:
 
 C<show-backups.pl> looks for files that end in ".dar" or ".dump" and
 prints them sorted by prefix and date (i.e. what was backed up and
-when).  By default it searches in F</scratch*/backups> and
+when).  By default it searches in the backup roots defined in
+F</etc/backup.conf>, else in F</scratch*/backups>, plus all of their
 subdirectories; this can be changed by specifying alternative search
 roots on the command line (but you'll need to escape any wildcards).
+Current dumps are marked with a "*".
 
 =head1 OPTIONS
 
