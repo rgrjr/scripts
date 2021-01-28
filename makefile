@@ -44,8 +44,6 @@ squid-scripts = redirect.pl
 perl-modules = 
 # firewall-scripts must go into /etc/init.d to be useful.
 firewall-scripts = paranoid firewall
-# qmail-scripts are not installed by default.
-qmail-scripts = qmail-restart qmail-redeliver qifq.pl
 
 all:
 	@echo Nobody here but us scripts.
@@ -275,8 +273,6 @@ install-backup:
 	mkdir -p ${pm-directory}/Backup
 	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
 	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
-install-qmail:
-	${INSTALL} -m 555 ${qmail-scripts} ${bin-directory}
 install-squid:
 	${INSTALL} -m 555 ${squid-scripts} /usr/sbin
 	squid -k reconfigure
@@ -286,8 +282,7 @@ install-upsd:
 		|| ${INSTALL} -m 400 upsd.sample.conf /etc/upsd.conf
 
 uninstall-root-bin:
-	for file in ${perl-modules} ${base-scripts} ${qmail-scripts} \
-			${squid-scripts}; do \
+	for file in ${perl-modules} ${base-scripts} ${squid-scripts}; do \
 	    if [ -r /root/bin/$$file ]; then \
 		echo Removing /root/bin/$$file; \
 		rm -f /root/bin/$$file; \

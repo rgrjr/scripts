@@ -68,17 +68,6 @@ Mail system hacks:
    * decode-message.pl -- Hack to decode Postfix messages as stored in a
 queue.
 
-   * qifq.pl -- crude hack to snarf qmail files out of a "dead" queue
-directory tree and re-inject them into a live qmail system.  The name
-stands for "qmail-inject into foreign queue," but that's a misnomer;
-"foreign" actually means the "other" queue, which must be available on
-the file system somewhere, and the destination is always the current
-queue, via qmail-inject.
-
-   * qmail-redeliver -- instruct qmail to restart delivery.
-
-   * qmail-restart -- instruct qmail to re-examine its control files.
-
    * mbox2maildir.pl -- convert a BSD mbox file (the default Unix
 format) to Maildir.
 
