@@ -5,6 +5,9 @@ else), and divided among a number of categories:
 
 Backup hacks:
 
+   Most of these are described in context on my Web site on the
+http://www.rgrjr.com/linux/backup.html page.
+
    * backup.pl -- Create and verify a dar backup.
 
    * vacuum.pl -- Copy and verify named backup files over the network.
@@ -22,6 +25,14 @@ minimum amount of free disk space.
 
 Version control hacks:
 
+   When CVS was really the only free VCS option, and because "cvs log"
+output was in terms of files, I wrote a the first of these to
+reconstruct the implicit changesets and present them chronologically
+(hence the name).  Then it became an experiment in comparing languages,
+with Python, Ruby, and C# versions, which were subsequently extended to
+handle "svn log --xml --verbose" output as well.  Only vc-chrono-log.pl
+has been updated to handle "git log", though.
+
    * cvs-chrono-log.pl -- Converts "cvs log" format into a chronological
 recounting of changes (greatly compressing the output along the way).
 
@@ -31,32 +42,42 @@ chronological recounting of changes.
    * svn-dump.pl -- Create Subversion repository dump files, suitable
 for incorporating into incremental file backups.
 
-   * vc-chrono-log.pl -- Converts either "git log", "svn log --xml", or
-"cvs log" output into a chronological recounting of changes (Perl
-implementation).
+   * vc-chrono-log.pl -- Converts "git log", "svn log --xml", or "cvs
+log" output into a chronological recounting of changes.  Used by my
+Emacs hacks for browsing project history.
 
    * vc-chrono-log.rb -- Converts either "svn log --xml" or "cvs log"
 output into a chronological recounting of changes (Ruby implementation).
 
 General sysadmin hacks:
 
+   * check-dates.pl -- Find the next ten transitions between standard
+time and daylight savings time in the current locale.
+
    * check-passwd.pl -- Find duplicates by name or ID in /etc/passwd or
 /etc/group.
+
+   * extract-djbdns-log.pl -- Produce a human-readable extract of djbdns
+queries.
+
+   * find-net-mounts.pl -- Extract "noauto" network mounts on our
+network from a file in /etc/fstab format.
 
    * install.pl -- Installation script that copies only if the file has
 been changed since the last installation (so that the file dates still
 mean something).  Also can create numbered backups, and do "diff -u"
 instead of installing.
 
-Weblog/Squid hacks:
+   * substitute-config.pl -- Apply changes in a delta configuration file
+to an input configuration file.
+
+Web hacks:
 
    * make-popular-pages.pl -- given a Web log (Squid or standard
 format), summarize the ten most popular pages.
 
    * page-hits.pl -- given a Web log (standard format), summarize the
 hits in various ways.
-
-   * redirect.pl -- Squid redirector.  Very site-specific.
 
    * page-rankings.pl -- given a series of log files, generates a
 period-by-period table of hits.  This is very site-specific.
@@ -78,20 +99,9 @@ message via the "sendmail -f" interface.
 
 Other stuff:
 
-   * check-dates.pl -- Find the next ten transitions between standard
-time and daylight savings time in the current locale.
-
-   * extract-djbdns-log.pl -- Produce a human-readable extract of djbdns
-queries.
-
-   * find-net-mounts.pl -- Extract "noauto" network mounts on our
-network from a file in /etc/fstab format.
-
    * html-diff.pl -- Make sense of unidiffs of HTML by splitting
 mismatched lines into tokens and then consolidating stretches of
 matching tokens and text, and reporting only the unmatched tokens.
-
-   * rgr-dehex.el -- hacks for looking at tcpdump output.
 
    * sdiff.pl -- Run diff on two files, either of which may be remote,
 fetched via scp.
@@ -99,11 +109,6 @@ fetched via scp.
    * split-discord-html.pl -- Split an HTML Discord direct messaging
 conversation into smaller chunks, so that it doesn't overwhelm the
 browser.
-
-   * substitute-config.pl -- Apply changes in a delta configuration file
-to an input configuration file.
-
-   * upsd.pl -- UPS daemon (that never worked very well).
 
    * week-avg.pl -- Given a tab-delimited table of daily dates and
 numbers, produce a corresponding table of weekly averages.

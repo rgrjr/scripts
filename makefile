@@ -15,10 +15,6 @@ bin-directory = ${PREFIX}/bin
 pm-directory  = ${shell eval "`perl -V:installsitelib`"; \
 			cd $$installsitelib; \
 			pwd}
-public-html-directory = /srv/www/htdocs/linux
-published-scripts = backup.pl cd-dump.pl vacuum.pl split-discord-html.pl
-published-modules = 
-html-pages = ${published-scripts:.pl=.pl.html}
 
 # All but ${backup-scripts}.
 base-scripts =  ${log-scripts} ${install-scripts} \
@@ -39,15 +35,13 @@ vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
 # random stuff that doesn't belong anywhere else.
 misc-scripts =	sdiff.pl html-diff.pl split-discord-html.pl
-# note that these are scripts used *by* squid.  -- rgr, 19-Oct-03.
-squid-scripts = redirect.pl
 perl-modules = 
 # firewall-scripts must go into /etc/init.d to be useful.
 firewall-scripts = paranoid firewall
 
 all:
 	@echo Nobody here but us scripts.
-	@echo So tell me what you really want to do, e.g. \"make publish\".
+	@echo So tell me what you really want to do, e.g. \"make test\".
 
 test:	test-diff test-chrono-log test-email test-backup
 
@@ -273,16 +267,9 @@ install-backup:
 	mkdir -p ${pm-directory}/Backup
 	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
 	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
-install-squid:
-	${INSTALL} -m 555 ${squid-scripts} /usr/sbin
-	squid -k reconfigure
-install-upsd:
-	${INSTALL} -m 555 upsd.pl /etc/init.d
-	test -e /etc/upsd.conf \
-		|| ${INSTALL} -m 400 upsd.sample.conf /etc/upsd.conf
 
 uninstall-root-bin:
-	for file in ${perl-modules} ${base-scripts} ${squid-scripts}; do \
+	for file in ${perl-modules} ${base-scripts}; do \
 	    if [ -r /root/bin/$$file ]; then \
 		echo Removing /root/bin/$$file; \
 		rm -f /root/bin/$$file; \
@@ -299,16 +286,10 @@ diff:
 install-firewall:
 	${INSTALL} -m 555 ${firewall-scripts} /etc/init.d
 
-${html-pages}:   %.pl.html:	%.pl
-	pod2html $^ > $@
-
-publish:	${published-scripts} ${published-modules} ${html-pages}
-	install -c -m 444 $^ ${public-html-directory}
-
 ### Other oddments.
 
 clean:
-	rm -f pod2htm*.tmp ${html-pages}
+	rm -f *.tmp
 tags:
 	find . -name '*.p[lm]' -o -name '*.rb' -o -name '*.el' \
 		-o -name '*.erl' -o -name '*.py' \
