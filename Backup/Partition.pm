@@ -1,4 +1,4 @@
-### Class for representing partitions used to store backups.
+### Class for representing partitions.
 #
 # [created.  -- rgr, 14-Mar-11.]
 #
@@ -267,3 +267,101 @@ sub clean_partition {
 }
 
 1;
+
+__END__
+
+=head1 Backup::Partition
+
+Class for representing partitions.  This can either be a partition
+that is backed up, or (for purposes of cleaning) a partition that
+stores backups.
+
+=head2 Accessors and methods
+
+=head3 avail_blocks
+
+Returns or sets the number of available disk blocks, as reported by
+the C<df> program, for cleaning.
+
+=head3 clean_partition
+
+Given a C<Backup::Config> instance, check for old backup files that
+should be removed.  This implements the guts of the
+C<clean-backups.pl> script.  Assumes that C<sort_dumps_by_partition>
+has been run (see L<Backup::Config/sort_dumps_by_partition>).
+
+=head3 contains_file_p
+
+Given an absolute file name without a "host:" prefix, returns true if
+the file name is our C<mount_point>, or contains our mount point as a
+prefix.
+
+=head3 device_name
+
+Returns or sets our device name, as reported by the C<df> program, for
+cleaning.
+
+=head3 device_number
+
+Returns or sets our device number.  This is only ever valid for a
+local partition.
+
+=head3 dumps_from_level
+
+Returns or sets an arrayref of arrayrefs of C<Backup::Dump> objects at
+the indicated level.
+
+=head3 find_partitions
+
+Class method that, given a set of keyword options, finds and returns a
+list (not an arrayref!) of C<Backup::Partition> instances.  The
+keyword options are C<max_free_blocks> and C<partition>; partitions
+with more than C<max_free_blocks> available blocks are ignored.  This
+is usually fairly indiscriminate, including other random partitions as
+well as partitions that are backed up and those that store backups,
+though NFS-mounted partitions are eliminated.
+
+The C<partition> value can be "host:" or "partition" (a mount point)
+or "host:partition"; if "host" is omitted, it is assumed to be the
+local host, else we query "host" via SSH.  If "partition" is omitted,
+we query all paritions, else just the one named.
+
+Once we know the host and partition(s), we use C<df> to create the
+C<Backup::Partition> instances, initializing the C<device_name>,
+C<host_name>, C<mount_point>, C<total_blocks>, C<used_blocks>,
+C<avail_blocks>, and C<use_pct> slots, plus the C<device_number> slot
+for local partitions, returning them as a list.
+
+=head3 host_colon_mount
+
+Return our C<host_name> and C<mount_point> with a ":" in between.
+
+=head3 host_name
+
+Returns or sets our host name string.
+
+=head3 mount_point
+
+Returns or sets our mount point string.
+
+=head3 prefixes
+
+Returns or sets an arraref of dump prefixes that should be cleaned in
+this partition.  See L<Backup::Config/find_partitions_to_clean>.
+
+=head3 total_blocks
+
+Returns or sets the number of total disk blocks, as reported by the
+C<df> program, for cleaning.
+
+=head3 use_pct
+
+Returns or sets the filesystem usage percentage, as reported by the
+C<df> program, for cleaning.
+
+=head3 used_blocks
+
+Returns or sets the number of used disk blocks, as reported by the
+C<df> program, for cleaning.
+
+=cut

@@ -18,12 +18,12 @@ sub test_dump_order {
     # Two tests per invocation.
     my ($dump1, $dump2, $cmp) = @_;
 
-    my $base_name_1 = $dump1->base_name;
-    my $base_name_2 = $dump2->base_name;
+    my $file_stem_1 = $dump1->file_stem;
+    my $file_stem_2 = $dump2->file_stem;
     ok($cmp == $dump1->entry_cmp($dump2),
-       "dump $base_name_1 cmp $base_name_2 is $cmp");
+       "dump $file_stem_1 cmp $file_stem_2 is $cmp");
     ok(-$cmp == $dump2->entry_cmp($dump1),
-       "dump $base_name_2 cmp $base_name_1 is ".-$cmp);
+       "dump $file_stem_2 cmp $file_stem_1 is ".-$cmp);
 }
 
 sub test_slice_order {
@@ -50,7 +50,7 @@ sub check_current {
 	my $dump = $set->dumps->[$idx];
 	my $current_p = $current_p[$idx];
 	ok(! $current_p == ! $dump->current_p,
-	   join(' ', $dump->base_name,
+	   join(' ', $dump->file_stem,
 		$current_p ? 'is' : 'is not',
 		'current'));
     }

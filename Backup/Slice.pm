@@ -103,3 +103,90 @@ sub entry_cmp {
 }
 
 1;
+
+__END__
+
+=head1 Backup::Slice
+
+Represents a single slice (file) that comprises part of a backup dump,
+which in turn is represented as a C<Backup::Dump> object.  A slice is
+not a complete backup, but it is a complete filesystem object, hence
+this somewhat awkward dichotomy.
+
+=head2 Accessors and methods
+
+=head3 base_name
+
+Returns or sets a string that is the file name of the slice without
+the directory.  This is initialized by the C<new> method from the
+C<file> slot.
+
+=head3 catalog_p
+
+Returns or sets a boolean that indicates whether this is a catalog
+file made from another backup dump.
+
+=head3 date
+
+Returns or sets the eight-digit string component of the file name that
+indicates the date the dump was made.
+
+=head3 entry_cmp
+
+Given another C<Backup::Slice> instance, return a -1,0,1 comparison
+value reflecting the proper sort order of the two instances.  First we
+compare by C<date> backwards (i.e. putting the most recent dump
+first), then by C<level> backwards (if someone performs backups at two
+different levels on the same day, the second is usually an
+extracurricular L9 dump on top of the other), then by by C<prefix>
+alphabetically forwards, then by catalog_p (to put the catalogs
+first), and finally by ascending index (for when a single backup is
+split across multiple files).  Since one usually only sorts slices
+from the same C<Backup::Dump>, only the last two comparisons are
+likely to be significant.
+
+=head3 file
+
+Returns or sets the full filename pathname of the slice.
+
+=head3 host_name
+
+Returns or sets the name of the computer on which the slice is found
+(which will be shared among all slices).
+
+=head3 index
+
+Returns or sets the numeric index of the slice within the dump.
+
+=head3 level
+
+Returns or sets the backup level of the dump (which will be shared
+among all slices).
+
+=head3 listing
+
+Returns the line used by C<show-backups.pl> for the slice, but without
+the "*" for current dumps and without a trailing newline.
+
+=head3 new
+
+Create and return a new C<Backup::Slice> instance, initializing
+C<base_name> in the process.
+
+=head3 prefix
+
+Returns or sets the dump prefix (which will be shared among all
+slices).
+
+=head3 size
+
+Returns or sets the file size in bytes.  If not set, tries to
+initialize the size on the first access using C<stat>, but this won't
+work for remote files.
+
+=head3 size_in_mb
+
+Given an optional size value (which defaults to our C<size>), convert
+it into MiB.  Tries to deal with integer size issues in older perls.
+
+=cut
