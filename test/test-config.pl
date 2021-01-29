@@ -54,3 +54,19 @@ for my $stanza (sort(keys(%expected_values_from_stanza))) {
 my @search_roots = $config->find_search_roots('/home');
 is_deeply(\@search_roots, [ qw(/scratch2 /scratch3 /scratch4) ],
 	  'got search roots from default');
+
+__END__
+
+=head1 NAME
+
+test-config.pl
+
+=head1 SYNOPSIS
+
+    perl test/test-config.pl
+
+=head1 DESCRIPTION
+
+Make sure C<Backup::Config> works properly.
+
+=cut

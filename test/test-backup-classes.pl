@@ -112,3 +112,19 @@ for my $idx (qw(0 11 3 1 10 5 9 7 12 2 4 6 8)) {
     $set2->add_slice(@{$specs[$idx]});
 }
 check_current($set2);
+
+__END__
+
+=head1 NAME
+
+test-backup-classes.pl
+
+=head1 SYNOPSIS
+
+    perl test/test-backup-classes.pl
+
+=head1 DESCRIPTION
+
+Make sure that the backup classes work properly.
+
+=cut
