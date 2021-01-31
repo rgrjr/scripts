@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 #
-# Find the next ten daylight/standard time switches, relying on the time2str
-# "%Z" directive to define whether a given absolute time is DST or not.
+# Find the next ten daylight/standard time switches, using time2str "%Z".
 #
 # [created.  -- rgr, 25-Feb-07.]
 # [revised to search.  -- rgr, 23-Feb-12.]
@@ -68,3 +67,47 @@ for my $counter (1 .. 10) {
     last
 	unless $change_start;
 }
+
+__END__
+
+=head1 NAME
+
+snoop-maildir.pl -- print a summary of maildir content
+
+=head1 SYNOPSIS
+
+    check-dates.pl
+
+=head1 DESCRIPTION
+
+Find the next ten daylight savings/standard time switches in the
+current locale, relying on the "%Z" directive of C<time2str> (see
+C<Date::Format>) to define whether a given time is daylight savings or
+not.  Has no options and ignores all arguments.
+
+=head1 EXAMPLE
+
+    > ./check-dates.pl
+    2021-03-14 01:59:59 EST	2021-03-14 03:00:00 EDT
+    2021-11-07 01:59:59 EDT	2021-11-07 01:00:00 MNT
+    2022-03-13 01:59:59 EST	2022-03-13 03:00:00 EDT
+    2022-11-06 01:59:59 EDT	2022-11-06 01:00:00 MNT
+    2023-03-12 01:59:59 EST	2023-03-12 03:00:00 EDT
+    2023-11-05 01:59:59 EDT	2023-11-05 01:00:00 MNT
+    2024-03-10 01:59:59 EST	2024-03-10 03:00:00 EDT
+    2024-11-03 01:59:59 EDT	2024-11-03 01:00:00 MNT
+    2025-03-09 01:59:59 EST	2025-03-09 03:00:00 EDT
+    2025-11-02 01:59:59 EDT	2025-11-02 01:00:00 MNT
+    > 
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2016-2020 by Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>.
+This script is free software; you may redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=cut

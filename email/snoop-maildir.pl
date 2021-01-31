@@ -22,10 +22,11 @@ use constant EX_TEMPFAIL => 75;
 
 ### Process command-line arguments.
 
-GetOptions('verbose+' => \$verbose_p,
-	   'dir=s' => \$dir);
-$dir ||= shift(@ARGV) || '/home/rogers/mail/incoming/spam/new';
-die "$0:  No --dir option"
+GetOptions('dir=s' => \$dir);
+$dir ||= shift(@ARGV);
+$dir = $ENV{HOME} . '/Maildir/new'
+    if ! $dir && $ENV{HOME};
+die "$0:  Need a --dir option"
     unless $dir && -d $dir;
 
 ### Subroutines.
@@ -95,3 +96,38 @@ for my $file_name (split"\n", `ls $dir`) {
 	       } $from->addr_list);
     printf("[ ]  %-28s  %s\n", $file_name, $formatted_from);
 }
+
+__END__
+
+=head1 NAME
+
+snoop-maildir.pl -- print a summary of maildir content
+
+=head1 SYNOPSIS
+
+    snoop-maildir.pl [ --dir <dir> | <dir> ]
+
+=head1 DESCRIPTION
+
+Given a directory containing files with a single email in each (which
+defaults to F<~/Maildir/new> if the C<HOME> environment variable is
+defined), print a one-line report for each message in the following
+format:
+
+    [ ]  1612058483.I1919565P13731.scorpio  (Cron Daemon) <root@rgrjr.com>
+
+This is used by an Emacs hack I have that lets me dispose of messages
+before pulling them into an email client, which is particularly useful
+for deciding whether spam is really spam or not.
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2016-2020 by Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>.
+This script is free software; you may redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=cut

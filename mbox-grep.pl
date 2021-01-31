@@ -249,3 +249,92 @@ else {
 }
 # Return grep-compatible exit code.
 exit ($n_unreadable_files ? 2 : ($matching_line_count > 0 ? 0 : 1));
+
+=head1 NAME
+
+mbox-grep.pl -- Perl regular expression search in mbox files
+
+=head1 SYNOPSIS
+
+    mbox-grep.pl [ -debug ] [ -hlmn ] [ [ -e ] <regexp> ] <file> ...
+
+where:
+
+    Parameter Name     Deflt  Explanation
+     -debug             no    Whether to print extra debug info on stderr.
+     -e                       Next arg is the expression.
+     -h                       Show file name in output; default true if >1.
+     -l                 no    Show only the file name for hits.
+     -m                 no    Display the full message for hits.
+     -n                 no    Show the hit line number (in message).
+
+=head1 DESCRIPTION
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--debug>
+
+Enables a few obscure bits of debugging code that elucidate the
+structure of the message file, implemented as extra output to the
+standard error.
+
+=item B<-e>
+
+If this option is given by itself, the next word on the command line
+is taken to be the regular expression; this is useful if the regular
+expression itself starts with a "-".  (The other single-dash options
+can be combined, but not this one; we're not as clever as the regular
+C<grep> program.)
+
+=item B<-h>
+
+If specified, the name of the file is always used to prefix any hits.
+The default is to prefix hits only if more than one file is named on
+the command line.
+
+=item B<-l>
+
+If specified, the file name is output only once for a hit, instead of
+one line per hit.  C<mbox-grep.pl> considers it an error and exits
+with a grep-compatible exit code of 2 if both C<-m> and C<-l> are
+specified.
+
+=item B<-m>
+
+If specified, the full message is displayed if a hit is found within
+it.  C<mbox-grep.pl> considers it an error and exits with a
+grep-compatible exit code of 2 if both C<-m> and C<-l> are specified.
+
+=item B<-n>
+
+If specified, shows the message number and the line number within the
+message (a negative number indicates a line within the message
+headers).
+
+=back
+
+=head1 BUGS
+
+If you find any, please let me know.
+
+=head1 SEE ALSO
+
+=over 4
+
+=item L<grep(1)>
+
+=back
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2020 by Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>.
+This script is free software; you may redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=cut
