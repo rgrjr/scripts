@@ -1,0 +1,40 @@
+diff --git a/linux/disk-upgrade.html b/linux/disk-upgrade.html
+index 5156557..112852e 100644
+--- a/linux/disk-upgrade.html
++++ b/linux/disk-upgrade.html
+@@ -114,8 +114,9 @@ the disk.
+ <a name="repartition">
+ <h3>New partitions</h3>
+ 
+ <p>
+-I bought a used 30G drive from <a
+-href="http://www.pcsforeveryone.com/">PCs for Everyone
++I bought a used 30G drive from PCs for Everyone (they now call
++themselves <a
++href="https://www.thinkmate.com/">Thinkmate.com
+ </a>, and planned
+ to divide it up as follows:
+ <blockquote>
+ <pre>
+@@ -930,7 +931,7 @@ buttons, nothing.  Without the cooling fans, the silence in my attic
+ office was oddly distracting.  At that point, I figured I had no choice
+ but to take it in to the shop, and let them diagnose the problem.
+ 
+ <p>At 
+-<a href="http://www.pcsforeveryone.com/">
++<a href="https://www.thinkmate.com/">
+ PCs for Everyone</a>, the
+ guy agreed that I had a bad power supply, but they didn't have the
+ 145-watt supply I needed in stock, and in any case it would be another
+ two weeks before they could even look at my disk problem.  I must have
+@@ -999,7 +1000,7 @@ incident.  I also got <a href="cd-burning.html">a new CD-burner</a> at
+ the same time.
+ 
+ <p>So perhaps a good moral would be, <i>"Choose your hardware supplier
+ carefully."</i>  Kudos to 
+-<a href="http://www.pcsforeveryone.com/">
++<a href="https://www.thinkmate.com/">
+ PCs
+ for Everyone</a> for taking such good care of an old (and not
+ particularly rich) customer.
+ 

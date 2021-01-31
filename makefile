@@ -209,7 +209,7 @@ test-vacuum:
 
 ## Testing the html-diff.pl script.
 test-diff:	test-diff-tok-1 test-diff-1 test-diff-2 test-diff-3 \
-		test-diff-4 test-diff-5
+		test-diff-4 test-diff-5 test-diff-6
 test-diff-tok-1:
 	./html-diff.pl --test-split test/html/$@-in.patch > $@.tmp
 	cmp test/html/$@.patch $@.tmp
@@ -219,6 +219,8 @@ test-diff-1:	test/html/test-diff-tok-1-in.patch
 	cmp test/html/$@.patch $@.tmp
 	./html-diff.pl --line-length 40 $^ > $@.tmp
 	cmp test/html/$@-40.patch $@.tmp
+	./html-diff.pl --line-length 0 $^ > $@.tmp
+	cmp test/html/$@-0.patch $@.tmp
 	rm -f $@.tmp
 test-diff-2:
 	./html-diff.pl test/html/$@-in.patch > $@.tmp
@@ -236,6 +238,16 @@ test-diff-4:
 test-diff-5:
 	./html-diff.pl test/html/$@-in.patch > $@.tmp
 	cmp test/html/$@.patch $@.tmp
+	rm -f $@.tmp
+# Regression test for line breaks.
+test-diff-6:
+	./html-diff.pl < test/html/$@-in.patch > $@.tmp
+	cmp test/html/$@-out.patch $@.tmp
+	rm -f $@.tmp
+# Another regression test for line breaks.
+test-diff-7:
+	./html-diff.pl < test/html/$@-in.patch > $@.tmp
+	cmp test/html/$@-out.patch $@.tmp
 	rm -f $@.tmp
 
 # This can't be put on the "test" target because it's too hard to make test
