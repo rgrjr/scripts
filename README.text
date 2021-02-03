@@ -97,6 +97,9 @@ format) to Maildir.
    * no-such-user.pl -- return an "address no longer valid" bounce
 message via the "sendmail -f" interface.
 
+   * qmail-deliver.pl -- deliver a message the way that qmail-local
+does, with extra hacks for whitelisting and blacklisting.
+
 Other stuff:
 
    * html-diff.pl -- Make sense of unidiffs of HTML by splitting
