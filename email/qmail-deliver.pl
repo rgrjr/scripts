@@ -2,7 +2,7 @@
 #
 # Deliver a message the way that qmail-local does.
 #
-# [created (post-deliver.pl, based on postfix-sort.pl).  -- rgr, 28-Apr-08.]
+# [created (as post-deliver.pl, based on postfix-sort.pl).  -- rgr, 28-Apr-08.]
 # [created (based on post-deliver.pl).  -- rgr, 9-Sep-16.]
 #
 
@@ -10,9 +10,13 @@ use strict;
 use warnings;
 
 use Getopt::Long;
+use Pod::Usage;
 use Mail::Header;
 use IO::String;
 
+my $help = 0;
+my $man = 0;
+my $usage = 0;
 my $tag = "$0 ($$)";
 my $test_p = 0;
 my $verbose_p = 0;
@@ -25,13 +29,18 @@ use constant EX_TEMPFAIL => 75;
 
 ### Process command-line arguments.
 
-GetOptions('test!' => \$test_p,
+GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
+	   'test!' => \$test_p,
 	   'verbose+' => \$verbose_p,
 	   'redeliver!' => \$redeliver_p,
 	   'deadlist=s' => \@deadlists,
 	   'host-deadlist=s' => \@host_deadlists,
 	   'whitelist=s' => \@whitelists,
-	   'blacklist=s' => \@blacklists);
+	   'blacklist=s' => \@blacklists)
+    or pod2usage(2);
+pod2usage(2) if $usage;
+pod2usage(1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 if ($verbose_p) {
     # debugging.
     open(STDERR, ">>post-deliver.log") or die;
@@ -123,7 +132,9 @@ sub write_maildir_message {
     }
     elsif ($redeliver_p) {
 	# Move the file.
-	my $result = system('mv', $message_source, $temp_file_name);
+	my $result = 0;
+	$result = system('mv', $message_source, $temp_file_name)
+	    unless $test_p;
 	die("$0:  Move of '$message_source' to '$temp_file_name' failed:  $!")
 	    if $result;
 	$inode = (stat($temp_file_name))[1];
@@ -369,6 +380,9 @@ sub deliver_message {
 	process_qmail_file(".qmail-$extension", $head, $header,
 			   $message_source);
     }
+    elsif (-r '.qmail') {
+	process_qmail_file('.qmail', $head, $header, $message_source);
+    }
     else {
 	write_maildir_message('Maildir/', $head, $header, $message_source);
     }
@@ -387,3 +401,138 @@ else {
     deliver_message(\*STDIN, 1);
 }
 exit(EX_OK);
+
+__END__
+
+=head1 NAME
+
+qmail-deliver.pl - deliver a message the way that qmail-local does
+
+=head1 SYNOPSIS
+
+    qmail-deliver.pl [ --help ] [ --man ] [ --usage ] [ --verbose ... ]
+ 	             [ --[no]test ] [ --redeliver ]
+		     [ --whitelist=<file> ... ] [ --blacklist=<file> ... ]
+		     [ --deadlist=<file> ... ] [ --host-deadlist=<file> ... ]
+
+=head1 DESCRIPTION
+
+Given one or more whitelist, blacklist, and/or deadlist files named on
+the command line, and an email message on the standard input, decide
+what to do with the message as C<qmail-deliver> would, consulting
+C<.qmail> files in the current directory (presumably the user home
+directory of the user to whom this message is addressed), and deliver
+it appropriately.
+
+The list options are L</--whitelist>, L</--blacklist>, L</--deadlist>,
+and L</--host-deadlist>; these name files which contain lists of email
+addresses to be treated specially. "?" and "*" are considered
+wildcards which match any single character and zero or more characters
+respectively.  All of these options may be repeated in order to
+specify multiple files.
+
+Messages are checked first for deadlisted recipients, then for
+blacklisted senders, and finally for whitelisted senders.  If they
+pass all hurdles, they are sent through normal Qmail dot-file
+processing, honoring recipient address extensions.
+
+=head1 OPTIONS
+
+As with all other C<Getopt::Long> scripts, option names can be
+abbreviated to anything long enough to be unambiguous (e.g. C<--white>
+or C<--wh> for C<--whitelist>), options with arguments can be given as
+two words (e.g. C<--white 100>) or in one word separated by an "="
+(e.g. C<--white=100>), and "-" can be used instead of "--".
+
+=over 4
+
+=item B<--blacklist>
+
+Names a file of blacklisted senders; if a sender is on this list and
+a F<.qmail-spam> file exists, then the message is processed according
+to F<.qmail-spam>.
+A sender address in one that appears as the envelope sender, or in a
+"Sender:", "From:", or "Reply-To:" header in the message itself.
+
+=item B<--deadlist>
+
+Names a file of deadlisted B<recipients>; if the message is addressed
+(either "To:" or "CC:") to someone on this list (or it comes from someone
+with an address that has only digits before the "@") and
+a F<.qmail-dead> or F<.qmail-spam>
+file exists, then the message is processed according
+to the first of these that exists.
+
+=item B<--help>
+
+Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
+
+=item B<--host-deadlist>
+
+Names a file of blacklisted sender hosts; if a sender host is on this
+list and a F<.qmail-spam> file exists, then the message is processed
+according to F<.qmail-spam>.  A sender address in one that appears as
+the envelope sender, or in a "Sender:", "From:", or "Reply-To:" header
+in the message itself.
+
+=item B<--man>
+
+Prints the full documentation in the Unix `manpage' style.
+
+=item B<--redeliver>
+
+Specify this to move message files given on the command line, as
+opposed to supplied on the standard input.  This is helpful when a
+previous invocation has misfiled something.
+
+=item B<--notest>
+
+=item B<--test>
+
+When C<--test> is specified, the new message file is not created.  The
+default is C<--notest>.  B<WARNING:> Specifying C<--test> is
+guaranteed to lose mail when used on a live email address; this is
+really only useful with C<--redeliver>.
+
+=item B<--usage>
+
+Prints just the L<"SYNOPSIS"> section of this documentation.
+
+=item B<--verbose>
+
+Prints debugging information if specified.
+
+=item B<--whitelist>
+
+Names a file of whitelisted senders; if the message has not been
+blacklisted, or deadlisted, we finally check for whitelisting.  If the
+message sender is whitelisted, then the message is processed normally,
+either through the default F<.qmail> file or to the default
+F<Maildir>.
+
+If the message fails the whitelist, it is processed according to a
+F<.qmail-grey> file if that exists, else a F<.qmail-spam> file if that
+exists.
+
+Otherwise we must fall back to the normal default F<.qmail> file or to
+the default F<Maildir>.  As before, a sender address in one that
+appears as the envelope sender, or in a "Sender:", "From:", or
+"Reply-To:" header in the message itself.
+
+=back
+
+=head1 BUGS
+
+If you find any, please let me know.
+
+=head1 COPYRIGHT
+
+ Copyright (C) 2003-2021 by Bob Rogers <rogers@rgrjr.dyndns.org>.
+ This script is free software; you may redistribute it and/or modify it
+ under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
+
+=cut
