@@ -19,9 +19,11 @@ my $debug_p = 0;
 # "\S*" instead of "\S+" because bounces get "<>" as the sender address.  We
 # just want to get to the DOW to help eliminate false hits.
 my $from_line_regexp = '^From \S* +(Sun|Mon|Tue|Wed|Thu|Fri|Sat) ';
+my @target_headers;
 
 GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
-	   'verbose|v+' => \$debug_p)
+	   'verbose|v+' => \$debug_p,
+	   'header=s' => \@target_headers)
     or pod2usage(2);
 pod2usage(2) if $usage;
 pod2usage(1) if $help;
@@ -30,10 +32,13 @@ pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 ### Subroutines.
 
 my %addresses;
+@target_headers = qw(Sender From Reply-To)
+    unless @target_headers;
+my $target_header_regexp = '^(' . join('|', @target_headers) . '): +';
 sub process_header_lines {
     for (@_) {
 	next
-	    unless /^(Sender|From|Reply-To): */i;
+	    unless /$target_header_regexp/io;
 	s///i;
 	my $address = (/<([^>]+)>/ ? $1 : $_);
 	$address =~ s/\(.*\)//g;
@@ -155,6 +160,15 @@ two words (e.g. C<--line 100>) or in one word separated by an "="
 (e.g. C<--line=100>), and "-" can be used instead of "--".
 
 =over 4
+
+=item B<--header>
+
+Specifies a header to search for addresses.  The header name should be
+specified without the trailing colon.  Case is not significant.
+Multiple header names may be separated with "|" (which must be escaped
+or quoted to protect it from interpretation by the shell) or specified
+in multiple C<--header> options.  If not specified, the default
+headers are "Sender", "From", and "Reply-To".
 
 =item B<--help>
 
