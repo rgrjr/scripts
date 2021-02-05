@@ -26,8 +26,7 @@ backup-scripts = backup.pl backup-dbs.pl clean-backups.pl cd-dump.pl \
 root-scripts = xauth-local-host
 log-scripts = find-net-mounts.pl
 # mail manipulation scripts.
-mail-scripts = mbox-grep.pl mbox2maildir.pl no-such-user.pl \
-		email/forged-local-address.pl
+mail-scripts = mbox-grep.pl mbox2maildir.pl email/forged-local-address.pl
 # installation of various things, including these guys.
 install-scripts = install.pl copy-tree substitute-config.pl
 # utility scripts for version control systems.

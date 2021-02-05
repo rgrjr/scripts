@@ -94,9 +94,6 @@ format) to Maildir.
 
    * mbox-grep.pl -- search for regexps in mbox files.
 
-   * no-such-user.pl -- return an "address no longer valid" bounce
-message via the "sendmail -f" interface.
-
    * qmail-deliver.pl -- deliver a message the way that qmail-local
 does, with extra hacks for whitelisting and blacklisting.
 
