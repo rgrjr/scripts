@@ -35,8 +35,6 @@ vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 # random stuff that doesn't belong anywhere else.
 misc-scripts =	sdiff.pl html-diff.pl split-discord-html.pl
 perl-modules = 
-# firewall-scripts must go into /etc/init.d to be useful.
-firewall-scripts = paranoid firewall
 
 all:
 	@echo Nobody here but us scripts.
@@ -293,9 +291,6 @@ diff:
 		diff -u ${bin-directory}/$$file $$file; \
 	    fi; \
 	done
-
-install-firewall:
-	${INSTALL} -m 555 ${firewall-scripts} /etc/init.d
 
 ### Other oddments.
 

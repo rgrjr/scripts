@@ -99,9 +99,18 @@ does, with extra hacks for whitelisting and blacklisting.
 
 Other stuff:
 
+   * firewall -- Firewall script for /etc/init.d from when I was using
+my GNU/Linux system as a firewall/router from 1999 until our cable modem
+usurped all of that in 2013.  It is no longer maintained and I keep it
+around only for historical reference.  (At work I maintained a similar
+firewall/router system through late 2020.)
+
    * html-diff.pl -- Make sense of unidiffs of HTML by splitting
 mismatched lines into tokens and then consolidating stretches of
 matching tokens and text, and reporting only the unmatched tokens.
+
+   * paranoid -- Early boot firewall script for /etc/init.d; see the
+"firewall" script above.
 
    * sdiff.pl -- Run diff on two files, either of which may be remote,
 fetched via scp.
