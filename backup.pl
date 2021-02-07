@@ -20,6 +20,11 @@ BEGIN {
 
 use Getopt::Long;
 use Pod::Usage;
+use Date::Format;
+
+# Backups are dated in 8-digit ISO date format, e.g. 20210208.
+# This can't be an option because the other backup tools depend on it.
+use constant DATE_FORMAT => '%Y%m%d';
 
 my $VERSION = '2.2';
 
@@ -33,7 +38,7 @@ my $dump_name = '';
 my $dump_dir = '';
 my $destination_dir = '';
 my $dump_volume_size = '';
-my ($mount_point, $level);
+my ($target, $level);
 # We want to use full pathnames for these programs (which are not yet covered by
 # options) so that we don't have to rely on $ENV{'PATH'} being set up correctly,
 # e.g. by cron.  See also the maybe_find_prog sub, below.
@@ -43,6 +48,14 @@ my $dar_p = 1;
 my ($dump_program, $restore_program);
 
 ### Subroutines.
+
+sub device_of {
+    # Return the device of the named file/directory.
+    my ($file_name) = @_;
+
+    my ($device) = stat($file_name);
+    return $device;
+}
 
 sub do_or_die {
     # Utility function that executes the args and insists on success.  Also
@@ -167,7 +180,7 @@ GetOptions('date=s' => \$file_date,
 	   'dest-dir=s' => \$destination_dir,
 	   'test+' => \$test_p, 'verbose+' => \$verbose_p,
 	   'volsize=i' => \$dump_volume_size,
-	   'mount-point|partition=s' => \$mount_point,
+	   'target|mount-point|partition=s' => \$target,
 	   'dump-program=s' => \$dump_program,
 	   'restore-program=s' => \$restore_program,
 	   'dar!' => \$dar_p,
@@ -204,18 +217,18 @@ else {
 }
 
 # Now figure out the options about the dump itself.
-$mount_point = shift(@ARGV)
-    if ! $mount_point && @ARGV;
-if (! $mount_point) {
-    pod2usage("$0:  Missing --mount-point or positional <mount-point> arg.");
+$target = shift(@ARGV)
+    if ! $target && @ARGV;
+if (! $target) {
+    pod2usage("$0:  Missing --target or positional <target> arg.");
 }
-elsif (-b $mount_point) {
+elsif (-b $target) {
     # It's actually a partition.
     my ($part, $mount)
-	= split(' ', `$grep_program "^$mount_point " /etc/mtab`);
-    pod2usage("$0:  '$mount_point' is not a mounted partition.")
+	= split(' ', `$grep_program "^$target " /etc/mtab`);
+    pod2usage("$0:  '$target' is not mounted.")
 	unless $mount && -d $mount;
-    $mount_point = $mount;
+    $target = $mount;
 }
 
 # [note that we have to check for defined-ness, since 0 is a valid backup level.
@@ -227,7 +240,7 @@ pod2usage("$0:  --level (or positional <level>) arg must be a single digit.")
 pod2usage("$0:  '".shift(@ARGV)."' is an extraneous positional arg.")
     if @ARGV;
 
-### Compute some defaults.
+### Default and validate $destination_dir and $dump_dir.
 
 $destination_dir ||= '.';
 pod2usage("$0:  --dest-dir value must be an existing writable directory.")
@@ -243,25 +256,28 @@ if (! $dump_dir) {
 	    or die("$0:  Could not create temp dir '$dump_dir':  $!");
     }
 }
-pod2usage("$0:  --dest-dir must be different from --dump-dir.")
-    if $dump_dir eq $destination_dir;
-pod2usage("$0:  --dump-dir value '$dump_dir' must be "
-	  ."an existing writable directory.")
-    unless -d $dump_dir && -w $dump_dir;
-# [should make sure that $destination_dir and $dump_dir are on the same
-# partition if both are specified.  -- rgr, 17-Nov-02.]
+elsif (! (-d $dump_dir && -w $dump_dir)) {
+    pod2usage("$0:  --dump-dir value '$dump_dir' must be "
+	      ."an existing writable directory.");
+}
+elsif ($dump_dir eq $destination_dir) {
+    pod2usage("$0:  --dest-dir must be different from --dump-dir.");
+}
+elsif (device_of($dump_dir) ne device_of($destination_dir)) {
+    pod2usage("$0:  --dest-dir must be on the same physical "
+	      . "device as --dump-dir.");
+}
 
-### Compute the dump file name(s).
+### Compute the dump file name.
 
 if (! $prefix) {
-    $prefix = $mount_point;
+    $prefix = $target;
     $prefix =~ s@.*/@@;
     $prefix = 'sys' unless $prefix;
 }
 if (! $dump_name) {
     # Must make our own dump name.
-    chomp($file_date = `$date_program '+%Y%m%d'`)
-	# [bug:  should use a perl module for this.  -- rgr, 5-Mar-08.]
+    $file_date = time2str(DATE_FORMAT, time())
 	unless $file_date;
     $dump_name = "$prefix-$file_date-l$level";
 }
@@ -272,7 +288,7 @@ my $orig_dump_name = $dump_name;
 check_for_existing_dump_files("$dump_name.1.dar",
 			      $dump_dir, $destination_dir);
 my $dump_file = "$dump_dir/$dump_name";
-print("Backing up $mount_point to $dump_file.\n");
+print("Backing up $target to $dump_file.\n");
 umask(066);
 my @dump_names;
 my $reference_file_stem;
@@ -310,7 +326,7 @@ do_or_die(ignore_code => 11,
 	  $dump_program, '-c', $dump_file, @dar_options,
 	  ($dump_volume_size ? ('-s', $dump_volume_size.'K') : ()),
 	  ($reference_file_stem ? ('-A', $reference_file_stem) : ()),
-	  '-R', $mount_point);
+	  '-R', $target);
 # Now figure out how many slices (dump files) it wrote.
 opendir(my $dir, $dump_dir)
     or die;
@@ -332,8 +348,7 @@ print "Done creating $dump_file; verifying . . .\n";
 # Since this just means that those files will still need saving in the next
 # backup, that is not a problem.
 do_or_die(ignore_code => 5,
-	  $dump_program, '-d', $dump_file, @dar_verify_options,
-	  '-R', $mount_point);
+	  $dump_program, '-d', $dump_file, @dar_verify_options, '-R', $target);
 
 ### Rename dump files to their final destination.
 
@@ -365,16 +380,14 @@ backup.pl -- Automated interface to create "dar" backups.
 
 =head1 SYNOPSIS
 
-    backup.pl [--test] [--verbose] [--usage|-?] [--help]
-              [--date=<string>] [--name-prefix=<string>]
-              [--file-name=<name>]
-	      [--dump-program=<dump-prog>] [--[no]dar]
-	      [--restore-program=<restore-prog>]
-	      [--gzip | -z] [--bzip2 | -y] [ --compression[=[algo:]level] ]
-	      [--dest-dir=<destination-dir>] [--dump-dir=<dest-dir>]
-              [--volsize=<max-vol-size>]
-	      [--mount-point=<dir> | <dir> ]
-              [--level=<digit> | <level>]
+    backup.pl [ --test ] [ --verbose ] [ --usage|-? ] [ --help ]
+              [ --date=<string> ] [ --name-prefix=<string> ]
+              [ --file-name=<name> ]
+              [ --dump-program=<dump-prog> ] [ --[no]dar ]
+              [ --gzip | -z ] [ --bzip2 | -y ] [  --compression[=[algo:]level] ]
+              [ --dest-dir=<destination-dir> ] [ --dump-dir=<dest-dir> ]
+              [ --volsize=<max-vol-size> ]
+              [ --target=<dir> | <dir> ] [ --level=<digit> | <level> ]
 
 =head1 DESCRIPTION
 
@@ -383,7 +396,7 @@ archiver") program.
 
 The product of this procedure is a set of dump files on disk somewhere
 that has been verified against the backed-up directory.  More than one
-file may be required (dar calls these "slices")
+file may be required (C<dar> calls these "slices")
 if the dump is to be written to offline media; in
 that case, use the C<--volsize> option to limit the maximum file size.
 Optionally, the file can be moved to somewhere else in the destination
@@ -410,7 +423,8 @@ of the backups made for a given directory.
 
 The date the backup was made.  This is normally the current date in
 "YYYYMMDD" format, e.g. '20021021', but can be overridden via the
-C<--date> option.
+C<--date> option.  (But be aware that the other backup tools,
+e.g. C<vacuum.pl> and C<show-backups.pl>, expect eight-digit dates.)
 
 =item 3.
 
@@ -547,20 +561,6 @@ supposed to pick up completed dumps.  The C<--dump-dir> defaults to
 C<tmp> underneath C<--dest-dir>, and must be on the same partition as
 C<--dest-dir>; it is created if it does not exist.
 
-=item B<--mount-point>
-
-The name of a directory or block-special device file that is to be
-backed up, e.g. F</home> or F</dev/sda5>.  There is no default;
-this option must be specified.  A positional directory argument is
-also supported for backward compatibility.
-
-Note that if a block-special device file is given, it must be mounted,
-since dar can only operate on mounted directories.
-
-=item B<--partition>
-
-Synonym for C<--mount-point>.
-
 =item B<--level>
 
 A digit for the backup level.  Level 0 is a full backup, level 9 is
@@ -568,14 +568,40 @@ the least inclusive incremental backup.  For more details, see
 L<dar(1)>, or my "System backups" page
 (L<http://www.rgrjr.com/linux/backup.html>).  The level defaults to
 9.  A positional level argument is also supported for backward
-compatibility.
+compatibility, but to use it the C<--partition> argument must also be
+supplied positionally.
+
+=item B<--mount-point>
+
+Synonym for C<--target>.
+
+=item B<--partition>
+
+Synonym for C<--target>.
+
+=item B<--target>
+
+The name of a directory that is to be
+backed up, e.g. F</home>.  There is no default;
+this option must be specified.  A positional directory argument is
+also supported for backward compatibility.
+
+For backward compatibility, one may name a block-special device file
+for a mounted partition instead of a directory, e.g. F</dev/sda5>.
+Note that it must be mounted,
+since C<dar> can only operate on mounted directories.
+
+=item B<--usage>
+
+Prints just the L<"SYNOPSIS"> section of this documentation.
 
 =item B<--volsize>
 
 Specifies the maximum dump file (slice) size.  This is useful because
 C<mkisofs> imposes a limit of 2147483646 bytes (= 2^31-2) on files
-burned to DVD-ROM; see the "DVDs created with too large files" thread
-at
+burned to DVD-ROM.  A C<--volsize> of 1527253 allows three slices to
+fit on a DVD with a little room left over.  See the "DVDs created with
+too large files" thread at
 L<http://groups.google.com/group/mailing.comp.cdwrite/browse_thread/thread/423a083cc7ad8ee8/fecd18c0f8507901%23fecd18c0f8507901>
 for details.
 
@@ -603,24 +629,24 @@ If you find any more, please let me know.
 
 =over 4
 
-=item dar home page L<http://dar.linux.free.fr/>
+=item C<dar> home page L<http://dar.linux.free.fr/>
 
-=item L<dar(1)>
+=item C<dar> "man" page L<dar(1)>
 
 =item System backups (L<http://www.rgrjr.com/linux/backup.html>)
 
-=item C<cd-dump.pl> (L<http://www.rgrjr.com/linux/cd-dump.pl.html>)
+=item C<cd-dump.pl> (L<http://www.rgrjr.com/linux/cd-burning.html#cd-dump.pl>)
 
 =back
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2017 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2000-2020 by Bob Rogers C<< <rogers@rgrjr.dyndns.org> >>.
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
+Bob Rogers C<< <rogers@rgrjr.dyndns.org> >>
 
 =cut
