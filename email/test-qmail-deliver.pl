@@ -178,3 +178,27 @@ deliver_one('baoguan.text', 'spam', 9,
 	    blacklist => 'list.tmp',
 	    sender => 'baoguan@hotmail.com');
 ok(2 == count_messages(), "blacklisted sender not delivered to Maildir");
+
+__END__
+
+=head1 NAME
+
+test-qmail-deliver.pl
+
+=head1 SYNOPSIS
+
+    perl email/test-qmail-deliver.pl
+
+=head1 DESCRIPTION
+
+This script tests the C<qmail-deliver.pl> script.  It first does a
+"chdir" to the F<email/> subdirectory, then creates a series of
+F<.qmail> files and maildirs; for the latter it needs the
+C<maildirmake> program on the path.
+
+It then alternates between calling C<qmail-deliver.pl> to deliver
+messages sourced from files and counting messages in maildirs to be
+sure that they did (or didn't) get to the appropriate maildirs.  The
+C<--redeliver> feature is also tested.
+
+=cut
