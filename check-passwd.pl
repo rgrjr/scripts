@@ -27,3 +27,46 @@ for my $id (keys(%names_from_id)) {
     print "$id is duplicated for ", join(', ', @$names), ".\n"
 	if @$names > 1;
 }
+
+__END__
+
+=head1 NAME
+
+check-passwd.pl -- check (e.g.) /etc/passwd for duplicates
+
+=head1 SYNOPSIS
+
+    check-passwd.pl /etc/passwd
+
+=head1 DESCRIPTION
+
+Given a colon-delimited file of
+
+	name:id:other:stuff:...
+
+on the standard input or command line, such as C</etc/passwd> or
+C</etc/group>, report duplicate names or IDs.  Do not try to supply
+both C</etc/passwd> and C</etc/group> on the same invocation, or
+you'll get lots of spurious duplications.
+
+=head1 SEE ALSO
+
+=over 4
+
+=item L<passwd(5)>
+
+=item L<group(5)>
+
+=back
+
+=head1 AUTHOR
+
+Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2018 by Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>.
+This script is free software; you may redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=cut
