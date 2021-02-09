@@ -301,11 +301,12 @@ There should also be a C<db_dump_overwrite_p>, for similar reasons.
 
 =head1 AUTHOR
 
-Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>
+Bob Rogers C<< <rogers@rgrjr.com> >>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2013 by Bob Rogers C<E<lt> rogers@rgrjr.com E<gt>>.
+Copyright (C) 2013 by Bob Rogers C<< <rogers@rgrjr.com> >>
+
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
