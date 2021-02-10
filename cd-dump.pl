@@ -37,11 +37,11 @@ my $diff_command = '/usr/bin/diff';
 my $cmp_command = '/usr/bin/cmp';
 my $mount_command = 'mount';
 my $unmount_command = 'umount';
-my $cd_mount_point;
+my $mount_point;
 
 # the CD-R and -RW disks are supposed to be 700MB, but leave a little room.
 # [backup.pl uses 695MB, so put the ceiling at 698MB.  -- rgr, 21-Oct-02.]
-my $cd_max_size = 715000;
+my $media_max_size = 715000;
 
 my @cdrecord_options = ();
 my @mkisofs_options = ();
@@ -53,7 +53,7 @@ my $help = 0;
 my $usage = 0;
 my $verbose_p = 0;
 my $test_p = 0;
-my $dvd_p = 0;
+my $dvd_p = 1;
 my $leave_mounted_p = 0;
 my $written_subdir = 'written';
 my $to_write_subdir = 'to-write';
@@ -74,9 +74,10 @@ sub make_option_forwarders {
     @result;
 }
 
-GetOptions('help' => \$help, 'man' => \$man, 'verbose+' => \$verbose_p,
-	   'test' => \$test_p, 'mount!' => \$leave_mounted_p,
-	   'cd-mount-point=s' => \$cd_mount_point,
+GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
+	   'verbose+' => \$verbose_p,
+	   'test!' => \$test_p, 'mount!' => \$leave_mounted_p,
+	   'mount-point|cd-mount-point=s' => \$mount_point,
 	   'dev=s' => \$dev_spec, 'dvd!' => \$dvd_p,
 	   'to-write-subdir=s' => \$to_write_subdir,
 	   'written-subdir=s' => \$written_subdir,
@@ -90,33 +91,33 @@ pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 # Check directories.
-if ($cd_mount_point) {
+if ($mount_point) {
     # already specified
 }
 elsif ($dev_spec =~ m@^/dev/(\S+)$@
        && -d "/media/$1") {
     # use the mount point that matches the device name.
-    $cd_mount_point = "/media/$1";
+    $mount_point = "/media/$1";
 }
 else {
     # look for a likely candidate.
     for my $mp (qw(/mnt/cdrom /media/cdrecorder /media/sr0)) {
 	if (-d $mp) {
 	    # found it.
-	    $cd_mount_point = $mp;
+	    $mount_point = $mp;
 	    last;
 	}
     }
 }
-die "$0:  Can't find written CD mount point; use --cd-mount-point to specify.\n"
-    unless $cd_mount_point;
-die "$0:  CD mount point '$cd_mount_point' does not exist.\n"
-    unless -d $cd_mount_point;
+die "$0:  Can't find written mount point; use --mount-point to specify.\n"
+    unless $mount_point;
+die "$0:  mount point '$mount_point' does not exist.\n"
+    unless -d $mount_point;
 die "No $to_write_subdir directory; died"
     unless -d $to_write_subdir;
 mkdir($written_subdir, 0700)
-        or die "Can't create ./$written_subdir/ directory:  $!"
-    unless -d './written';
+        or die "Can't create '$written_subdir' directory:  $!"
+    unless -d $written_subdir && -w $written_subdir;
 
 ### Subroutines.
 
@@ -161,8 +162,8 @@ if ($dvd_p) {
     $mkisofs_command = '/usr/bin/genisoimage'
 	if ! -x $mkisofs_command && -x '/usr/bin/genisoimage';
     $growisofs_p = $cdrecord_command =~ /growisofs$/;
-    # [single-sided DVDs are 4.7G; call it 4.5 for safety.  -- rgr, 28-Oct-05.]
-    $cd_max_size = 45000000;
+    # Single-sided DVDs are 4.7G.
+    $media_max_size = 47000000;
     # [this may be a peculiarity of my particular DVD burner, which cdrecord
     # identifies as a MAD DOG 'MD-16XDVD9A2' rev 1.F0.  in any case, it doesn't
     # handle track-at-once, which is why we need -tsize.  -- rgr, 28-Oct-05.]
@@ -210,15 +211,15 @@ elsif (! $dev_spec) {
 	    if $verbose_p;
     }
     elsif (@specs == 0) {
-	die "$0:  No CD burner available.\n";
+	die "$0:  No CD/DVD burner available.\n";
     }
     else {
-	die("$0:  Multiple CD burners available; must specify one of '",
+	die("$0:  Multiple CD/DVD burners available; must specify one of '",
 	    join("', '", @specs), "' to --dev.\n");
     }
 }
 
-# Check what's currently on the cd.  There are three interesting cases:
+# Check what's currently on the medium.  There are three interesting cases:
 #
 #   1. The CD is blank, so this is the first session.  In this case
 #      "cdrecord -msinfo" says 'Cannot read session offset' (though on stderr).
@@ -230,7 +231,7 @@ elsif (! $dev_spec) {
 # If somebody simply forgot to put in a blank disk, then cdrecord says "No disk
 # / Wrong disk!" (among other things).  But that falls neatly under the third
 # case, so all we care is that it *doesn't* say "Cannot read session offset."
-my $cd_used_estimate = 0;
+my $disk_used_estimate = 0;
 if (! $growisofs_p) {
     my $msinfo_command = "$cdrecord_command -dev=$dev_spec -msinfo 2>&1";
     chomp(my $msinfo = `$msinfo_command`);
@@ -248,7 +249,7 @@ if (! $growisofs_p) {
 	push(@mkisofs_options, '-C', $msinfo_data, '-M', $dev_spec);
 	push(@cdrecord_options, '-waiti');
 	my @temp = split(',', $msinfo_data);
-	$cd_used_estimate = $temp[1]*1.8;
+	$disk_used_estimate = $temp[1] * 1.8;
     }
     elsif ($test_p) {
 	# assume a blank disk.
@@ -272,18 +273,18 @@ die("$0:  Couldn't get disk size from ",
 
 # ensure that the data will fit.
 my $space_needed_estimate = 2*$disk_size;
-warn("$warn:  Estimate ${cd_used_estimate}K used, ",
+warn("$warn:  Estimate ${disk_used_estimate}K used, ",
      "${space_needed_estimate}K needed, with ${cd_max_size}K max.\n")
     if $verbose_p;
-die("$warn:  Not enough disk left:  ${cd_used_estimate}K used ",
+die("$warn:  Not enough disk left:  ${disk_used_estimate}K used ",
     "+ ${space_needed_estimate}K needed > ${cd_max_size}K max.\nDied")
-    if $cd_used_estimate+$space_needed_estimate > $cd_max_size;
+    if $disk_used_estimate+$space_needed_estimate > $media_max_size;
 
 ### all clear, write the disk.
 my $cmd
     = ($growisofs_p
        ? join(' ', $cdrecord_command,
-	      ($cd_used_estimate ? '-M' : '-Z'), $dev_spec,
+	      ($disk_used_estimate ? '-M' : '-Z'), $dev_spec,
 	      @mkisofs_options, $to_write_subdir)
        : join(' ', $mkisofs_cmd, $to_write_subdir,
 	      '|', $cdrecord_command, "-dev=$dev_spec",
@@ -297,10 +298,10 @@ system($cmd) == 0
 # now get rid of what we've written successfully.  if the disk is mountable,
 # then none of the possible error cases should die, as they are certainly not
 # fatal at this point: the data is there, or it isn't.
-ensure_mount($cd_mount_point);
+ensure_mount($mount_point);
 for my $file (@files_to_write) {
     my $to_write_file = "$to_write_subdir/$file";
-    my $cd_file = "$cd_mount_point/$file";
+    my $cd_file = "$mount_point/$file";
     if (! -r $cd_file) {
 	# [kludge for DAR, which creates files with two dots in the name;
 	# mkisofs changes the first to an underscore.  -- rgr, 27-Mar-08.]
@@ -325,8 +326,8 @@ for my $file (@files_to_write) {
 }
 
 # and leave the disk unmounted, if requested.
-system($unmount_command, $cd_mount_point) == 0
-    || warn "$warn:  '$unmount_command $cd_mount_point' failed:  $?"
+system($unmount_command, $mount_point) == 0
+    || warn "$warn:  '$unmount_command $mount_point' failed:  $?"
     unless $leave_mounted_p;
 # phew . . .
 exit(0);
@@ -339,14 +340,17 @@ cd-dump.pl -- Interface to `mkisofs' and `cdrecord' programs.
 
 =head1 SYNOPSIS
 
-    cd-dump.pl [--help] [--man] [--verbose] [--test] [--[no]dvd]
-               [ --dev=x,y,z ] [--[no]mount] [--max-iso9660-filenames]
-               [--relaxed-filenames] [-V=<volname>] [--speed=n]
+    cd-dump.pl [ --help ] [ --man ] [ --usage ] [ --verbose ]
+               [ --[no]test ] [ --[no]mount ] [ --[no]dvd ]
+               [ --dev=x,y,z ] [ --mount-point=<dir> ]
+               [ --max-iso9660-filenames ] [ --relaxed-filenames ]
+               [ --to-write-subdir=<dir> ] [ --written-subdir=<dir> ]
+               [ -V=<volname> ] [ --speed=n ]
 
 =head1 DESCRIPTION
 
 C<cd-dump.pl> is a utility that uses C<mkisofs> and C<cdrecord> to
-burn files to CD.  It does the following:
+burn files to CD or DVD.  It does the following:
 
 =over 4
 
@@ -358,7 +362,7 @@ a multisession CD.
 
 =item 2.
 
-Mounts the CD and compares the data to the originals.
+Mounts the CD or DVD medium and compares the data to the originals.
 
 =item 3.
 
@@ -377,6 +381,40 @@ options, which it passes along.
 
 =over 4
 
+=item B<--cd-mount-point>
+
+Synonym for C<--mount-point>.
+
+=item B<--dev>
+
+Specifies the SCSI device, needed by C<cdrecord> to address the
+drive.  If not specified, C<cd-dump.pl> looks through all SCSI devices
+listed by C<cdrecord -scanbus>; if it finds exactly one that appears
+to be a CD burner, it uses that device.  See the description of the
+C<scanbus> option on the C<cdrecord> "man" page for details.
+
+=item B<--nodvd>
+
+=item B<--dvd>
+
+If writing a DVD (the default), we set the maximum media size to
+4.7GB.
+
+If F</usr/bin/cdrecord> does not exist or is not executable,
+C<cd-dump.pl> searches for C<wodim>, C<growisofs>, and C<cdrecord-dvd>
+in F</usr/bin> in that order, and fails if none are found.  Similarly,
+it switches to F</usr/bin/genisoimage> if F</usr/bin/mkisofs> is not
+there and it can run F<genisoimage>.  It also specifies the C<-dao>
+option to the burn program if that is not C<growisofs>.
+
+Because I have had problems with the driver failing to recognize the
+new contents of the disk after burning, it also ejects the disk before
+mounting it for verification.  This worked fine for the original DVD
+burner I used that had a motorized tray, but those are few and far
+between these days, so for most DVD devices it will eject and then
+report a failure to mount.  In that case, the tray must be reloaded
+manually and the quality of the burn verified by hand.
+
 =item B<--help>
 
 Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
@@ -385,66 +423,63 @@ Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
 
 Prints the full documentation in the Unix `manpage' style.
 
-=item B<--verbose>
-
-Turns on verbose message output.  Repeating this option results in
-greater verbosity.
-
-=item B<--test>
-
-Specifies testing mode, in which C<cd-dump.pl> goes through all the
-motions, but doesn't actually write anything on the CD, or touch the
-hard disk file system.  This implies some verbosity.
-
-=item B<--dvd>
-
-Specifies writing to a DVD burner.  This affects the size of images
-that can be written, alters where C<cd-dump.pl> expects to find the
-burner program, and selects the C<-dao> option.
-
-[need much more detail, cdrecord-ProDVD link.  -- rgr, 5-Mar-06.]
-
-=item B<--mount>
-
-=item B<--nomount>
-
-If C<--mount> is specified, leaves the newly written disk mounted.
-The default is C<--nomount>.
-
 =item B<--max-iso9660-filenames>
 
 Passed directly to C<mkisofs>.
 
+=item B<--nomount>
+
+=item B<--mount>
+
+If C<--mount> is specified, leaves the newly written disk mounted.
+The default is C<--nomount>.
+
+=item B<--mount-point>
+
+Specifies the directory where the drive will be mounted, for
+verification.
+
 =item B<--relaxed-filenames>
 
 Passed directly to C<mkisofs>.
-
-=item B<--V>
-
-Passed directly to C<mkisofs>.
-
-=item B<--dev>
-
-Specifies the SCSI device, needed by C<cdrecord> to address the CD
-drive.  If not specified, C<cd-dump.pl> looks through all SCSI devices
-listed by C<cdrecord -scanbus>; if it finds exactly one that appears
-to be a CD burner, it uses that device.  See the description of the
-C<scanbus> option on the C<cdrecord> "man" page for details.
 
 =item B<--speed>
 
 Write speed, as a multiple of the "standard" read speed for an audio
 disk.  Passed directly to C<cdrecord>, which defines the default.
 
+=item B<--notest>
+
+=item B<--test>
+
+Specifies testing mode, in which C<cd-dump.pl> goes through all the
+motions, but doesn't actually write anything on the CD, or touch the
+hard disk file system.  This implies some verbosity.  The default is
+C<--notest>.
+
 =item B<--to-write-subdir>
 
 Defines the directory of files and subdirectories that need to be
 written.  If not specified, "./to_write/" is used.
 
+=item B<--usage>
+
+Prints just the L<"SYNOPSIS"> section of this documentation.
+
+=item B<--V>
+
+Passed directly to C<mkisofs>.
+
+=item B<--verbose>
+
+Prints debugging information if specified.  May be specified multiple
+times to get more debugging information (but the extra information is
+usually pretty obscure).
+
 =item B<--written-subdir>
 
 Defines the place where files that have successfully been written
-should be moved (via rename).  This should be on the same partition as
+should be moved (via rename).  This must be on the same partition as
 the C<--to-write-subdir>, so that files can be efficiently renamed.
 If not specified, "./written/" is used.
 
@@ -461,7 +496,7 @@ the C</usr/bin/> directory.
 
 =head1 KNOWN BUGS
 
-Comparison of files written to CD versus originals will fail unless
+Comparison of files written to disk versus originals will fail unless
 you supply both the C<--max-iso9660-filenames> and
 C<--relaxed-filenames> arguments (both passed to C<mkisofs>) on the
 command line.  These arguments should be hardwired.
@@ -480,11 +515,7 @@ If you find any more, please let me know.
 
 =over 4
 
-=item The C<backup.pl> script (L<http://www.rgrjr.com/linux/backup.pl.html>).
-
-=item L<dump(8)>
-
-=item L<restore(8)>
+=item Burning DVDs and CDs (L<http://www.rgrjr.com/linux/cd-burning.html>)
 
 =item System backups (L<http://www.rgrjr.com/linux/backup.html>)
 
@@ -492,12 +523,12 @@ If you find any more, please let me know.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2002-2006 by Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>.
+Copyright (C) 2002-2021 by Bob Rogers C<< <rogers@rgrjr.dyndns.org> >>
 This script is free software; you may redistribute it
 and/or modify it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
+Bob Rogers C<< <rogers@rgrjr.dyndns.org> >>
 
 =cut
