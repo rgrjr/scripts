@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 54;
+use Test::More tests => 62;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -16,7 +16,7 @@ for my $dir (qw(spam emacs Maildir)) {
     system(qq{rm -fr $dir})
 	if -d $dir;
 }
-unlink(qw(.qmail-spam .qmail-emacs));
+unlink(qw(.qmail-spam .qmail-emacs .qmail-dead));
 ok(0 == system('maildirmake Maildir'), "created Maildir")
     or die "no 'maildirmake' program?\n";
 
@@ -42,10 +42,15 @@ sub count_messages {
 sub deliver_one {
     my ($message_file, $maildir, $expected_messages, %options) = @_;
     my $exit_code = ($options{exit_code} || 0) << 8;
+    $options{network_prefix} ||= '10.0.0';
     local $ENV{SENDER} = $options{sender} || 'rogers@rgrjr.dyndns.org';
     local $ENV{LOCAL} = $options{localpart};
 
-    my $command = q{perl -Mlib=.. qmail-deliver2.pl};
+    my $command
+	= join(' ', q{perl -Mlib=.. ./qmail-deliver.pl --relay 69.164.211.47},
+	       q{--add-local rgrjr.dyndns.org --add-local rgrjr.com});
+    $command .= " --network-prefix=$options{network_prefix}"
+	if $options{network_prefix};
     $command .= " --test"
 	if $options{test_p};
     $command .= " --redeliver"
@@ -178,6 +183,20 @@ deliver_one('baoguan.text', 'spam', 9,
 	    blacklist => 'list.tmp',
 	    sender => 'baoguan@hotmail.com');
 ok(2 == count_messages(), "blacklisted sender not delivered to Maildir");
+
+## Test local address checking.
+system('echo jan@rgrjr.dyndns.org >> list.tmp');
+deliver_one('from-jan.text', 'Maildir', 3,
+	    network_prefix => '192.168.57',
+	    whitelist => 'list.tmp');
+deliver_one('from-jan-2.text', 'Maildir', 4,
+	    network_prefix => '192.168.57',
+	    whitelist => 'list.tmp');
+deliver_one('from-jan-3.text', 'Maildir', 5,
+	    network_prefix => '192.168.57',
+	    whitelist => 'list.tmp');
+deliver_one('from-debra.text', 'Maildir', 6,
+	    network_prefix => '65.54.168');
 
 __END__
 

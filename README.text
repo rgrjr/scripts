@@ -94,8 +94,9 @@ format) to Maildir.
 
    * mbox-grep.pl -- search for regexps in mbox files.
 
-   * qmail-deliver.pl -- deliver a message the way that qmail-local
-does, with extra hacks for whitelisting and blacklisting.
+   * qmail-deliver.pl (in email/qmail-deliver.pl) -- deliver a message
+the way that qmail-local does, with extra hacks for whitelisting and
+blacklisting.
 
 Other stuff:
 
@@ -121,3 +122,6 @@ browser.
 
    * week-avg.pl -- Given a tab-delimited table of daily dates and
 numbers, produce a corresponding table of weekly averages.
+
+   * Net::Block (in email/Net/Block.pm) -- Minimal IPv4 netblock
+representation, for testing which addresses are included.

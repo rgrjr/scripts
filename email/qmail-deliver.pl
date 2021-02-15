@@ -22,6 +22,7 @@ my $test_p = 0;
 my $verbose_p = 0;
 my $redeliver_p = 0;
 my (@whitelists, @blacklists, @host_deadlists, @deadlists);
+my @forged_local_args;
 
 # Selection of /usr/include/sysexits.h constants.
 use constant EX_OK => 0;
@@ -36,7 +37,9 @@ GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'deadlist=s' => \@deadlists,
 	   'host-deadlist=s' => \@host_deadlists,
 	   'whitelist=s' => \@whitelists,
-	   'blacklist=s' => \@blacklists)
+	   'blacklist=s' => \@blacklists,
+	   make_forged_local_pushers
+	       (qw(network-prefix=s add-local=s relay-ip=s)))
     or pod2usage(2);
 pod2usage(2) if $usage;
 pod2usage(1) if $help;
@@ -48,7 +51,22 @@ if ($verbose_p) {
 
 ### Subroutines.
 
+sub make_forged_local_pushers {
+    # Given a list of GetOptions keywords, provide them with subs that pass the
+    # values on the @forged_local_args list.
+    map {
+	my $fla_arg = $_;
+	$fla_arg =~ s/=.*//;
+	$fla_arg = "--$fla_arg";	# Do this once.
+	($_ => sub { push(@forged_local_args, $fla_arg => $_[1]); });
+    } @_;
+}
+
 sub parse_headers {
+    # Given a $message_source stream, read the email headers from it, plus any
+    # mbox-format "From " line it may include, and Use Mail::Header to parse
+    # the headers, returning the parsed headers, from line, and a string
+    # containing all unparsed headers as three values.
     my ($message_source) = @_;
 
     if (! ref($message_source)) {
@@ -81,6 +99,14 @@ sub parse_headers {
 }
 
 sub write_maildir_message {
+    # Given the name of a maildir (ending with a "/"), parsed headers, a string
+    # containing all unparsed headers, and a "message source" which is either a
+    # (blessed) stream with the rest of the message or an (unblessed) file name
+    # string, deliver the message by copying it into a unique "$maildir/new"
+    # file.  If there is a "$maildir/msgid" subdirectory and the message has a
+    # "Message-ID:" header value, then create a file with the name of the value
+    # if it does not already exist, else assume it's a duplicate and skip the
+    # delivery.
     my ($maildir, $head, $headers, $message_source) = @_;
 
     # Validate maildir.
@@ -116,19 +142,16 @@ sub write_maildir_message {
     chomp(my $host = `hostname`);
     my $temp_file_name = $maildir . 'tmp/' . join('.', time(), "P$$", $host);
     # warn "$tag:  Writing to $temp_file_name.\n";
-    my $inode;
     if (ref($message_source)) {
 	# Copy from the stream.
 	open(my $out, '>', $temp_file_name) or do {
 	    warn "$tag:  can't write temp file '$temp_file_name':  $!";
 	    exit(EX_TEMPFAIL);
 	};
-	print $out ("X-Delivered-By: $0 ($$)\n", $headers);
+	print $out ("X-Delivered-By: $tag\n", $headers);
 	while (<$message_source>) {
 	    print $out $_;
 	}
-	$inode = (stat($temp_file_name))[1];
-	close($out);
     }
     elsif ($redeliver_p) {
 	# Move the file.
@@ -137,14 +160,12 @@ sub write_maildir_message {
 	    unless $test_p;
 	die("$0:  Move of '$message_source' to '$temp_file_name' failed:  $!")
 	    if $result;
-	$inode = (stat($temp_file_name))[1];
     }
     else {
 	# Copy the file.
 	my $result = system('cp', $message_source, $temp_file_name);
 	die("$0:  Copy of '$message_source' to '$temp_file_name' failed:  $!")
 	    if $result;
-	$inode = (stat($temp_file_name))[1];
     }
 
     # Punt if just testing.
@@ -155,6 +176,7 @@ sub write_maildir_message {
     }
 
     # Rename uniquely.
+    my $inode = (stat($temp_file_name))[1];
     my $file_name = ($maildir . 'new/'
 		     . join('.', time(), "I${inode}P$$", $host));
     rename($temp_file_name, $file_name);
@@ -163,6 +185,13 @@ sub write_maildir_message {
 }
 
 sub process_qmail_file {
+    # Given the name of a "dot-qmail" file, the message parsed headers, a
+    # string containing all unparsed headers, and a "message source" which is
+    # either a (blessed) stream with the rest of the message or an (unblessed)
+    # file name string, open the dot-qmail file and process its directives line
+    # by line.  Unfortunately, all we can handle are maildirs and delivery to
+    # /dev/null; piped commands are ignored, and all others are flagged as
+    # errors.
     # [this will fail in the case of multiple delivery.  -- rgr, 9-Sep-16.]
     my ($qmail_file, $head, $message_headers, $message_source) = @_;
 
@@ -193,7 +222,9 @@ sub process_qmail_file {
 }
 
 sub find_localpart {
-    # Pull a localpart from a Delivered-To or X-Original-To header.
+    # Pull a localpart from a Delivered-To or X-Original-To header.  This is
+    # our fallback for redelivery, since $ENV{EXTENSION} won't be defined but
+    # $ENV{RECIPIENT} gets stored in a "Delivered-To:" header.
     my ($head) = @_;
 
     for my $header_name (qw(delivered-to x-original-to)) {
@@ -221,13 +252,17 @@ sub find_extension {
 
 sub address_forged_p {
     # Returns true if forged-local-address.pl says it claims to be local but
-    # came from somewhere else..
+    # came from somewhere else.
     my ($header) = @_;
 
+    return
+	# If we don't know what's local, we can't check.
+	unless @forged_local_args;
     # Get forged-local-address.pl from the same place we are running.
     my $fla = $0;
     $fla =~ s@[^/]*$@forged-local-address.pl@;
-    open(my $out, "| $fla --network-prefix 10.0.0 --add-local rgrjr.dyndns.org --add-local rgrjr.com")
+    my $fla_cmd = join(' ', "| $fla", @forged_local_args);
+    open(my $out, $fla_cmd)
 	or die "could not open $fla";
     print $out $header, "\n";
     my $result;
@@ -236,10 +271,11 @@ sub address_forged_p {
     # treat the message as forged.
     if (close($out)) {
 	# Success.
-	$result = ! $?;
+	return $result = ! $?;
     }
     elsif (! $!) {
 	# Nonzero exit, which (in shell land) means false (not a forgery).
+	return;
     }
     else {
 	# Some other error must have happened when running the piped command;
@@ -250,6 +286,10 @@ sub address_forged_p {
 }
 
 sub check_lists {
+    # Given the parsed email headers, return an existing dot-qmail file that
+    # should be used for this message based on address matching against the
+    # global lists.  We assume that .qmail-spam exists, so this should not be
+    # called unless that file is known to exist.
     my ($head) = @_;
 
     my $find_addresses = sub {
@@ -349,16 +389,19 @@ sub check_lists {
 }
 
 sub deliver_message {
-    my ($message_source, $use_environment_p) = @_;
+    # Given a message source (either a file name or a stream), figure out what
+    # to do with it, possibly finding an appropriate qmail file if a to/from
+    # address is found on a list, looking for the dot-qmail file for an
+    # extension if the destination has one, else doing the usual dot-qmail or
+    # Maildir/ fallback.
+    my ($message_source) = @_;
 
     # Read the headers to find where this message was originally addressed.
     my ($head, $mbox_from_line, $header) = parse_headers($message_source);
-    my $sender
-	= $use_environment_p && exists($ENV{SENDER}) ? $ENV{SENDER} : 'none';
 
     # Check for forgery, whitelisting, blacklisting, and/or deadlisting.
     my $qmail_file;
-    if ($sender && -r '.qmail-spam') {
+    if (-r '.qmail-spam') {
 	my $file;
 	if (address_forged_p($header)) {
 	    # Found spam; redirect it.
@@ -398,7 +441,7 @@ if (@ARGV) {
 }
 else {
     # Normal delivery of a message on STDIN.
-    deliver_message(\*STDIN, 1);
+    deliver_message(\*STDIN);
 }
 exit(EX_OK);
 
@@ -406,62 +449,139 @@ __END__
 
 =head1 NAME
 
-qmail-deliver.pl - deliver a message the way that qmail-local does
+qmail-deliver.pl - deliver mail like qmail-local, with whitelists/blacklists
 
 =head1 SYNOPSIS
 
-    qmail-deliver.pl [ --help ] [ --man ] [ --usage ] [ --verbose ... ]
- 	             [ --[no]test ] [ --redeliver ]
+    qmail-deliver.pl [ --help | --man | --usage ]
+
+    qmail-deliver.pl [ --verbose ... ] [ --[no]test ] [ --redeliver ]
+    		     [ --add-local=<name> ... ]
+		     [ --network-prefix=<IP> ... ] [ relay-ip=<IP> ... ]
 		     [ --whitelist=<file> ... ] [ --blacklist=<file> ... ]
 		     [ --deadlist=<file> ... ] [ --host-deadlist=<file> ... ]
 
 =head1 DESCRIPTION
 
-Given one or more whitelist, blacklist, and/or deadlist files named on
-the command line, and an email message on the standard input, decide
-what to do with the message as C<qmail-deliver> would, consulting
-C<.qmail> files in the current directory (presumably the user home
-directory of the user to whom this message is addressed), and deliver
-it appropriately.
+Given a series of command-line options, decide what to do with one or
+more messages as C<qmail-local> would, consulting C<.qmail> files in
+the current directory (normally the home directory of the user to whom
+the message is addressed), and deliver it appropriately.  The message
+may be supplied on the standard input (the normal delivery situation),
+or multiple message file names may be supplied on the command line
+with the L</--redeliver> option.
 
-The list options are L</--whitelist>, L</--blacklist>, L</--deadlist>,
-and L</--host-deadlist>; these name files which contain lists of email
-addresses to be treated specially. "?" and "*" are considered
-wildcards which match any single character and zero or more characters
-respectively.  All of these options may be repeated in order to
-specify multiple files.
+In addition to the usual Qmail extension and dot-qmail customizations,
+C<qmail-deliver.pl> may also check source and destination addresses
+against lists specified by command-line options.  The list options are
+L</--whitelist>, L</--blacklist>, L</--deadlist>, and
+L</--host-deadlist>;
+these name files which contain lists of email addresses.  
+In these addresses, "?" and "*" are considered wildcards
+which match any single character and zero or more characters
+respectively.  All of these command-line options may be repeated in order to
+specify multiple files of addresses.
+In order to work, the list file options also require a
+F<.qmail-spam> file and optionally (for the deadlists) a
+F<.qmail-dead> file as the destination for emails with matching addresses,
+though they may just contain the line
+F</dev/null> in order to discard matching emails.
 
-Messages are checked first for deadlisted recipients, then for
-blacklisted senders, and finally for whitelisted senders.  If they
-pass all hurdles, they are sent through normal Qmail dot-file
-processing, honoring recipient address extensions.
+The L</--add-local>, L</--network-prefix>, and L</--relay-ip> options
+are for the C<forged-local-address.pl> script; if any of these three
+is supplied (and all may be repeated), then C<forged-local-address.pl>
+is used to detect whether the sender has spoofed a local address
+illegitimately in order to avoid whitelisting or other antispam
+defenses.
+
+=head2 Message processing
+
+Note that list processing only happens if (a) at least one list was
+specified and (b) a F<.qmail-spam> file exists, since F<.qmail-spam>
+is what tells C<qmail-deliver.pl> what to do with messages that fail
+the testing implied by the address lists.
+
+=over 4
+
+=item 1.
+
+Nonlocal messages are checked first for a forged local address (if
+enabled) and sent to F<.qmail-forged> if that exists, else to
+F<.qmail-spam>.  Note that C<forged-local-address.pl> is in charge of
+determining whether the mail was originated locally or not.
+
+=item 2.
+
+If we find any deadlisted B<recipients> in the "To:" or "CC:"
+headers, the message is sent to F<.qmail-dead> if that exists, else to
+F<.qmail-spam>.
+
+=back
+
+Then we check all B<senders>, including the envelope sender,
+and all addresses in the "Sender:", "From:", and "Reply-To:" fields.
+
+=over 4
+
+=item 1.
+
+If we find a sender with "name" of all digits, the message is sent to
+F<.qmail-dead> if that exists, else to F<.qmail-spam>.
+
+=item 2.
+
+If we find a blacklisted sender, the message is sent to
+F<.qmail-spam>).
+
+=item 3.
+
+If we find a dead host, the message is sent to F<.qmail-dead> if that
+exists, else to F<.qmail-spam>.
+
+=item 4.
+
+If the message has gotten this far and there is a whitelist, and the
+B<no sender matches> any whitelisted address, then the message is sent
+to F<.qmail-grey> if that exists, else to F<.qmail-spam>.
+
+=item 5.
+
+Otherwise (there is no whitelist or some sender matched it), the
+message is sent through normal Qmail dot-file processing, honoring the
+usual recipient address extensions.
+
+=back
 
 =head1 OPTIONS
 
 As with all other C<Getopt::Long> scripts, option names can be
 abbreviated to anything long enough to be unambiguous (e.g. C<--white>
 or C<--wh> for C<--whitelist>), options with arguments can be given as
-two words (e.g. C<--white 100>) or in one word separated by an "="
-(e.g. C<--white=100>), and "-" can be used instead of "--".
+two words (e.g. C<--white list.text>) or in one word separated by an "="
+(e.g. C<--white=list.text>), and "-" can be used instead of "--".
 
 =over 4
+
+=item B<--add-local>
+
+Specifies a single domain name to add to the "local" set.  If the name
+starts with a ".", it is a wildcard; otherwise, the whole domain name
+must match.
+This is passed verbatim to C<forged-local-address.pl>.
 
 =item B<--blacklist>
 
 Names a file of blacklisted senders; if a sender is on this list and
-a F<.qmail-spam> file exists, then the message is processed according
+a F<.qmail-spam> file exists, then the message is sent
 to F<.qmail-spam>.
-A sender address in one that appears as the envelope sender, or in a
-"Sender:", "From:", or "Reply-To:" header in the message itself.
+See L</Message processing> for details.
 
 =item B<--deadlist>
 
 Names a file of deadlisted B<recipients>; if the message is addressed
-(either "To:" or "CC:") to someone on this list (or it comes from someone
-with an address that has only digits before the "@") and
-a F<.qmail-dead> or F<.qmail-spam>
-file exists, then the message is processed according
-to the first of these that exists.
+(either "To:" or "CC:") to someone on this list, it is sent to
+F<.qmail-dead> if that exists, else to F<.qmail-spam>.
+See L</Message processing> for details.
 
 =item B<--help>
 
@@ -470,20 +590,33 @@ Prints the L<"SYNOPSIS"> and L<"OPTIONS"> sections of this documentation.
 =item B<--host-deadlist>
 
 Names a file of blacklisted sender hosts; if a sender host is on this
-list and a F<.qmail-spam> file exists, then the message is processed
-according to F<.qmail-spam>.  A sender address in one that appears as
-the envelope sender, or in a "Sender:", "From:", or "Reply-To:" header
-in the message itself.
+list, then the message is sent to F<.qmail-dead> if that exists, else
+to F<.qmail-spam>.
+See L</Message processing> for details.
 
 =item B<--man>
 
 Prints the full documentation in the Unix `manpage' style.
+
+=item B<--network-prefix>
+
+Specifies an IPv4 network block (i.e. "192.168.23" or "73.38.11.6/22")
+that is considered local, and may be repeated to add multiple local
+blocks.  Local sender or "From:" addresses are considered legitimate
+if a message comes from a non-relay system within such a block.
+This is passed verbatim to C<forged-local-address.pl>.
 
 =item B<--redeliver>
 
 Specify this to move message files given on the command line, as
 opposed to supplied on the standard input.  This is helpful when a
 previous invocation has misfiled something.
+
+=item B<--relay-ip>
+
+Specifies the dotted-quad (i.e. IPv4 only) address of a system with a
+non-local IP address that is authorized to relay mail.
+This is passed verbatim to C<forged-local-address.pl>.
 
 =item B<--notest>
 
@@ -500,24 +633,22 @@ Prints just the L<"SYNOPSIS"> section of this documentation.
 
 =item B<--verbose>
 
-Prints debugging information if specified.
+Prints debugging information if specified, appended to the
+F<post-deliver.log> file in the current directory (typically the
+delivery user's home directory).  May be repeated for extra verbosity.
 
 =item B<--whitelist>
 
 Names a file of whitelisted senders; if the message has not been
 blacklisted, or deadlisted, we finally check for whitelisting.  If the
-message sender is whitelisted, then the message is processed normally,
-either through the default F<.qmail> file or to the default
-F<Maildir>.
+message sender is whitelisted (or there is no whitelist), then the
+message is processed normally, either through the default F<.qmail>
+file or to the default F<Maildir>.
 
 If the message fails the whitelist, it is processed according to a
 F<.qmail-grey> file if that exists, else a F<.qmail-spam> file if that
 exists.
-
-Otherwise we must fall back to the normal default F<.qmail> file or to
-the default F<Maildir>.  As before, a sender address in one that
-appears as the envelope sender, or in a "Sender:", "From:", or
-"Reply-To:" header in the message itself.
+See L</Message processing> for details.
 
 =back
 
@@ -525,14 +656,24 @@ appears as the envelope sender, or in a "Sender:", "From:", or
 
 If you find any, please let me know.
 
+=head1 SEE ALSO
+
+=over 4
+
+=item C<forged-local-address.pl> 
+
+=item Qmail
+
+=back
+
 =head1 COPYRIGHT
 
- Copyright (C) 2003-2021 by Bob Rogers <rogers@rgrjr.dyndns.org>.
- This script is free software; you may redistribute it and/or modify it
- under the same terms as Perl itself.
+Copyright (C) 2003-2021 by Bob Rogers C<< <rogers@rgrjr.dyndns.org> >>.
+This script is free software; you may redistribute it and/or modify it
+under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Bob Rogers C<E<lt>rogers@rgrjr.dyndns.orgE<gt>>
+Bob Rogers C<< <rogers@rgrjr.dyndns.org> >>
 
 =cut

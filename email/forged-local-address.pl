@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#!/usr/bin/perl
 ################################################################################
 #
 # Check for forged email SENDER addresses, exiting 0 if so.
@@ -9,38 +9,57 @@
 use strict;
 use warnings;
 
+BEGIN {
+    # This is for testing, and only applies if you don't use $PATH.
+    unshift(@INC, $1)
+	if $0 =~ m@(.+)/@;
+}
+
 use Mail::Header;
 use Getopt::Long;
 use Pod::Usage;
+use Net::Block;
 
 ### Option parsing.
 
 my $verbose_p = 0;
 my $not_p = 0;		# to reverse the sense of the test.
-my $local_domain_file = '/var/qmail/control/locals';
-my $local_network_prefix;
-my $vps = '69.164.211.47';	# fixed IP for rgrjr.com.
+my ($local_domain_file, %match_domains, @suffix_domains);
+my @local_networks;
+my %relay_p;		# authorized relays.
 my @sender_regexps;
+my $dotted_quad = '\d+.\d+.\d+.\d+';	# constant regexp.
 
 GetOptions('verbose+' => \$verbose_p,
 	   'not!' => \$not_p,
 	   'sender-re=s' => \@sender_regexps,
 	   'add-local=s' => \&add_local_domain,
-	   'network-prefix=s' => \$local_network_prefix,
+	   'relay-ip=s' => \&add_relay,
+	   'network-prefix=s' => \&add_local_net,
 	   'locals=s' => \$local_domain_file)
     or pod2usage();
+$local_domain_file ||= '/var/qmail/control/locals'
+    # Take the Qmail default only if --add-local was never specified.
+    unless %match_domains || @suffix_domains;
 
 my ($spam_exit, $legit_exit) = ($not_p ? (1, 0) : (0, 1));
-# Find the $local_network_prefix if not specified.
-if (! $local_network_prefix) {
-    open(my $in, '/sbin/ifconfig |')
-	or fail("Could not open pipe from ifconfig:  $!");
+# Find the local network(s) if not specified.
+if (! @local_networks) {
+    open(my $in, '/bin/ip a |')
+	or fail("Could not open pipe from 'ip a':  $!");
     while (defined(my $line = <$in>)) {
-	$local_network_prefix = $1, last
-	    if $line =~ /inet addr:(192\.168\.\d+|10\.\d+\.\d+)\./;
+	if ($line =~ m@inet ([.\d]+/\d+)@) {
+	    my $address = $1;
+	    my $block = Net::Block->parse($address)
+		or die "$0:  Bug:  Bad address '$address' from 'ip a'.\n";
+	    push(@local_networks, $block)
+		# Don't use the loopback address.
+		unless $block->host_octets->[0] == 127;
+	}
     }
-    fail("Couldn't find default IP address from ifconfig")
-	unless $local_network_prefix;
+    fail("Couldn't find a default IPv4 netblock from 'ip a'; ",
+	 "use --network-prefix to specify one.\n")
+	unless @local_networks;
 }
 
 ### Subroutines.
@@ -53,8 +72,6 @@ sub fail {
     exit(111);
 }
 
-my %match_domains;
-my @suffix_domains;
 sub add_local_domain {
     my $domain = (@_ == 2 ? $_[1] : shift);
 
@@ -65,6 +82,25 @@ sub add_local_domain {
     else {
 	$match_domains{$domain}++;
     }
+}
+
+sub add_relay {
+    # For option parsing.
+    my ($option, $relay_address) = @_;
+
+    die "$0:  Relay address must be a dotted quad.\n"
+	unless $relay_address =~ /^$dotted_quad$/;
+    $relay_p{$relay_address}++;
+}
+
+sub add_local_net {
+    # More option parsing.
+    my ($option, $local_net_address) = @_;
+
+    my $block = Net::Block->parse($local_net_address);
+    die "$0:  Malformed --$option '$local_net_address'.\n"
+	unless $block;
+    push(@local_networks, $block);
 }
 
 sub ensure_nonlocal_host {
@@ -87,6 +123,39 @@ sub ensure_nonlocal_host {
 	if $verbose_p;
 }
 
+sub local_p {
+    # Return true if the address is on one of our local networks.
+    my ($address) = @_;
+
+    for my $block (@local_networks) {
+	return $block
+	    if $block->address_contained_p($address);
+    }
+}
+
+sub classify_sender_address {
+    # Return true if the sender address is known to be a trusted local machine,
+    # i.e. the local host or a non-relay machine on the local network, undef if
+    # the address belongs to a relay, or 0 otherwise.
+    my ($address) = @_;
+
+    if ($address eq '127.0.0.1') {
+	return 'local';
+    }
+    elsif ($relay_p{$address}) {
+	# We check this before local_p in case the relay is on our local
+	# network.
+	return;
+    }
+    elsif (local_p($address)) {
+	return 'lan';
+    }
+    else {
+	# Definitely from elsewhere.
+	return 0;
+    }
+}
+
 sub local_header_p {
     # The sole argument is expected to be a "Received:\s*" header string,
     # possibly multiline, but without the part matching this RE.  Return 1 if
@@ -94,7 +163,7 @@ sub local_header_p {
     # "undef" if the header shows internal relaying, and 0 otherwise (which
     # presumably means that the message came from somewhere else).  Important:
     # Do NOT return "undef" unless the "from" host is trustworthy.
-    my $hdr = shift;
+    my ($hdr) = @_;
 
     if (! $hdr) {
 	# Can't make a determination.
@@ -104,47 +173,33 @@ sub local_header_p {
 	# qmail locally originated.
 	return 'local';
     }
-    elsif ($hdr =~ /by $local_network_prefix\.\d+ with SMTP/) {
-	# qmail format for delivery to our LAN address.
-	'lan';
-    }
-    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \((\S+\@)?$local_network_prefix\.\d+\)/) {
-	# qmail format for receipt from a LAN host.
-	'lan';
-    }
-    elsif ($hdr =~ /^from \S+ \(\S+ \[$local_network_prefix\.\d+\]\)/) {
-	# Postfix format for receipt from a LAN host.
-	'lan';
+    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \((\S+\@)?($dotted_quad)\)/) {
+	# qmail format
+	return classify_sender_address($2);
     }
     elsif ($hdr =~ /^from \S+ \(localhost \[127.0.0.1\]\)/) {
 	# Postfix format for the loopback re-receipt of SpamAssassin results.
 	return;
     }
-    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \($vps\)/) {
-	# qmail format for receipt from the rgrjr.com VPS.  [Though loopback on
-	# any trusted host should be equivalent.  -- rgr, 27-Nov-08.]
-	return;
+    elsif ($hdr =~ /^from \S+ \(\S+ \[($dotted_quad)\]\)/) {
+	# Postfix format.
+	return classify_sender_address($1);
     }
-    elsif ($hdr !~ /Postfix/) {
-	# Assume qmail, which adds two headers for SMTP mail; we need to check
-	# the second one.
-	return;
+    elsif ($hdr =~ /^from \S+ \(HELO \S+\) \(($dotted_quad)\)/) {
+	# qmail format.
+	return classify_sender_address($1);
     }
-    elsif ($hdr =~ /^from \S+ \(\S+ \[$vps\]\)/) {
-	# Postfix format for receipt from the rgrjr.com VPS.
+    elsif ($hdr =~ /qmail \d+ invoked from network/) {
+	# qmail adds two headers for SMTP mail; we must check the second one.
 	return;
     }
     # Postfix only adds a single header, so we need to make a definite
     # determination on this header to avoid spoofing.
     elsif ($hdr =~ /from userid \d+/) {
-	'local';
-    }
-    elsif ($hdr =~ /^from \S+ \(\S+ \[([\d.]+)\.\d+\]\)/
-	   && $1 eq $local_network_prefix) {
-	'lan';
+	return 'local';
     }
     else {
-	0;
+	return 0;
     }
 }
 
@@ -198,17 +253,27 @@ else {
 }
 
 # We have a remote message, so we need to find out what our local addresses are.
-if (-r $local_domain_file) {
-    open(IN, $local_domain_file)
+if (%match_domains || @suffix_domains) {
+    # Local domains already specified on the command line.
+}
+elsif ($local_domain_file && -r $local_domain_file) {
+    # Qmail "locals" configuration.
+    open(my $in, '<', $local_domain_file)
 	or fail("Could not open '$local_domain_file':  $!");
-    while (<IN>) {
+    while (<$in>) {
 	chomp;
 	add_local_domain($_);
     }
-    close(IN);
 }
-# Default default.
-%match_domains = map { ($_ => 1); } qw(rgrjr.com rgrjr.dyndns.org)
+elsif (-x '/usr/sbin/postconf') {
+    # Just ask Postfix.
+    chomp(my $destination = `/usr/sbin/postconf -hx mydestination`);
+    for my $name (split(/,\s*/, $destination)) {
+	add_local_domain($name)
+	    unless $name =~ /^localhost/;
+    }
+}
+fail("No local domain names found, use --locals or --add-local.\n")
     unless %match_domains || @suffix_domains;
 
 # Check the envelope sender against all of the match domains.  If we find a
@@ -258,9 +323,81 @@ __END__
 
 =head1 DESCRIPTION
 
-Detect forged email addresses by examining 'Received:' headers.
+Detect forged email addresses by examining "Received:" headers.
 
-To use this, put the following in your C<.qmail> file:
+Each mail transport agent (MTA) adds at least one "Received:" header
+to the front of the pile, so the first one was added by your MTA
+before it handed the message off to the delivery code (including
+C<forged-local-address.pl>).  Since we know it came from the local
+MTA, we know it is trustworthy.  This header will say what system it
+came from, which may be another local system (which we must trust), a
+relay (which we trust but which may also accept email from anywhere),
+and the Internet at large (definitely not trustworthy).
+
+=over 4
+
+=item 1.
+
+If it's from a local system, defined by having a local network
+address, then it's allowed to use local domain names in "From:" and
+sender addresses.  We assume such systems will only originate emails,
+or may relay emails within the network, but will not relay from the
+outside world.
+
+=item 2.
+
+If it's a designated relay system, then we defer judgment, based on
+the next "Received:" header, which is still trustworthy because it
+came from the relay and we trust the relay.
+
+=item 3.
+
+Otherwise it's from the wild, wild West, and we disallow any of our
+local domain names in the envelope sender and the "Sender:", "From:",
+and "Reply-To:" headers, including parenthetical comments and text
+outside of any angle brackets that would normally contain just the
+user name (if there are angle brackets, that is the real email
+address).
+
+=back
+
+In order to make these determinations, we need to know three things:
+
+=over 4
+
+=item 1.
+
+The set of domain names considered local, specified by C<--locals> and
+C<--add-local>.  This can usually be defaulted; without
+C<--add-local>, C<--locals> defaults to F</var/qmail/control/locals>,
+which works for Qmail, and if that file doesn't exist, we ask Postfix.
+
+=item 2.
+
+The local netblock(s), specified by C<--network-prefix>, which
+defaults to the directly connected IPv4 networks identified in "ip a"
+output.
+
+=item 3.
+
+Any external systems that are authorized to relay mail from the
+Internet at large, identified by C<--relay-ip>.
+
+=back
+
+The defaults for these values are usually sufficient; the only thing
+that C<forged-local-address.pl> can't figure out on its own is the
+existence of any authorized relays.
+
+Currently, the only supported MTAs are Qmail and Postfix.  Since
+"Received:" headers are supposed to be fairly standard, it's possible
+that C<forged-local-address.pl> may be able to recognize the headers
+added by other MTAs, but there is also a lot of variation just between
+these two, so it's not likely.
+
+=head2 Usage for Qmail
+
+To use this with Qmail, put the following in your C<.qmail> file:
 
 	| bouncesaying "Go away." bin/forged-local-address.pl
 
@@ -272,7 +409,12 @@ folder:
 In this case, the C<rogers-spam> address must be defined (e.g. via a
 C<.qmail-spam> file).
 
-Currently, the only supported MTAs are qmail and Postfix.
+=head2 Usage for Postfix
+
+OK, I confess, I don't really interface C<forged-local-address.pl>
+directly with Postfix.  Instead, I use C<qmail-deliver.pl> which
+preserves my Qmail-style delivery options, adds whitelisting and
+blacklisting, and throws in C<forged-local-address.pl> as a bonus.
 
 =head2 Options
 
@@ -290,14 +432,25 @@ must match.
 
 Specifies a file of domain names.  Each line in this file is treated
 as if it had been added individually with C<--add-local>.  The file
-name defaults to '/var/qmail/control/locals', which only makes sense
-for qmail.  There is no error if the C<--locals> file does not exist.
+name defaults to '/var/qmail/control/locals' (which only makes sense
+for qmail) but only if C<--add-local> was never specified.
+
+The C<--locals> file is consulted only if we determine that the
+message comes from the outside world, so we must check its addresses
+for forgeries, and we have no C<--add-local> hosts.  If the
+C<--locals> file does not exist, we try to extract the equivalent
+information from the C<postconf> command, assuming that Postfix is the
+MTA.  If afterwards, no domain names are defined, we die with a fatal
+error.
 
 =item B<--network-prefix>
 
-Specifies a class C network prefix (i.e. "192.168.23") for qmail
-relaying.  If not specified, this defaults to the first "192.168.*.*"
-subnet in the output of C<ifconfig>.  This is mostly used for testing.
+Specifies an IPv4 network block (i.e. "192.168.23" or "73.38.11.6/22")
+that is considered local, and may be repeated to add multiple local
+blocks.  Local sender or "From:" addresses are considered legitimate
+if a message comes from a non-relay system within such a block.  If
+not specified, this defaults to all IPv4 subnets found in the output
+of C<ip a>.  The option is mostly used for testing.
 
 =item B<--not>
 
@@ -305,6 +458,11 @@ Inverts the sense of the return value.  Normally,
 C<forged-local-address.pl> exits true (0) if it detects a forgery, and
 false (1) otherwise.  If C<--not> is specified,
 C<forged-local-address.pl> exits 1 for a forgery, and 0 otherwise.
+
+=item B<--relay-ip>
+
+Specifies the dotted-quad (i.e. IPv4 only) address of a system with a
+non-local IP address that is authorized to relay mail.
 
 =item B<--sender-re>
 
@@ -357,7 +515,7 @@ There are three cases:
 
 Locally injected, in which case the first 'Received:' header contains
 something like "qmail 20512 invoked by uid 500" or "qmail 20513
-invoked by alias".  This is legitimate.
+invoked by alias" (or the Postfix equivalent).  This is legitimate.
 
 =item 2.
 
@@ -405,7 +563,7 @@ match is exact.
 Note that these are mutually exclusive; if you want to include both,
 you must mention both explicitly.
 
-=head2 Bugs
+=head1 BUGS
 
 C<--network-prefix> shouldn't be biased towards class C networks that
 start with "192.168...".

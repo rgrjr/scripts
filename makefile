@@ -26,7 +26,8 @@ backup-scripts = backup.pl backup-dbs.pl clean-backups.pl cd-dump.pl \
 root-scripts = xauth-local-host
 log-scripts = find-net-mounts.pl
 # mail manipulation scripts.
-mail-scripts = mbox-grep.pl mbox2maildir.pl email/forged-local-address.pl
+mail-scripts = mbox-grep.pl mbox2maildir.pl email/qmail-deliver.pl \
+		email/forged-local-address.pl email/snoop-maildir.pl
 # installation of various things, including these guys.
 install-scripts = install.pl copy-tree substitute-config.pl
 # utility scripts for version control systems.
@@ -34,13 +35,23 @@ vc-scripts =    cvs-chrono-log.pl svn-chrono-log.pl \
 		vc-chrono-log.pl vc-chrono-log.rb
 # random stuff that doesn't belong anywhere else.
 misc-scripts =	sdiff.pl html-diff.pl split-discord-html.pl
-perl-modules = 
+perl-net-modules = email/Net/Block.pm
 
 all:
 	@echo Nobody here but us scripts.
 	@echo So tell me what you really want to do, e.g. \"make test\".
 
-test:	test-diff test-chrono-log test-email test-backup
+test:	test-more-scripts test-diff test-forged-address test-chrono-log
+# This is all the Test::More scripts collected together, so they can be run
+# under Test::Harness at once, which takes up less space.  The test-email and
+# test-backup targets are not included under test because they would be
+# redundant wrt test-more-scripts and test-forged-address.
+test-more-scripts:
+	perl -MTest::Harness -e 'runtests(@ARGV);' \
+		test/test-backup-classes.pl \
+		test/test-config.pl \
+		email/test-net-block.pl \
+		email/test-qmail-deliver.pl
 
 test-chrono-log:	test-cvs-chrono-log-1 test-cvs-chrono-log-2 \
 			test-cvs-chrono-log-3 test-svn-chrono-log-1a \
@@ -124,14 +135,16 @@ test-compare-languages:	vc-chrono-log.exe
 	cmp $@.tmp.pl.text $@.tmp.py.text
 	rm -f $@.tmp.*
 
-test-email:	test-forged-address test-deliver
+test-email:	test-net-block test-forged-address test-deliver
+test-net-block:
+	perl email/test-net-block.pl
 test-deliver:
 	perl email/test-qmail-deliver.pl
 test-forged-address:	test-rgrjr-forged-address \
 		test-nonforged-addresses \
 		test-new-forged-address test-postfix-forged-address \
 		test-postfix-forged-2
-rgrjr-config-options = --locals email/rgrjr-locals.text \
+rgrjr-config-options = --locals email/rgrjr-locals.text --relay=69.164.211.47 \
 		--network-prefix 192.168.57
 test-rgrjr-forged-address:
 	SENDER=rogers@rgrjr.dyndns.org perl -Mlib=. email/forged-local-address.pl \
@@ -264,21 +277,23 @@ test-show-backups:
 
 install:	install-base
 install-base:
-	${INSTALL} -m 444 ${perl-modules} ${pm-directory}
+	mkdir -p ${pm-directory}/Net
+	${INSTALL} -m 444 ${perl-net-modules} ${pm-directory}/Net
 	${INSTALL} -m 555 ${base-scripts} ${mail-scripts} ${bin-directory}
+install-backup:
+	mkdir -p ${pm-directory}/Backup
+	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
+	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
+
+install-root-bin:
 	${INSTALL} -m 555 ${root-scripts} /root/bin
 # install burn-backups only if not already there; usually it gets
 # customized per host.
 	if [ ! -r /root/bin/burn-backups ]; then \
 	    ${INSTALL} -m 555 burn-backups /root/bin; \
 	fi
-install-backup:
-	mkdir -p ${pm-directory}/Backup
-	${INSTALL} -m 444 Backup/*.pm ${pm-directory}/Backup
-	${INSTALL} -m 555 ${backup-scripts} ${bin-directory}
-
 uninstall-root-bin:
-	for file in ${perl-modules} ${base-scripts}; do \
+	for file in ${root-scripts}; do \
 	    if [ -r /root/bin/$$file ]; then \
 		echo Removing /root/bin/$$file; \
 		rm -f /root/bin/$$file; \
@@ -295,7 +310,7 @@ diff:
 ### Other oddments.
 
 clean:
-	rm -f *.tmp
+	rm -f *.tmp email/*.tmp email/.qmail-*
 tags:
 	find . -name '*.p[lm]' -o -name '*.rb' -o -name '*.el' \
 		-o -name '*.erl' -o -name '*.py' \
