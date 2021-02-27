@@ -274,10 +274,10 @@ die("$0:  Couldn't get disk size from ",
 # ensure that the data will fit.
 my $space_needed_estimate = 2*$disk_size;
 warn("$warn:  Estimate ${disk_used_estimate}K used, ",
-     "${space_needed_estimate}K needed, with ${cd_max_size}K max.\n")
+     "${space_needed_estimate}K needed, with ${media_max_size}K max.\n")
     if $verbose_p;
 die("$warn:  Not enough disk left:  ${disk_used_estimate}K used ",
-    "+ ${space_needed_estimate}K needed > ${cd_max_size}K max.\nDied")
+    "+ ${space_needed_estimate}K needed > ${media_max_size}K max.\nDied")
     if $disk_used_estimate+$space_needed_estimate > $media_max_size;
 
 ### all clear, write the disk.
