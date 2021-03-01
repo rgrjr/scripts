@@ -21,6 +21,7 @@ my $tag = "$0 ($$)";
 my $test_p = 0;
 my $verbose_p = 0;
 my $redeliver_p = 0;
+my $ext_from_deliver_to_p = 0;
 my (@whitelists, @blacklists, @host_deadlists, @deadlists);
 my @forged_local_args;
 
@@ -34,6 +35,7 @@ GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'test!' => \$test_p,
 	   'verbose+' => \$verbose_p,
 	   'redeliver!' => \$redeliver_p,
+	   'use-delivered-to!' => \$ext_from_deliver_to_p,
 	   'deadlist=s' => \@deadlists,
 	   'host-deadlist=s' => \@host_deadlists,
 	   'whitelist=s' => \@whitelists,
@@ -109,6 +111,14 @@ sub write_maildir_message {
     # delivery.
     my ($maildir, $head, $headers, $message_source) = @_;
 
+    if ($verbose_p && $head->count('delivered-to')) {
+	my @delivered_to = $head->get('delivered-to');
+	warn("Message for $maildir has '",
+	     join(q{', '}, map { chomp; $_; } @delivered_to), "'.\n")
+	    # It's unusual to have more than one of these.
+	    if @delivered_to > 1 || $verbose_p > 1;
+    }
+
     # Validate maildir.
     unless ($maildir =~ m@/$@ && -d $maildir) {
 	warn "$tag:  invalid maildir '$maildir'.\n";
@@ -125,6 +135,9 @@ sub write_maildir_message {
 	    my $msgid_file = "$msgid_dir/$message_id";
 	    if (-e $msgid_file) {
 		# Already seen.
+		warn("Message '$message_id' for $maildir ",
+		     "has already been delivered.\n")
+		    if $verbose_p;
 		if (ref($message_source)) {
 		    while (<$message_source>) { }
 		}
@@ -205,10 +218,14 @@ sub process_qmail_file {
 	    # Ignore comments and blank lines.
 	}
 	elsif (substr($_, 0, 1) eq '|') {
-	    # Silently ignore piped commands.
+	    # Ignore piped commands.
+	    warn "Ignoring piped command in $qmail_file\n"
+		if $verbose_p > 1;
 	}
 	elsif (m@^(&?dev-null|/dev/null)$@) {
 	    # Explicitly ignored.
+	    warn "Delivered message to /dev/null\n"
+		if $verbose_p > 1;
 	}
 	elsif (m@^\S+/$@) {
 	    # Maildir delivery.
@@ -237,9 +254,35 @@ sub find_localpart {
 }
 
 sub find_extension {
-    # Find the extension from $ENV{EXTENSION}, or the localpart if we can find
-    # one, or assume it is "".
+    # Find the extension from the difference in the latest two "Delivered-To:"
+    # header localparts if --use-delivered-to was specified and such headers
+    # exist, or directly from $ENV{EXTENSION}, or the from localpart or
+    # $ENV{LOCAL} if we can find one (in which case we have to assume the first
+    # hyphen is the extension separator), or just assume the extension is "".
     my ($head) = @_;
+
+    if ($ext_from_deliver_to_p && $head->count('delivered-to') >= 2) {
+	# If we have at least two "Delivered-To:" headers, we might be able to
+	# extract an extension that was dropped between the previous address
+	# ($local2, e.g. "rogers-emacs") and the final destination ($local1,
+	# e.g. "rogers").  Note that comparing the two localparts means that we
+	# don't have to guess which of possibly many hyphens is the right one.
+	my ($local1, $local2)
+	    = map { chomp;
+		    my ($localpart) = split(/@/);
+		    lc($localpart);
+	} $head->get('delivered-to');
+	my $len1 = length($local1); 
+	if (length($local2) > $len1 + 1) {
+	    my $suffix = substr($local2, $len1);
+	    if (substr($suffix, 0, 1) eq '-'
+		&& $local1 eq substr($local2, 0, $len1)) {
+		warn("$tag:  Found suffix '$suffix' from 'Delivered-To:'\n")
+		    if $verbose_p > 1;
+		return substr($suffix, 1)
+	    }
+	}
+    }
 
     my $extension = $ENV{EXTENSION};
     return $extension
@@ -261,6 +304,8 @@ sub address_forged_p {
     # Get forged-local-address.pl from the same place we are running.
     my $fla = $0;
     $fla =~ s@[^/]*$@forged-local-address.pl@;
+    unshift(@forged_local_args, ('--verbose') x ($verbose_p - 1))
+	if $verbose_p > 1;
     my $fla_cmd = join(' ', "| $fla", @forged_local_args);
     open(my $out, $fla_cmd)
 	or die "could not open $fla";
@@ -361,6 +406,9 @@ sub check_lists {
     my $dead_dest = -r '.qmail-dead' ? '.qmail-dead' : '.qmail-spam';
     if (@deadlists) {
 	my $to_addresses = $find_addresses->(qw(to cc));
+	my $recipient = $ENV{RECIPIENT};
+	$to_addresses->{$recipient}++
+	    if $recipient;
 	return $dead_dest
 	    if $address_match_p->($to_addresses, @deadlists);
     }
@@ -456,7 +504,7 @@ qmail-deliver.pl - deliver mail like qmail-local, with whitelists/blacklists
     qmail-deliver.pl [ --help | --man | --usage ]
 
     qmail-deliver.pl [ --verbose ... ] [ --[no]test ] [ --redeliver ]
-    		     [ --add-local=<name> ... ]
+    		     [ --add-local=<name> ... ] [ --[no-]use-delivered-to ]
 		     [ --network-prefix=<IP> ... ] [ relay-ip=<IP> ... ]
 		     [ --whitelist=<file> ... ] [ --blacklist=<file> ... ]
 		     [ --deadlist=<file> ... ] [ --host-deadlist=<file> ... ]
@@ -579,7 +627,8 @@ See L</Message processing> for details.
 =item B<--deadlist>
 
 Names a file of deadlisted B<recipients>; if the message is addressed
-(either "To:" or "CC:") to someone on this list, it is sent to
+(either "To:" or "CC:" or the envelope
+sender) to someone on this list, it is sent to
 F<.qmail-dead> if that exists, else to F<.qmail-spam>.
 See L</Message processing> for details.
 
@@ -630,6 +679,39 @@ really only useful with C<--redeliver>.
 =item B<--usage>
 
 Prints just the L<"SYNOPSIS"> section of this documentation.
+
+=item B<--no-use-delivered-to>
+
+=item B<--use-delivered-to>
+
+Whether or not to use "Delivered-To:" headers when trying to find an
+address extension.  The default is C<--no-use-delivered-to> because
+when C<--use-delivered-to> is specified, this overrides the normal
+environment C<EXTENSION> specification provided by the mail server;
+normally, the mail server should know better.
+
+The C<--use-delivered-to> option is helpful when an intermediate
+server must be put in charge of aliasing in order to funnel multiple
+addresses toward a single destination address for final delivery.  If
+the intermediate server adds (for instance):
+
+    Delivered-To: rogers-emacs@rgrjr.com
+
+before redirecting the message to C<rogers@rgrjr.com>, and the
+destination server adds:
+
+    Delivered-To: rogers@rgrjr.com
+
+before handing the message off to C<qmail-deliver.pl>, then
+C<qmail-deliver.pl> can use these headers to re-split the different
+alias email streams.  In this case, it would extract "emacs" as the
+desired extension, and direct that message according to the
+F<.qmail-emacs> file.  Note that only the localpart of each address is
+consulted; the "@rgrjr.com" in each address is ignored completely, and
+in fact is allowed to be different.  Note that these "Delivered-To:"
+headers will be added in the B<reverse> of the order shown here (the
+most recent ones are towards the top), and only the (chronologically)
+last two such headers are consulted.
 
 =item B<--verbose>
 

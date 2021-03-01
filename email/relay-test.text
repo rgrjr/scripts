@@ -1,0 +1,97 @@
+Return-Path: <rogers+caf_=rogers=rgrjr.dyndns.org@rgrjr.com>
+X-Original-To: rogers@rgrjr.dyndns.org
+Delivered-To: rogers@rgrjr.dyndns.org
+Received: from rgrjr.com (li126-47.members.linode.com [69.164.211.47])
+	by scorpio.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 85C085FE4A
+	for <rogers@rgrjr.dyndns.org>; Mon,  1 Mar 2021 15:04:26 -0500 (EST)
+Received: from mail-io1-f48.google.com (mail-io1-f48.google.com [209.85.166.48])
+	by rgrjr.com (Postfix on openSUSE) with ESMTP id C9FE51D69AD
+	for <rogers@rgrjr.dyndns.org>; Mon,  1 Mar 2021 20:04:36 +0000 (UTC)
+Received: by mail-io1-f48.google.com with SMTP id g27so17803677iox.2
+        for <rogers@rgrjr.dyndns.org>; Mon, 01 Mar 2021 12:04:26 -0800 (PST)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:delivered-to:dkim-signature:from:mime-version
+         :content-transfer-encoding:message-id:date:to:subject;
+        bh=42KV6ihpl3+pVtusr5kU6pdhU1aFsmYIgYa6cU1Y7zA=;
+        b=raLlnsbgRbv1D7J7tKzVk91vmyzJUpFhFzB9CPT0024iWelFDt8YR81f8ik/0gXA/r
+         GNlwHPqNojvTJHBhoHOw3fNC4HlL6meuf6m0pdtbU0vcsfBQle5P2ylh1LQJCUsTeAAT
+         rA3PQ6ZeZESjsvmEMHsYV9hn1JDZbARyHNWSRuuEYa7Pvg4x0VpY9kACtQkL2Hxzayn/
+         2MyzT8ZbHHfJZGS7kY8XqmeL2SK35sVuq6kvnqa5+ywgIzrTl0M0/9DLi6czDtson4VX
+         kkX9SXaRu8qG93zZAJ/qSnht+1jT9HjeC19XZa3Jq41eW2U485hArLtz7lYX23x2FK9J
+         UedQ==
+X-Gm-Message-State: AOAM532NSQ50gU5X58fte0folBHKc6Cs774oVmhXpSmHNEbK647oBggK
+	YMacF8ETi/wvoxSn69rlX8CzizT9UI4Y4nwDR4WOVxF567WTLcHcbtlwaFzk1g==
+X-Received: by 2002:a05:6602:2048:: with SMTP id z8mr3033259iod.143.1614629065855;
+        Mon, 01 Mar 2021 12:04:25 -0800 (PST)
+X-Forwarded-To: rogers@rgrjr.dyndns.org
+X-Forwarded-For: rogers@rgrjr.com rogers@rgrjr.dyndns.org
+Delivered-To: rogers-emacs@rgrjr.com
+Received: by 2002:a6b:3f05:0:0:0:0:0 with SMTP id m5csp4054876ioa;
+        Mon, 1 Mar 2021 12:04:24 -0800 (PST)
+X-Received: by 2002:a4a:d88a:: with SMTP id b10mr13860232oov.29.1614629064219;
+        Mon, 01 Mar 2021 12:04:24 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1614629064; cv=none;
+        d=google.com; s=arc-20160816;
+        b=Bnvtb+Sl1Ad7jorRjOCaeHKhGyQvWbbqlYoq8SV1kDbBUdTfzoatl3RPMHVokaj9I4
+         wi6y9trgJRaB2QXP1yKiqVjAL6kNSUnb/hgcaEb1iyiumlaBskCsh6Erx2wGRePncGoZ
+         520E7KUffNhuWxajLZaDrJtFFuds1XygNleMezdJjIhSPmDV5VUG8vziT3/hloW3HU9+
+         vqJ0J6OFn6wGcOhBGSgoM6+X94RWTV1KsV0W2qvTFbZI5InIH1y2wsK8By5JT+XZWDNZ
+         a9pruKuLcWZB823n16AJQn311I0ic+yGtcYfifDTCzy4f+mZQT1gEPxN/ySzTVJiaftW
+         MYkA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=subject:to:date:message-id:content-transfer-encoding:mime-version
+         :from:dkim-signature;
+        bh=42KV6ihpl3+pVtusr5kU6pdhU1aFsmYIgYa6cU1Y7zA=;
+        b=wtxS32VUUAc/S9WG+50WeqHeESWiSgK3D8Ota6wZ6KU7eMXhkIZbhZYjzgp05UXIPz
+         04qjahxts4iLc+WpwMGaq0dkovio6DiVjvFugItry5cWQ0CXT1IhNi3laixtBBu765p6
+         qV6uhUI8ML6ps+AtgQA2q/vjyabx8cdY1nec2aSd8mk0TgwhiB3uu9M9MMDCs/0eZ5ag
+         WdFDOEaE+mlJ1G36LiHDnI2waIGUTC1TigJMO1wXFqkP/FUc3XOed7oGLfnrJAKeSmTu
+         vRhOfW8k4+NvM3oricaKE3VjQzUMoCCg3MhdC49qLGGagEb/xEf8bpWx0k28zutf/BDV
+         eWTw==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@modulargenetics-com.20150623.gappssmtp.com header.s=20150623 header.b=UnZIeh59;
+       spf=neutral (google.com: 209.85.220.97 is neither permitted nor denied by best guess record for domain of rogers@modulargenetics.com) smtp.mailfrom=rogers@modulargenetics.com
+Received: from mail-sor-f97.google.com (mail-sor-f97.google.com. [209.85.220.97])
+        by mx.google.com with SMTPS id h5sor4076094ots.5.2021.03.01.12.04.22
+        for <rogers-emacs@rgrjr.com>
+        (Google Transport Security);
+        Mon, 01 Mar 2021 12:04:24 -0800 (PST)
+Received-SPF: neutral (google.com: 209.85.220.97 is neither permitted nor denied by best guess record for domain of rogers@modulargenetics.com) client-ip=209.85.220.97;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@modulargenetics-com.20150623.gappssmtp.com header.s=20150623 header.b=UnZIeh59;
+       spf=neutral (google.com: 209.85.220.97 is neither permitted nor denied by best guess record for domain of rogers@modulargenetics.com) smtp.mailfrom=rogers@modulargenetics.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=modulargenetics-com.20150623.gappssmtp.com; s=20150623;
+        h=from:mime-version:content-transfer-encoding:message-id:date:to
+         :subject;
+        bh=42KV6ihpl3+pVtusr5kU6pdhU1aFsmYIgYa6cU1Y7zA=;
+        b=UnZIeh59iRon/falRYn2oeEFw4qFIcMtIdcmMW+DHmiTTIgeTjQpkwOP12sqewFyOd
+         Nl5FtYCYJvvGkCoCHaWDHsIQDHi7ELLtvRoWK/w6pvUEk2ozN0b7QTc6d1FVjVX8RDrj
+         QSVw4sWssM4ANUn/uVOLAYkKXsKqbUHqAhL2jpGAr9D4/WbVTj7X2s07jkeuWE/aQ46z
+         Yn2ehGo1hpuTEbBUK5fl+DfssTGYsm4uZLUbJX+e7k9o+iEFE9fILxT0VwyahCi0n5ZM
+         lPQMNijgDaUgtiCThSXp5mwqxwWslp04QPxVUrtKaGlvtEI11+WfVTdGhTIlDbr/xghX
+         QYXw==
+X-Google-Smtp-Source: ABdhPJyUxGLPp4enoeHVC/mMsGu0QeO9NaF8zOYsrhHGyF/iqXqqOcXA78TRYKJi6bqf2zrElfg2vgPj1f/d
+X-Received: by 2002:a9d:6c92:: with SMTP id c18mr14540460otr.82.1614629062733;
+        Mon, 01 Mar 2021 12:04:22 -0800 (PST)
+Received: from alexandria.modulargenetics.com (pool-100-0-197-235.bstnma.fios.verizon.net. [100.0.197.235])
+        by smtp-relay.gmail.com with ESMTP id w3sm2940560oow.27.2021.03.01.12.04.22
+        for <rogers-emacs@rgrjr.com>;
+        Mon, 01 Mar 2021 12:04:22 -0800 (PST)
+X-Relaying-Domain: modulargenetics.com
+Received: by alexandria.modulargenetics.com (Postfix, from userid 503)
+	id 1CCE161D6C; Mon,  1 Mar 2021 15:04:22 -0500 (EST)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <24637.18630.90257.937044@alexandria.modulargenetics.com>
+X-Mailer: VM 7.19 under Emacs 27.1
+From: Bob Rogers <rogers@modulargenetics.com>
+To: Bob Rogers <rogers-emacs@rgrjr.com>
+Subject: email testing [1]
+Date: Mon, 1 Mar 2021 15:04:22 -0500
+
+   Start of a new testing series.
+
+					-- Bob

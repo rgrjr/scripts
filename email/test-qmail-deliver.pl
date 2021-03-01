@@ -8,19 +8,18 @@
 use strict;
 use warnings;
 
-use Test::More tests => 64;
-
-# Clean up from old runs, leaving an empty Maildir.
-chdir('email') or die "bug";
-for my $dir (qw(spam emacs Maildir)) {
-    system(qq{rm -fr $dir})
-	if -d $dir;
-}
-unlink(qw(.qmail-spam .qmail-emacs .qmail-dead));
-ok(0 == system('maildirmake Maildir'), "created Maildir")
-    or die "no 'maildirmake' program?\n";
+use Test::More tests => 72;
 
 ### Subroutines.
+
+sub clean_up {
+    # Clean up from old runs, leaving an empty Maildir.
+    for my $dir (qw(spam emacs dead Maildir)) {
+	system(qq{rm -fr $dir})
+	    if -d $dir;
+    }
+    unlink(qw(list.tmp .qmail-spam .qmail-emacs .qmail-dead));
+}
 
 sub count_messages {
     # Really, this just counts files.
@@ -39,34 +38,48 @@ sub count_messages {
     return $count;
 }
 
+my %boolean_option_p
+    = (test_p => " --test",
+       redeliver_p => " --redeliver",
+       use_deliver_to_p => " --use-delivered-to",
+       verbose_p => " --verbose");
+my %keyword_option_p
+    = (network_prefix => '--network-prefix',
+       blacklist => '--blacklist',
+       whitelist => '--whitelist',
+       deadlist => '--deadlist',
+       host_deadlist => '--host-deadlist');
+
 sub deliver_one {
-    my ($message_file, $maildir, $expected_messages, %options) = @_;
+    my ($message_file, $maildir, $expected_messages, @options) = @_;
+    my %options = @options;
     my $exit_code = ($options{exit_code} || 0) << 8;
     $options{network_prefix} ||= '10.0.0';
+    local $ENV{RECIPIENT} = $options{recipient} || '';
     local $ENV{SENDER} = $options{sender} || 'rogers@rgrjr.dyndns.org';
     local $ENV{LOCAL} = $options{localpart};
 
+    # Set up the command.
     my $command
 	= join(' ', q{perl -Mlib=.. ./qmail-deliver.pl --relay 69.164.211.47},
 	       q{--add-local rgrjr.dyndns.org --add-local rgrjr.com});
-    $command .= " --network-prefix=$options{network_prefix}"
-	if $options{network_prefix};
-    $command .= " --test"
-	if $options{test_p};
-    $command .= " --redeliver"
-	if $options{redeliver_p};
-    $command .= " --blacklist=$options{blacklist}"
-	if $options{blacklist};
-    $command .= " --whitelist=$options{whitelist}"
-	if $options{whitelist};
-    $command .= " --deadlist=$options{deadlist}"
-	if $options{deadlist};
-    $command .= " --host-deadlist=$options{host_deadlist}"
-	if $options{host_deadlist};
+    while (@options) {
+	my ($keyword, $value) = (shift(@options), shift(@options));
+	if (my $opt = $keyword_option_p{$keyword}) {
+	    $command .= " $opt=$value";
+	}
+	elsif ($opt = $boolean_option_p{$keyword}) {
+	    $command .= $opt;
+	}
+    }
     for my $opt (qw(file file1 file2 file3)) {
 	$command .= " $options{$opt}"
 	    if $options{$opt};
     }
+    # We still discard stderr even if we are passing the --verbose option,
+    # because qmail-deliver.pl redirects its stderr to post-deliver.log; this
+    # redirection is just to catch a few forged-local-address.pl dribbles when
+    # --verbose is not specified.
     my $exit = system(qq{$command < $message_file 2>/dev/null});
     ok($exit_code == $exit, "deliver $message_file")
 	or warn "actually got exit code $exit for '$command < $message_file'";
@@ -76,6 +89,12 @@ sub deliver_one {
 }
 
 ### Main code.
+
+## Set up.
+chdir('email') or die "bug";
+clean_up();
+ok(0 == system('maildirmake Maildir'), "created Maildir")
+    or die "no 'maildirmake' program?\n";
 
 ## Simple default deliveries.
 deliver_one('from-bob.text', 'Maildir', 1);
@@ -120,13 +139,21 @@ unlink('list.tmp');
 
 ## Test deadlisting.
 system('echo rogers-ilisp@rgrjr.dyndns.org > list.tmp');
-system('echo /dev/null > .qmail-dead');
-deliver_one('dead-1.text', 'Maildir', 4,
+ok(0 == system('maildirmake dead'), "created dead maildir");
+system('echo dead/ > .qmail-dead');
+deliver_one('dead-1.text', 'dead', 1,
 	    deadlist => 'list.tmp',
 	    sender => 'debra@somewhere.com');
+system('echo rogers-netatalk-devel@rgrjr.dyndns.org >> list.tmp');
+deliver_one('netatalk-devel.text', 'dead', 2,
+	    recipient => 'rogers-netatalk-devel@rgrjr.dyndns.org',
+	    deadlist => 'list.tmp',
+	    sender => 'debra@somewhere.com');
+ok(0 == system('rm -fr dead'), 'removed dead maildir');
 
 ## Test host deadlisting.
 system('echo qq.com > host-deadlist.tmp');
+system('echo /dev/null > .qmail-dead');
 deliver_one('from-debra.text', 'Maildir', 4,
 	    host_deadlist => 'host-deadlist.tmp',
 	    sender => 'bogus@qq.com');
@@ -199,8 +226,22 @@ deliver_one('from-debra.text', 'Maildir', 6,
 	    network_prefix => '65.54.168');
 
 ## Test delivery of a Postfix bounce message.
-deliver_one('test-bounce.text', 'Maildir', 7,
+deliver_one('bounce-test.text', 'Maildir', 7,
 	    network_prefix => '209.85.128.0/17');
+
+## Test the --use-delivered-to feature.
+system('echo rogers@modulargenetics.com >> list.tmp');
+deliver_one('relay-test.text', 'emacs', 3,
+	    whitelist => 'list.tmp',
+	    use_deliver_to_p => 1,
+	    network_prefix => '209.85.128.0/17');
+# The same message will go to Maildir/ without the --use-delivered-to flag.
+deliver_one('relay-test.text', 'Maildir', 8,
+	    whitelist => 'list.tmp',
+	    network_prefix => '209.85.128.0/17');
+
+## Tidy up.
+clean_up();
 
 __END__
 

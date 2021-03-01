@@ -1,0 +1,69 @@
+X-Delivered-By: /usr/local/bin/qmail-deliver.pl (30898)
+Return-Path: <aungkyawsoe@mytel.com.mm>
+X-Original-To: rogers-netatalk-devel@rgrjr.dyndns.org
+Delivered-To: rogers-netatalk-devel@rgrjr.dyndns.org
+Received: from rgrjr.com (li126-47.members.linode.com [69.164.211.47])
+	by scorpio.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id C627C5FEAC
+	for <rogers-netatalk-devel@rgrjr.dyndns.org>; Sat,  6 Mar 2021 18:14:20 -0500 (EST)
+Received: from YGNSP02_MAIL02.mytel.com.mm (mailgw.mytel.com.mm [103.85.104.3])
+	by rgrjr.com (Postfix on openSUSE) with ESMTP id 5930E1D69AC
+	for <rogers-netatalk-devel@rgrjr.dyndns.org>; Sat,  6 Mar 2021 23:13:54 +0000 (UTC)
+Received: from mta2.mytel.com.mm ([10.201.4.51])
+	by YGNSP02_MAIL02.mytel.com.mm  with ESMTP id 126Mxos6015022-126Mxos8015022
+	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NO);
+	Sun, 7 Mar 2021 05:30:19 +0630
+Received: from localhost (localhost [127.0.0.1])
+	by mta2.mytel.com.mm (Postfix) with ESMTP id 95B0F1C507E;
+	Sun,  7 Mar 2021 05:13:56 +0630 (MMT)
+Received: from mta2.mytel.com.mm ([127.0.0.1])
+	by localhost (mta2.mytel.com.mm [127.0.0.1]) (amavisd-new, port 10032)
+	with ESMTP id aYyMPS8RrSHp; Sun,  7 Mar 2021 05:13:55 +0630 (MMT)
+Received: from localhost (localhost [127.0.0.1])
+	by mta2.mytel.com.mm (Postfix) with ESMTP id D24E11C5021;
+	Sun,  7 Mar 2021 05:04:42 +0630 (MMT)
+X-Virus-Scanned: amavisd-new at 
+Received: from mta2.mytel.com.mm ([127.0.0.1])
+	by localhost (mta2.mytel.com.mm [127.0.0.1]) (amavisd-new, port 10026)
+	with ESMTP id G_N0iX60G1IH; Sun,  7 Mar 2021 05:04:41 +0630 (MMT)
+Received: from mailbox.mytel.com.mm (mailbox1.mytel.com.mm [10.201.4.35])
+	by mta2.mytel.com.mm (Postfix) with ESMTP id 714031C5239;
+	Sun,  7 Mar 2021 04:56:43 +0630 (MMT)
+Message-ID: <16332427.248336.1615069603272.JavaMail.zimbra@mytel.com.mm>
+Subject: PROCESSED
+MIME-Version: 1.0
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_248330_846774070.1615069603165"
+X-Originating-IP: [10.201.4.38]
+X-Mailer: Zimbra 8.8.6_GA_1906 (ZimbraWebClient - GC88 (Mac)/8.8.6_GA_1906)
+Thread-Index: ooqW8UuIAep/d2gOZjAQBhK7lhbYFg==
+Thread-Topic: PROCESSED
+Date: Sun,  7 Mar 2021 05:04:42 +0630 (MMT)
+From: aungkyawsoe@mytel.com.mm
+
+------=_Part_248330_846774070.1615069603165
+Content-Type: multipart/alternative; 
+	boundary="=_c756c6c3-3bf9-4645-a175-eff0220a1417"
+
+--=_c756c6c3-3bf9-4645-a175-eff0220a1417
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+[content deleted]
+
+--=_c756c6c3-3bf9-4645-a175-eff0220a1417
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+<html><body>[content deleted]</body></html>
+
+--=_c756c6c3-3bf9-4645-a175-eff0220a1417--
+
+------=_Part_248330_846774070.1615069603165
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
+ name=Reciept.xlsx
+Content-Disposition: attachment; filename=Reciept.xlsx
+Content-Transfer-Encoding: base64
+
+[content deleted]
+
+------=_Part_248330_846774070.1615069603165--
