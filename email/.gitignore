@@ -3,4 +3,5 @@
 .qmail-spam
 Maildir
 emacs
+post-deliver.log
 spam

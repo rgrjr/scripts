@@ -310,7 +310,7 @@ diff:
 ### Other oddments.
 
 clean:
-	rm -f *.tmp email/*.tmp email/.qmail-*
+	rm -f *.tmp email/*.tmp email/.qmail-* email/post-deliver.log
 tags:
 	find . -name '*.p[lm]' -o -name '*.rb' -o -name '*.el' \
 		-o -name '*.erl' -o -name '*.py' \
