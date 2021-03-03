@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 62;
+use Test::More tests => 64;
 
 # Clean up from old runs, leaving an empty Maildir.
 chdir('email') or die "bug";
@@ -197,6 +197,10 @@ deliver_one('from-jan-3.text', 'Maildir', 5,
 	    whitelist => 'list.tmp');
 deliver_one('from-debra.text', 'Maildir', 6,
 	    network_prefix => '65.54.168');
+
+## Test delivery of a Postfix bounce message.
+deliver_one('test-bounce.text', 'Maildir', 7,
+	    network_prefix => '209.85.128.0/17');
 
 __END__
 

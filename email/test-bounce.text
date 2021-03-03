@@ -1,0 +1,98 @@
+X-Delivered-By: /home/rogers/projects/system/scripts/email/qmail-deliver.pl (3261)
+Return-Path: <>
+X-Original-To: rogers@rgrjr.com
+Delivered-To: rogers@rgrjr.com
+Received: by scorpio.rgrjr.com (Postfix on openSUSE GNU/Linux)
+	id DA95F6018C; Wed,  3 Mar 2021 14:28:31 -0500 (EST)
+Date: Wed,  3 Mar 2021 14:28:31 -0500 (EST)
+From: MAILER-DAEMON@rgrjr.com (Mail Delivery System)
+Subject: Undelivered Mail Returned to Sender
+To: rogers@rgrjr.com
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="0F85A5FE93.1614799711/scorpio.rgrjr.com"
+Message-Id: <20210303192831.DA95F6018C@scorpio.rgrjr.com>
+
+This is a MIME-encapsulated message.
+
+--0F85A5FE93.1614799711/scorpio.rgrjr.com
+Content-Description: Notification
+Content-Type: text/plain; charset=us-ascii
+
+This is the mail system at host scorpio.rgrjr.com.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to postmaster.
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<rogers@modulargenetics.com>: host smtp-relay.gmail.com[2607:f8b0:400d:c01::1c]
+    said: 550-5.7.1 Invalid credentials for relay
+    [2601:19c:4601:1ee0:1eb7:2cff:fea7:d249] 550-5.7.1 . The IP address you've
+    registered in your G Suite SMTP Relay service 550-5.7.1 doesn't match
+    domain of the account this email is being sent from. If 550-5.7.1 you are
+    trying to relay mail from a domain that isn't registered 550-5.7.1 under
+    your G Suite account or has empty envelope-from, you must 550-5.7.1
+    configure your mail server either to use SMTP AUTH to identify the
+    550-5.7.1 sending domain or to present one of your domain names in the HELO
+    or 550-5.7.1 EHLO command. For more information, please visit 550 5.7.1
+    https://support.google.com/a/answer/6140680#invalidcred i1sm1164405pjz.1 -
+    gsmtp (in reply to MAIL FROM command)
+
+--0F85A5FE93.1614799711/scorpio.rgrjr.com
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; scorpio.rgrjr.com
+X-Postfix-on-openSUSE-GNU/Linux-Queue-ID: 0F85A5FE93
+X-Postfix-on-openSUSE-GNU/Linux-Sender: rfc822; rogers@rgrjr.com
+Arrival-Date: Wed,  3 Mar 2021 14:28:31 -0500 (EST)
+
+Final-Recipient: rfc822; rogers@modulargenetics.com
+Original-Recipient: rfc822;rogers@modulargenetics.com
+Action: failed
+Status: 5.7.1
+Remote-MTA: dns; smtp-relay.gmail.com
+Diagnostic-Code: smtp; 550-5.7.1 Invalid credentials for relay
+    [2601:19c:4601:1ee0:1eb7:2cff:fea7:d249] 550-5.7.1 . The IP address you've
+    registered in your G Suite SMTP Relay service 550-5.7.1 doesn't match
+    domain of the account this email is being sent from. If 550-5.7.1 you are
+    trying to relay mail from a domain that isn't registered 550-5.7.1 under
+    your G Suite account or has empty envelope-from, you must 550-5.7.1
+    configure your mail server either to use SMTP AUTH to identify the
+    550-5.7.1 sending domain or to present one of your domain names in the HELO
+    or 550-5.7.1 EHLO command. For more information, please visit 550 5.7.1
+    https://support.google.com/a/answer/6140680#invalidcred i1sm1164405pjz.1 -
+    gsmtp
+
+--0F85A5FE93.1614799711/scorpio.rgrjr.com
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+
+Return-Path: <rogers@rgrjr.com>
+Received: from orion (orion.rgrjr.com [192.168.0.3])
+	by scorpio.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 0F85A5FE93;
+	Wed,  3 Mar 2021 14:28:31 -0500 (EST)
+Received: by orion (Postfix, from userid 500)
+	id ED3CC9FCB9; Wed,  3 Mar 2021 14:28:30 -0500 (EST)
+From: Bob Rogers <rogers@rgrjr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <24639.58206.905325.240749@gargle.gargle.HOWL>
+Date: Wed, 3 Mar 2021 14:28:30 -0500
+To: Bob Rogers <rogers@modulargenetics.com>
+Subject: testing bounces [1]
+X-Mailer: VM 7.19 under Emacs 28.0.50
+
+   Yadda, yadda.
+
+					-- Bob
+
+--0F85A5FE93.1614799711/scorpio.rgrjr.com--

@@ -173,6 +173,10 @@ sub local_header_p {
 	# qmail locally originated.
 	return 'local';
     }
+    elsif ($hdr =~ /^by \S+ \(Postfix/) {
+	# Postfix locally originated.
+	return 'local';
+    }
     elsif ($hdr =~ /^from \S+ \(HELO \S+\) \((\S+\@)?($dotted_quad)\)/) {
 	# qmail format
 	return classify_sender_address($2);
