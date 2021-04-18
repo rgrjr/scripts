@@ -99,8 +99,8 @@ for my $i (0..$n_dumps-1) {
 	for my $k ($j..$n_slices-1) {
 	    my $slice_k = $slices->[$k];
 	    my $result = ($slice_j->catalog_p
-			  ? ($slice_k->catalog_p ? $j <=> $k : -1)
-			  : ($slice_k->catalog_p ? 1 : $j <=> $k));
+			  ? ($slice_k->catalog_p ? $j <=> $k : 1)
+			  : ($slice_k->catalog_p ? -1 : $j <=> $k));
 	    test_slice_order($slice_j, $slice_k, $result);
 	}
     }

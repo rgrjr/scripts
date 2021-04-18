@@ -87,18 +87,17 @@ sub listing {
 }
 
 sub entry_cmp {
-    # This sorts first by date backwards, then by level backwards (if someone
-    # performs backups at two different levels on the same day, the second is
-    # usually an extracurricular L9 dump on top of the other), then prefix
-    # alphabetically, then by catalog_p (to put the catalogs first), and
-    # finally by index (for when a single backup is split across multiple
-    # files).
+    # This sorts first prefix forwards, then by date backwards, then by level
+    # backwards (if someone performs backups at two different levels on the
+    # same day, the second is usually an extracurricular L9 dump on top of the
+    # other), then by catalog_p (to put the catalogs last as "ls" does), and
+    # finally by slice index.
     my ($self, $other) = @_;
 
-    $other->date cmp $self->date
+    $self->prefix cmp $other->prefix
+	|| $other->date cmp $self->date
 	|| $other->level <=> $self->level
-	|| $self->prefix cmp $other->prefix
-	|| ($other->catalog_p || 0) <=> ($self->catalog_p || 0)
+	|| ($self->catalog_p || 0) <=> ($other->catalog_p || 0)
 	|| $self->index <=> $other->index;
 }
 
@@ -135,12 +134,14 @@ indicates the date the dump was made.
 
 Given another C<Backup::Slice> instance, return a -1,0,1 comparison
 value reflecting the proper sort order of the two instances.  First we
-compare by C<date> backwards (i.e. putting the most recent dump
+compare by C<prefix> alphabetically forwards, then by C<date>
+backwards (i.e. putting the most recent dump with a given prefix
 first), then by C<level> backwards (if someone performs backups at two
 different levels on the same day, the second is usually an
-extracurricular L9 dump on top of the other), then by by C<prefix>
-alphabetically forwards, then by catalog_p (to put the catalogs
-first), and finally by ascending index (for when a single backup is
+extracurricular L9 dump on top of the other), then by L</catalog_p>
+(to put the catalogs last, which matches C<ls> order for the sake of
+the C<--show-backups.pl> C<--sort=dvd> option), and finally by
+ascending slice index (for when a single dump is
 split across multiple files).  Since one usually only sorts slices
 from the same C<Backup::Dump>, only the last two comparisons are
 likely to be significant.

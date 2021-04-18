@@ -19,14 +19,16 @@ BEGIN {
 }
 
 sub entry_cmp {
-    # This sorts first by date backwards, then by level backwards (if someone
-    # performs backups at two different levels on the same day, the second is
-    # usually an extracurricular L9 dump on top of the other).
+    # Compare two dumps, considering the more recent one to be "less than" the
+    # other.  This sorts first by prefix forwards, then by date backwards, then
+    # by level backwards (if someone performs backups at two different levels
+    # on the same day, the second is usually an extracurricular L9 dump on top
+    # of the other).
     my ($self, $other) = @_;
 
-    $other->date cmp $self->date
-	|| $other->level <=> $self->level
-	|| $self->prefix cmp $other->prefix;
+    return ($self->prefix cmp $other->prefix
+	    || $other->date cmp $self->date
+	    || $other->level <=> $self->level);
 }
 
 sub file_stem {
@@ -85,12 +87,13 @@ indicates the date the dump was made.
 =head3 entry_cmp
 
 Given another C<Backup::Dump> instance, return a -1,0,1 comparison value
-reflecting the proper sort order of the two instances.
-First we compare by C<date> backwards (i.e. putting the most recent
-dump first), then by C<level> backwards (if someone
+reflecting the proper sort order of the two instances,
+considering the more recent one to be "less than" the other.
+First we compare by C<prefix> alphabetically forwards, then by
+C<date> backwards (i.e. putting the most recent
+dump first), and finally by C<level> backwards (if someone
 performs backups at two different levels on the same day, the second is
-usually an extracurricular L9 dump on top of the other),
-and finally by C<prefix> forwards.
+usually an extracurricular L9 dump on top of the other).
 
 =head3 file_stem
 
