@@ -165,7 +165,7 @@ sub clean_partition {
 	my ($dump) = @_;
 
 	$n_deletions++;
-	warn "    delete dump ", $dump->base_name, "\n"
+	warn "    delete dump ", $dump->file_stem, "\n"
 	    if $verbose_p > 1;
 	for my $slice (@{$dump->slices}) {
 	    my $file = $slice->file;
