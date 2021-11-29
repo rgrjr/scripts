@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 72;
+use Test::More tests => 77;
 
 ### Subroutines.
 
@@ -45,12 +45,18 @@ my %boolean_option_p
        verbose_p => " --verbose");
 my %keyword_option_p
     = (network_prefix => '--network-prefix',
+       list_host => '--list-host',
        blacklist => '--blacklist',
        whitelist => '--whitelist',
        deadlist => '--deadlist',
        host_deadlist => '--host-deadlist');
 
 sub deliver_one {
+    # After running ./qmail-deliver.pl with @options, which may include an
+    # expected exit_code, we expect to have $expected_messages count of
+    # messages in $maildir.  There are two "ok" calls, one for the exit code
+    # (and we warn if that fails) and one for the message count (and we die if
+    # that fails, because misdelivery will screw up subsequent tests).
     my ($message_file, $maildir, $expected_messages, @options) = @_;
     my %options = @options;
     my $exit_code = ($options{exit_code} || 0) << 8;
@@ -239,6 +245,18 @@ deliver_one('relay-test.text', 'emacs', 3,
 deliver_one('relay-test.text', 'Maildir', 8,
 	    whitelist => 'list.tmp',
 	    network_prefix => '209.85.128.0/17');
+
+## Test the --list-host option.
+deliver_one('mailing-list-1.text', 'Maildir', 9,
+	    sender => 'users-bounces@opensuse.org',
+	    list_host => 'opensuse.org',
+	    network_prefix => '209.85.128.0/17');
+deliver_one('viagra-inc.text', 'spam', 9,
+	    sender => 'rogerryals@hcsmail.com',
+	    list_host => 'opensuse.org',
+	    network_prefix => '209.85.128.0/17');
+ok(9 == count_messages(),
+   "--list-host makes no difference if not delivered from that system.");
 
 ## Tidy up.
 clean_up();

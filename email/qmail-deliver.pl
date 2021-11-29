@@ -41,7 +41,7 @@ GetOptions('help' => \$help, 'man' => \$man, 'usage' => \$usage,
 	   'whitelist=s' => \@whitelists,
 	   'blacklist=s' => \@blacklists,
 	   make_forged_local_pushers
-	       (qw(network-prefix=s add-local=s relay-ip=s)))
+	       (qw(network-prefix=s list-host=s add-local=s relay-ip=s)))
     or pod2usage(2);
 pod2usage(2) if $usage;
 pod2usage(1) if $help;
@@ -452,7 +452,7 @@ sub deliver_message {
     if (-r '.qmail-spam') {
 	my $file;
 	if (address_forged_p($header)) {
-	    # Found spam; redirect it.
+	    # Found spam with a forged address; redirect it.
 	    $qmail_file = -r '.qmail-forged' ? '.qmail-forged' : '.qmail-spam';
 	}
 	elsif (@whitelists || @blacklists || @host_deadlists || @deadlists
@@ -506,6 +506,7 @@ qmail-deliver.pl - deliver mail like qmail-local, with whitelists/blacklists
     qmail-deliver.pl [ --verbose ... ] [ --[no]test ] [ --redeliver ]
     		     [ --add-local=<name> ... ] [ --[no-]use-delivered-to ]
 		     [ --network-prefix=<IP> ... ] [ relay-ip=<IP> ... ]
+                     [ --list-host=<host-name> ... ]
 		     [ --whitelist=<file> ... ] [ --blacklist=<file> ... ]
 		     [ --deadlist=<file> ... ] [ --host-deadlist=<file> ... ]
 
@@ -535,7 +536,8 @@ F<.qmail-dead> file as the destination for emails with matching addresses,
 though they may just contain the line
 F</dev/null> in order to discard matching emails.
 
-The L</--add-local>, L</--network-prefix>, and L</--relay-ip> options
+The L</--add-local>, L</--network-prefix>, L</--list-host>,
+and L</--relay-ip> options
 are for the C<forged-local-address.pl> script; if any of these three
 is supplied (and all may be repeated), then C<forged-local-address.pl>
 is used to detect whether the sender has spoofed a local address
@@ -642,6 +644,14 @@ Names a file of blacklisted sender hosts; if a sender host is on this
 list, then the message is sent to F<.qmail-dead> if that exists, else
 to F<.qmail-spam>.
 See L</Message processing> for details.
+
+=item B<--list-host>
+
+Specifies a single domain name to add to the set of mailing list
+servers.  Any host that has an rDNS name with this as a suffix is
+considered valid as a mailing list host, so emails using one of our
+addresses coming from such a relay are not considered forgeries.
+This is passed verbatim to C<forged-local-address.pl>.
 
 =item B<--man>
 

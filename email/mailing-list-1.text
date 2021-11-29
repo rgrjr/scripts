@@ -1,0 +1,74 @@
+X-Delivered-By: /usr/local/bin/qmail-deliver.pl (30965)
+Return-Path: <users-bounces@opensuse.org>
+X-Original-To: rogers-suse@rgrjr.homedns.org
+Delivered-To: rogers-suse@rgrjr.homedns.org
+Received: from rgrjr.com (li126-47.members.linode.com [69.164.211.47])
+	by scorpio.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 4690A5FE8A
+	for <rogers-suse@rgrjr.homedns.org>; Sun, 28 Nov 2021 00:23:09 -0500 (EST)
+Received: from anna.opensuse.org (proxy-nue1.opensuse.org [195.135.221.145])
+	by rgrjr.com (Postfix on openSUSE) with ESMTP id 120A71D6BB2
+	for <rogers-suse@rgrjr.homedns.org>; Sun, 28 Nov 2021 05:23:23 +0000 (UTC)
+Received: from mailman3.infra.opensuse.org (mailman3.infra.opensuse.org [192.168.47.80])
+	by anna.opensuse.org (Postfix) with ESMTP id 91F9C21DEC;
+	Sun, 28 Nov 2021 05:23:00 +0000 (UTC)
+Received: from mailman3.infra.opensuse.org (localhost [127.0.0.1])
+	by mailman3.infra.opensuse.org (Postfix) with ESMTP id 5F5476728;
+	Sun, 28 Nov 2021 05:23:00 +0000 (UTC)
+Received: from mx2.opensuse.org (mx2.infra.opensuse.org [192.168.47.96])
+	by mailman3.infra.opensuse.org (Postfix) with ESMTP id 05BE079D
+	for <users@lists.opensuse.org>; Sun, 28 Nov 2021 05:22:47 +0000 (UTC)
+Received: from mx2.opensuse.org (localhost [127.0.0.1])
+	by mx2.opensuse.org (Postfix) with ESMTP id A6CADC9B
+	for <users@lists.opensuse.org>; Sun, 28 Nov 2021 05:22:44 +0000 (UTC)
+X-Spam-Checker-Version: SpamAssassin 3.4.5 (2021-03-20) on
+	mx2.infra.opensuse.org
+X-Spam-Level: 
+X-Spam-Status: No, score=-0.5 required=5.0 tests=KHOP_HELO_FCRDNS,NICE_REPLY_A
+	autolearn=disabled version=3.4.5
+X-Spam-Virus: No
+Received: from rgrjr.com (li126-47.members.linode.com [69.164.211.47])
+	by mx2.opensuse.org (Postfix) with ESMTP
+	for <users@lists.opensuse.org>; Sun, 28 Nov 2021 05:22:44 +0000 (UTC)
+Received: from rgrjr.com (c-73-16-206-7.hsd1.ma.comcast.net [73.16.206.7])
+	by rgrjr.com (Postfix on openSUSE) with ESMTP id A25701D6BB2
+	for <users@lists.opensuse.org>; Sun, 28 Nov 2021 05:22:53 +0000 (UTC)
+Received: from orion.rgrjr.com (orion.rgrjr.com [192.168.0.3])
+	by scorpio.rgrjr.com (Postfix on openSUSE GNU/Linux) with ESMTP id 3EF146017A;
+	Sun, 28 Nov 2021 00:22:39 -0500 (EST)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <24995.4636.242641.263134@orion.rgrjr.com>
+Date: Sun, 28 Nov 2021 00:22:36 -0500
+From: Bob Rogers <rogers-suse@rgrjr.homedns.org>
+To: oS-EN <users@lists.opensuse.org>
+Subject: Re: [oS-en] eth0 trouble
+In-Reply-To: <c26c1212-b74b-88a3-c120-21113a0ac64e@telefonica.net>
+References: <04256326-0fd4-5d3f-bbbc-c147e0c02158@telefonica.net>
+	<b77888a7-7565-3a2e-0968-ceaa32a63a43@telefonica.net>
+	<sntqfs$io8$3@saturn.local.net>
+	<b45af0fd-103e-8c7c-b0bd-544135a6636e@telefonica.net>
+	<ee930951-f7a0-68f4-a15e-c28d7d087534@jknott.net>
+	<20211127203838.64817e9b@acer-suse.lan>
+	<fef8630c-5f98-cc82-379a-9cec1186a749@telefonica.net>
+	<459027a6-6533-cfc6-7b77-634d5341bd20@jknott.net>
+	<b45f29d4-5697-0a2c-f539-b2aa5e66a35d@telefonica.net>
+	<32075fee-2520-443a-feec-eb7ae6b851bd@jknott.net>
+	<c26c1212-b74b-88a3-c120-21113a0ac64e@telefonica.net>
+X-Mailer: VM 7.19 under Emacs 28.0.60
+Message-ID-Hash: QZVX4QZOBVA5DMNPRJOUVJVUNR6CCCXS
+X-Message-ID-Hash: QZVX4QZOBVA5DMNPRJOUVJVUNR6CCCXS
+X-MailFrom: SRS0=f9Mk=QP=rgrjr.homedns.org=rogers-suse@opensuse.org
+X-Mailman-Rule-Misses: dmarc-mitigation; no-senders; approved; emergency; loop; banned-address; member-moderation; header-match-config-1; header-match-config-2; header-match-config-3; nonmember-moderation; administrivia; implicit-dest; max-recipients; max-size; news-moderation; no-subject; digests; suspicious-header
+X-Mailman-Version: 3.3.4
+Precedence: list
+List-Id: openSUSE Users <users.lists.opensuse.org>
+Archived-At: <https://lists.opensuse.org/archives/list/users@lists.opensuse.org/message/QZVX4QZOBVA5DMNPRJOUVJVUNR6CCCXS/>
+List-Archive: <https://lists.opensuse.org/archives/list/users@lists.opensuse.org/>
+List-Help: <mailto:users-request@lists.opensuse.org?subject=help>
+List-Owner: <mailto:users-owner@lists.opensuse.org>
+List-Post: <mailto:users@lists.opensuse.org>
+List-Subscribe: <mailto:users-join@lists.opensuse.org>
+List-Unsubscribe: <mailto:users-leave@lists.opensuse.org>
+
+[body omitted]
